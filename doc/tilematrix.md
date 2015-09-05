@@ -12,16 +12,16 @@ TileMatrix(projection, px_per_tile=256)
 * ``px_per_tile``: Optional, specifies the target resolution of each tile (i.e. each tile will have 256x256 px). Default is ``256``.
 
 After that, the object has the following properties:
-``self.projection``: The projection it was initialized with (either ``4326`` or ``3857``).
-``self.px_per_tile``: The pixelsize per tile it was initialized with (default ``256``).
-``self.left``: Left boundary of tile matrix.
-``self.top``: Top boundary of tile matrix.
-``self.right ``: Right boundary of tile matrix.
-``self.bottom ``: Bottom boundary of tile matrix.
-``self.wesize``: Horizontal size of tile matrix in map coordinates.
-``self.nssize``: Vertical size of tile matrix in map coordinates.
-``self.crs``: CRS (e.g. ``{'init': u'EPSG:4326'}``)
-``self.format``: Output format. Set to ``None`` in the beginning.
+* ``self.projection``: The projection it was initialized with (either ``4326`` or ``3857``).
+* ``self.px_per_tile``: The pixelsize per tile it was initialized with (default ``256``).
+* ``self.left``: Left boundary of tile matrix.
+* ``self.top``: Top boundary of tile matrix.
+* ``self.right ``: Right boundary of tile matrix.
+* ``self.bottom ``: Bottom boundary of tile matrix.
+* ``self.wesize``: Horizontal size of tile matrix in map coordinates.
+* ``self.nssize``: Vertical size of tile matrix in map coordinates.
+* ``self.crs``: CRS (e.g. ``{'init': u'EPSG:4326'}``)
+* ``self.format``: Output format. Set to ``None`` in the beginning.
 
 **Define output format/profile**
 ```python
@@ -102,5 +102,5 @@ MetaTileMatrix(tilematrix, metatiles=1)
 * ``metatiles``: Defines the metatile size. A value of 2 for example concatenates 2x2 ``TileMatrix`` tiles into one metatile. It should have one of these values: 2, 4, 8, 16.
 
 In addition to the basic properties it inherits from the source ``TileMatrix``, it inherits the following:
-``self.tilematrix``: The ``TileMatrix`` it builds on.
-``self.metatiles``: The ``metatiles`` value it was initialized with.
+* ``self.tilematrix``: The ``TileMatrix`` it builds on.
+* ``self.metatiles``: The ``metatiles`` value it was initialized with.
