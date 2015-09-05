@@ -342,14 +342,14 @@ class OutputFormat(object):
     def __init__(self, output_format):
 
         supported_rasterformats = ["GTiff", "PNG", "PNG_hillshade"]
-        supported_vectorformats = ["GEOJSON"]
+        supported_vectorformats = ["GeoJSON"]
         supported_formats = supported_rasterformats + supported_vectorformats
 
         format_extensions = {
             "GTiff": ".tif",
             "PNG": ".png",
             "PNG_hillshade": ".png",
-            "GEOJSON": ".geojson"
+            "GeoJSON": ".geojson"
         }
     
         try:
