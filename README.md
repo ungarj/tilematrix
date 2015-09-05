@@ -8,5 +8,5 @@ Python module to handle WMTS-like tile matrices. The module is designed to simpl
 # Documentation
 
 * [tilematrix](doc/tilematrix.md)
-* [tilematrix_io](doc/tilematrixio.md)
+* [tilematrix_io](doc/tilematrix_io.md)
 * [examples](doc/examples.md)
