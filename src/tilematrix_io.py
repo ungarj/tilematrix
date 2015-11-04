@@ -40,8 +40,12 @@ def read_raster_window(input_file,
     try:
         assert tile_geom.intersects(source_envelope)
 
-        left, bottom, right, top = tilematrix.tile_bounds(zoom, row, col,
-            pixelbuffer)
+        left, bottom, right, top = tilematrix.tile_bounds(
+            zoom,
+            row,
+            col,
+            pixelbuffer
+            )
         pixelsize = tilematrix.pixelsize(zoom)
         if pixelbuffer:
             destination_pixel = tilematrix.px_per_tile + (pixelbuffer * 2)
@@ -52,12 +56,18 @@ def read_raster_window(input_file,
         width, height = destination_shape
         destination_data = np.zeros(destination_shape, dtype=source_dtype)
 
-
-        # compute target window
+        # Compute target window in source file.
         out_left, out_bottom, out_right, out_top = transform_bounds(
-            source_crs, destination_crs, left, bottom, right, top, densify_pts=21)
+            destination_crs,
+            source_crs,
+            left,
+            bottom,
+            right,
+            top,
+            densify_pts=21
+            )
 
-        # compute target affine
+        # Compute target affine
         destination_affine = calculate_default_transform(
             source_crs,
             destination_crs,
@@ -67,7 +77,8 @@ def read_raster_window(input_file,
             out_bottom,
             out_right,
             out_top,
-            resolution=(pixelsize, pixelsize))[0]
+            resolution=(pixelsize, pixelsize)
+        )[0]
 
         # open window with rasterio
         with rasterio.open(input_file) as source:
@@ -75,36 +86,63 @@ def read_raster_window(input_file,
             maxrow, maxcol = source.index(out_right, out_bottom)
             window_offset_row = minrow
             window_offset_col = mincol
-            minrow, minrow_offset = clean_pixel_coordinates(minrow, source_shape[0])
-            maxrow, maxrow_offset = clean_pixel_coordinates(maxrow, source_shape[0])
-            mincol, mincol_offset = clean_pixel_coordinates(mincol, source_shape[1])
-            maxcol, maxcol_offset = clean_pixel_coordinates(maxcol, source_shape[1])
+            minrow, minrow_offset = clean_pixel_coordinates(
+                minrow,
+                source_shape[0]
+                )
+            maxrow, maxrow_offset = clean_pixel_coordinates(
+                maxrow,
+                source_shape[0]
+                )
+            mincol, mincol_offset = clean_pixel_coordinates(
+                mincol,
+                source_shape[1]
+                )
+            maxcol, maxcol_offset = clean_pixel_coordinates(
+                maxcol,
+                source_shape[1]
+                )
             rows = (minrow, maxrow)
             cols = (mincol, maxcol)
 
             window_data = source.read(1, window=(rows, cols))
             if minrow_offset:
-                nullarray = np.empty((minrow_offset, window_data.shape[1]), dtype=source_dtype)
+                nullarray = np.empty(
+                    (minrow_offset, window_data.shape[1]),
+                    dtype=source_dtype
+                    )
                 nullarray[:] = source_nodata
                 newarray = np.concatenate((nullarray, window_data), axis=0)
                 window_data = newarray
             if maxrow_offset:
-                nullarray = np.empty((maxrow_offset, window_data.shape[1]), dtype=source_dtype)
+                nullarray = np.empty(
+                    (maxrow_offset, window_data.shape[1]),
+                    dtype=source_dtype
+                    )
                 nullarray[:] = source_nodata
                 newarray = np.concatenate((window_data, nullarray), axis=0)
                 window_data = newarray
             if mincol_offset:
-                nullarray = np.empty((window_data.shape[0], mincol_offset), dtype=source_dtype)
+                nullarray = np.empty(
+                    (window_data.shape[0], mincol_offset),
+                    dtype=source_dtype
+                    )
                 nullarray[:] = source_nodata
                 newarray = np.concatenate((nullarray, window_data), axis=1)
                 window_data = newarray
             if maxcol_offset:
-                nullarray = np.empty((window_data.shape[0], maxcol_offset), dtype=source_dtype)
+                nullarray = np.empty(
+                    (window_data.shape[0], maxcol_offset),
+                    dtype=source_dtype
+                    )
                 nullarray[:] = source_nodata
                 newarray = np.concatenate((window_data, nullarray), axis=1)
                 window_data = newarray
 
-            window_vector_affine = source_affine.translation(window_offset_col, window_offset_row)
+            window_vector_affine = source_affine.translation(
+                window_offset_col,
+                window_offset_row
+                )
             window_affine = source_affine * window_vector_affine
 
             window_meta = source_meta
@@ -140,7 +178,7 @@ def read_raster_window(input_file,
                 raise
             tile_metadata = destination_meta
             tile_data = ma.masked_equal(destination_data, source_nodata)
-    except:        
+    except:
         tile_metadata, tile_data = None, None
         raise
 
