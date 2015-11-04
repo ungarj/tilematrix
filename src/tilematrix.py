@@ -15,7 +15,6 @@ class TileMatrix(object):
 
     def __init__(self, projection, px_per_tile=256):
         projections = ("4326", "3857")
-
         try:
             assert projection in projections
         except:
@@ -68,7 +67,7 @@ class TileMatrix(object):
             self.px_per_tile, ROUND))
         return pixelsize
 
-    def top_left_tile_coords(self, zoom, row, col):        
+    def top_left_tile_coords(self, zoom, row, col):
         left, upper = top_left_tile_coords(self, zoom, row, col)
         return left, upper
 
@@ -81,12 +80,12 @@ class TileMatrix(object):
         return bbox
 
     def tiles_from_bbox(self, geometry, zoom):
-        tilelist = tiles_from_bbox(self, geometry, zoom)        
-        return tilelist    
-    
+        tilelist = tiles_from_bbox(self, geometry, zoom)
+        return tilelist
+
     def tiles_from_geom(self, geometry, zoom):
-        # returns tiles intersecting with input geometry    
-        tilelist = tiles_from_geom(self, geometry, zoom)    
+        # returns tiles intersecting with input geometry
+        tilelist = tiles_from_geom(self, geometry, zoom)
         return tilelist
 
 
@@ -107,7 +106,7 @@ class MetaTileMatrix(TileMatrix):
         self.px_per_tile = tilematrix.px_per_tile * metatiles
         self.left = tilematrix.left
         self.top = tilematrix.top
-        self.right  = tilematrix.right 
+        self.right  = tilematrix.right
         self.bottom = tilematrix.bottom
         self.wesize = tilematrix.wesize
         self.nssize = tilematrix.nssize
@@ -150,7 +149,7 @@ class MetaTileMatrix(TileMatrix):
         pixelsize = self.tilematrix.pixelsize(zoom)
         return round(pixelsize, ROUND)
 
-    def top_left_tile_coords(self, zoom, row, col):        
+    def top_left_tile_coords(self, zoom, row, col):
         try:
             left, upper = top_left_tile_coords(self, zoom, row, col)
             return left, upper
@@ -167,12 +166,12 @@ class MetaTileMatrix(TileMatrix):
         return bbox
 
     def tiles_from_bbox(self, geometry, zoom):
-        tilelist = tiles_from_bbox(self, geometry, zoom)        
-        return tilelist    
-    
+        tilelist = tiles_from_bbox(self, geometry, zoom)
+        return tilelist
+
     def tiles_from_geom(self, geometry, zoom):
-        # returns tiles intersecting with input geometry    
-        tilelist = tiles_from_geom(self, geometry, zoom)    
+        # returns tiles intersecting with input geometry
+        tilelist = tiles_from_geom(self, geometry, zoom)
         return tilelist
 
     def tiles_from_tilematrix(self, zoom, row, col, geometry=None):
@@ -278,7 +277,7 @@ def tiles_from_bbox(tilematrix, geometry, zoom):
         tilelat -= tile_nssize
         row += 1
         rows.append(row)
-    tilelist = list(product([zoom], rows, cols))   
+    tilelist = list(product([zoom], rows, cols))
     return tilelist
 
 
@@ -301,7 +300,7 @@ def tiles_from_geom(tilematrix, geometry, zoom):
         except:
             print "... geometry could not be fixed"
             sys.exit(0)
-    
+
     if geometry.almost_equals(geometry.envelope, ROUND):
         tilelist = tilematrix.tiles_from_bbox(geometry, zoom)
 
@@ -323,7 +322,7 @@ def tiles_from_geom(tilematrix, geometry, zoom):
     elif geometry.geom_type in ("LineString", "MultiLineString", "Polygon",
         "MultiPolygon", "MultiPoint"):
         prepared_geometry = prep(geometry)
-        bbox_tilelist = tilematrix.tiles_from_bbox(geometry, zoom)  
+        bbox_tilelist = tilematrix.tiles_from_bbox(geometry, zoom)
         for tile in bbox_tilelist:
             zoom, row, col = tile
             geometry = tilematrix.tile_bbox(zoom, row, col)
@@ -333,7 +332,7 @@ def tiles_from_geom(tilematrix, geometry, zoom):
     else:
         print "ERROR: no valid geometry"
         sys.exit(0)
-    
+
     return tilelist
 
 
@@ -351,7 +350,7 @@ class OutputFormat(object):
             "PNG_hillshade": ".png",
             "GeoJSON": ".geojson"
         }
-    
+
         try:
             assert output_format in supported_formats
         except:
@@ -360,7 +359,7 @@ class OutputFormat(object):
             sys.exit(0)
 
         self.name = output_format
-    
+
         if output_format in supported_rasterformats:
             self.format = output_format
             self.type = "raster"
@@ -368,7 +367,7 @@ class OutputFormat(object):
             self.format = output_format
             self.type = "vector"
 
-        # Default driver equals format name .   
+        # Default driver equals format name .
 
         if self.format == "GTiff":
             self.profile = profiles.DefaultGTiffProfile().defaults
