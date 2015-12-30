@@ -99,7 +99,7 @@ A ``MetaTileMatrix`` object needs a ``TileMatrix`` object to be initialized and 
 MetaTileMatrix(tilematrix, metatiles=1)
 ```
 * ``tilematrix``: The ``TileMatrix`` it builds on.
-* ``metatiles``: Defines the metatile size. A value of 2 for example concatenates 2x2 ``TileMatrix`` tiles into one metatile. It should have one of these values: 2, 4, 8, 16.
+* ``metatiles``: Defines the metatile size. A value of 2 for example concatenates 2x2 ``TileMatrix`` tiles into one metatile. It should have one of these values: 2, 4, 8, 16. Note: a ``metatile`` value of 1 means no metatiling, i.e. the MetaTileMatrix is equal to the TileMatrix.
 
 In addition to the basic properties it inherits from the source ``TileMatrix``, it inherits the following:
 * ``self.tilematrix``: The ``TileMatrix`` it builds on.

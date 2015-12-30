@@ -7,8 +7,8 @@ Python module to help handling tile pyramids. The module is designed to help pre
 
 # Documentation
 
-* [tilematrix](doc/tilematrix.md)
-* [tilematrix_io](doc/tilematrix_io.md)
+* [navigate through a tile pyramid](doc/tilematrix.md)
+* [reading and writing data](doc/tilematrix_io.md)
 * [examples](doc/examples.md)
 
 # (Known) Deficiencies
