@@ -1,7 +1,7 @@
 # tilematrix
-Python module which helps handling tile pyramids. The module is designed to simplify preprocessing of geodata for web maps by providing useful functions
-* to translate between tile indices (zoom, row, column) and map coordinates (e.g. latitute, longitude), and
-* to read and write data aligned to a predefined tile cache.
+Python module to help handling tile pyramids. The module is designed to help preprocessing of geodata for web maps by simplifying following steps:
+1. translate between tile indices (zoom, row, column) and map coordinates (e.g. latitute, longitude), and
+1. read and write data aligned to a predefined tile cache.
 
 ``tilematrix`` supports metatiling as well and makes heavy use of [Fiona](https://github.com/Toblerity/Fiona), [shapely](https://github.com/Toblerity/shapely) and [rasterio](https://github.com/mapbox/rasterio).
 

@@ -1,6 +1,6 @@
 *.pyc
-
 dist/
 build/
 testenv/
 *.egg-info
+test/testdata/out/*
