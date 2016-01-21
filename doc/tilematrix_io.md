@@ -1,3 +1,3 @@
-# tilematrix_io
+# TilePyramid_io
 
 TBD
