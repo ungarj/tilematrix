@@ -21,21 +21,22 @@ def main(args):
     global debug
     debug = parsed.debug
     scriptdir = os.path.dirname(os.path.realpath(__file__))
-    
+
     testdata_directory = os.path.join(scriptdir, "testdata")
     outdata_directory = os.path.join(testdata_directory, "out")
-    wgs84 = TileMatrix("4326")
+    wgs84 = TilePyramid("4326")
     wgs84.set_format("GTiff", dtype="uInt16")
-    wgs84_meta = MetaTileMatrix(wgs84, 16)
+    wgs84_meta = MetaTilePyramid(wgs84, 16)
     print wgs84_meta.format.profile["dtype"]
 
-    # tilematrix
+    # TilePyramid
     #===========
 
     # tiles per zoomlevel
     try:
-        tiles = wgs84.tiles_per_zoom(5)
-        assert tiles == (64, 32)
+        matrix_width = wgs84.matrix_width(5)
+        matrix_height = wgs84.matrix_height(5)
+        assert (matrix_width, matrix_height) == (64, 32)
         print "tiles per zoomlevel OK"
     except:
         print "tiles per zoomlevel FAILED"
@@ -387,7 +388,7 @@ def main(args):
         col, row = 2, 2
         zoom = 5
         metatiling = 2
-        wgs84_meta = MetaTileMatrix(wgs84, metatiling)
+        wgs84_meta = MetaTilePyramid(wgs84, metatiling)
         antimeridian_location = os.path.join(testdata_directory,
             "antimeridian.geojson")
         with fiona.open(antimeridian_location) as antimeridian_file:
@@ -396,13 +397,13 @@ def main(args):
                 geometries.append(shape(feature["geometry"]))
         antimeridian = cascaded_union(geometries)
         print "top left tile coordinates:"
-        print "metatilematrix: %s" %([wgs84_meta.top_left_tile_coords(zoom, row, col)])
+        print "metaTilePyramid: %s" %([wgs84_meta.top_left_tile_coords(zoom, row, col)])
         print "tile bounding box"
-        print "metatilematrix: %s" %([mapping(wgs84.tile_bbox(zoom, row, col))])
+        print "metaTilePyramid: %s" %([mapping(wgs84.tile_bbox(zoom, row, col))])
         print "tile bounds"
-        print "metatilematrix: %s" %([wgs84_meta.tile_bounds(zoom, row, col)])
+        print "metaTilePyramid: %s" %([wgs84_meta.tile_bounds(zoom, row, col)])
         print "tiles from bbox"
-        #print "metatilematrix: %s" %([wgs84_meta.tiles_from_bbox(antimeridian, zoom)])
+        #print "metaTilePyramid: %s" %([wgs84_meta.tiles_from_bbox(antimeridian, zoom)])
         print "tiles from geometry"
 
         ## write debug output
@@ -416,7 +417,7 @@ def main(args):
         except:
             pass
         tiles = wgs84.tiles_from_geom(antimeridian, zoom)
-        print "tilematrix: %s" %(len(tiles))
+        print "TilePyramid: %s" %(len(tiles))
         with fiona.open(tiled_out, 'w', 'GeoJSON', schema) as sink:
             for tile in tiles:
                 zoom, row, col = tile
@@ -437,7 +438,7 @@ def main(args):
         except:
             pass
         metatiles = wgs84_meta.tiles_from_geom(antimeridian, zoom)
-        print "metatilematrix: %s" %(len(metatiles))
+        print "metaTilePyramid: %s" %(len(metatiles))
         with fiona.open(metatiled_out, 'w', 'GeoJSON', schema) as sink:
             for metatile in metatiles:
                 zoom, row, col = metatile
@@ -449,87 +450,91 @@ def main(args):
                 sink.write(feature)
 
 
-    for metatiling in range(1, 21):
-        wgs84_meta = MetaTileMatrix(wgs84, metatiling)
+    for metatiling in (1, 2, 4, 8, 16):
+        wgs84_meta = MetaTilePyramid(wgs84, metatiling)
         for zoom in range(22):
-            tilematrix_tiles = wgs84.tiles_per_zoom(zoom)
-            metatilematrix_tiles = wgs84_meta.tiles_per_zoom(zoom)
-            we_metatiles = metatilematrix_tiles[0]
-            we_control = int(math.ceil(float(tilematrix_tiles[0])/float(metatiling)))
-            ns_metatiles = metatilematrix_tiles[1]
-            ns_control = int(math.ceil(float(tilematrix_tiles[1])/float(metatiling)))
+            tilepyramid_width = wgs84.matrix_width(zoom)
+            tilepyramid_height = wgs84.matrix_height(zoom)
+            metatilepyramid_width = wgs84_meta.matrix_width(zoom)
+            metatilepyramid_height = wgs84_meta.matrix_height(zoom)
+            control_width = int(math.ceil(
+                float(tilepyramid_width)/float(metatiling)
+            ))
+            control_height = int(math.ceil(
+                float(tilepyramid_height)/float(metatiling)
+            ))
             try:
-                assert we_metatiles == we_control
-                assert ns_metatiles == ns_control
+                assert metatilepyramid_width == control_width
+                assert metatilepyramid_height == control_height
             except:
                 print "ERROR: metatile number"
                 print metatiling, zoom
-                print we_metatiles, we_control
-                print ns_metatiles, ns_control
+                print metatilepyramid_width, control_width
+                print metatilepyramid_height, control_height
                 raise
 
 
-    for metatiling in range(1, 21):
-        wgs84_meta = MetaTileMatrix(wgs84, metatiling)
+    for metatiling in (1, 2, 4, 8, 16):
+        wgs84_meta = MetaTilePyramid(wgs84, metatiling)
         for zoom in range(21):
             # check tuple
-            assert len(wgs84_meta.tiles_per_zoom(zoom)) == 2
+            assert isinstance(wgs84_meta.matrix_width(zoom), int)
+            assert isinstance(wgs84_meta.matrix_height(zoom), int)
 
             # check metatile size
-            metatile_wesize, metatile_nssize = wgs84_meta.tilesize_per_zoom(zoom)
-            metatile_wesize = round(metatile_wesize, ROUND)
-            metatile_nssize = round(metatile_nssize, ROUND)
-            ## assert metatile size equals tilematrix width and height at zoom 0
+            metatile_x_size =  round(wgs84_meta.metatile_x_size(zoom), ROUND)
+            metatile_y_size =  round(wgs84_meta.metatile_y_size(zoom), ROUND)
+            ## assert metatile size equals TilePyramid width and height at zoom 0
             if zoom == 0:
                 try:
                     if metatiling == 1:
-                        assert (metatile_wesize * 2) == wgs84.wesize
+                        assert (metatile_x_size * 2) == wgs84.x_size
                     else:
-                        assert metatile_wesize == wgs84.wesize
-                    assert metatile_nssize == wgs84.nssize
+                        assert metatile_x_size == wgs84.x_size
+                    assert metatile_y_size == wgs84.y_size
                 except:
                     print metatiling, zoom
                     print "ERROR: zoom 0 metatile size not correct"
-                    print metatile_wesize, wgs84.wesize
-                    print metatile_nssize, wgs84.nssize
-            ## assert metatile size within tilematrix bounds
+                    print metatile_x_size, wgs84.x_size
+                    print metatile_y_size, wgs84.y_size
+            ## assert metatile size within TilePyramid bounds
             try:
-                assert (metatile_wesize > 0.0) and (metatile_wesize <= wgs84.wesize)
-                assert (metatile_nssize > 0.0) and (metatile_nssize <= wgs84.nssize)
+                assert (metatile_x_size > 0.0) and (metatile_x_size <= wgs84.x_size)
+                assert (metatile_y_size > 0.0) and (metatile_y_size <= wgs84.y_size)
             except:
                 print "ERROR: metatile size"
                 print zoom
-                print metatile_wesize, wgs84_meta.wesize
-                print metatile_nssize, wgs84_meta.wesize
+                print metatile_x_size, wgs84_meta.x_size
+                print metatile_y_size, wgs84_meta.x_size
             ## calculate control size from tiles
 
-            tile_wesize, tile_nssize = wgs84.tilesize_per_zoom(zoom)
-            we_control_size = round(tile_wesize * float(metatiling), ROUND)
-            if we_control_size > wgs84.wesize:
-                we_control_size = wgs84.wesize
-            ns_control_size = round(tile_nssize * float(metatiling), ROUND)
+            tile_x_size = wgs84.tile_x_size(zoom)
+            tile_y_size = wgs84.tile_y_size(zoom)
+            we_control_size = round(tile_x_size * float(metatiling), ROUND)
+            if we_control_size > wgs84.x_size:
+                we_control_size = wgs84.x_size
+            ns_control_size = round(tile_y_size * float(metatiling), ROUND)
 
-            if ns_control_size > wgs84.nssize:
-                ns_control_size = wgs84.nssize
+            if ns_control_size > wgs84.y_size:
+                ns_control_size = wgs84.y_size
             try:
-                assert metatile_wesize == we_control_size
-                assert metatile_nssize == ns_control_size
+                assert metatile_x_size == we_control_size
+                assert metatile_y_size == ns_control_size
             except:
                 print "ERROR: metatile size and control sizes"
                 print metatiling, zoom
-                print metatile_wesize, we_control_size
-                print metatile_nssize, ns_control_size
+                print metatile_x_size, we_control_size
+                print metatile_y_size, ns_control_size
 
             # check metatile pixelsize (resolution)
             try:
-                assert round(wgs84.pixelsize(zoom), ROUND) == round(wgs84_meta.pixelsize(zoom), ROUND)
+                assert round(wgs84.pixel_x_size(zoom), ROUND) == round(wgs84_meta.pixel_x_size(zoom), ROUND)
+                assert round(wgs84.pixel_y_size(zoom), ROUND) == round(wgs84_meta.pixel_y_size(zoom), ROUND)
             except:
                 print "ERROR: metatile pixel size"
-                print zoom, metatiling
-                print wgs84_meta.tilesize_per_zoom(zoom), float(wgs84_meta.px_per_tile)
-                print round((wgs84_meta.tilesize_per_zoom(zoom)[0] / float(wgs84_meta.px_per_tile)), ROUND)
-                print round(wgs84.pixelsize(zoom), ROUND), round(wgs84_meta.pixelsize(zoom), ROUND)
-
+                print "zoom, metatiling:", zoom, metatiling
+                print round(wgs84.pixel_x_size(zoom), ROUND), round(wgs84_meta.pixel_x_size(zoom), ROUND)
+                print round(wgs84.pixel_y_size(zoom), ROUND), round(wgs84_meta.pixel_y_size(zoom), ROUND)
 
     if debug:
         fiji_borders = os.path.join(testdata_directory, "fiji.geojson")
@@ -549,7 +554,7 @@ def main(args):
             os.remove(fiji_tiles)
         except:
             pass
-        metatiling = 5
+        metatiling = 4
         zoom = 10
         tiles = wgs84.tiles_from_geom(union, zoom)
         with fiona.open(fiji_tiles, 'w', 'GeoJSON', schema) as sink:
@@ -572,7 +577,7 @@ def main(args):
             os.remove(fiji_metatiles)
         except:
             pass
-        wgs84_meta = MetaTileMatrix(wgs84, metatiling)
+        wgs84_meta = MetaTilePyramid(wgs84, metatiling)
         metatiles = wgs84_meta.tiles_from_geom(union, zoom)
         with fiona.open(fiji_metatiles, 'w', 'GeoJSON', schema) as sink:
             for metatile in metatiles:

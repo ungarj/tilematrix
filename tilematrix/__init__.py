@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 from .tilematrix import (
-    TileMatrix,
-    MetaTileMatrix,
+    TilePyramid,
+    MetaTilePyramid,
     OutputFormat
 )
 

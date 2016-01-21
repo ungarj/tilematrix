@@ -8,7 +8,7 @@ setup(
     description='helps handling tile pyramids',
     author='Joachim Ungar',
     author_email='joachim.ungar@gmail.com',
-    url='https://github.com/ungarj/tilematrix',
+    url='https://github.com/ungarj/TilePyramid',
     license='MIT',
     packages=['tilematrix'],
     install_requires=[
