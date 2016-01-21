@@ -119,5 +119,5 @@ MetaTilePyramid(TilePyramid, metatiles=1)
 * ``metatiles``: Defines the metatile size. A value of 2 for example concatenates 2x2 ``TilePyramid`` tiles into one metatile. It should have one of these values: 2, 4, 8, 16. Note: a ``metatile`` value of 1 means no metatiling, i.e. the MetaTilePyramid is equal to the TilePyramid.
 
 In addition to the basic properties it inherits from the source ``TilePyramid``, it inherits the following:
-* ``self.TilePyramid``: The ``TilePyramid`` it builds on.
+* ``self.tilepyramid``: The ``TilePyramid`` it builds on.
 * ``self.metatiles``: The ``metatiles`` value it was initialized with.
