@@ -5,6 +5,12 @@ Python module to help handling tile pyramids. The module is designed to help pre
 
 ``tilematrix`` supports metatiling as well and makes heavy use of [Fiona](https://github.com/Toblerity/Fiona), [shapely](https://github.com/Toblerity/shapely) and [rasterio](https://github.com/mapbox/rasterio).
 
+# Installation
+```shell
+pip install numpy
+pip install tilematrix
+```
+
 # Documentation
 
 * [navigate through a tile pyramid](doc/tilematrix.md)
