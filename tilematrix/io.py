@@ -9,18 +9,18 @@ from copy import deepcopy
 from tilematrix import *
 
 def read_raster_window(input_file,
-    TilePyramid,
+    tile_pyramid,
     tileindex,
     pixelbuffer=None,
     tilify=True):
 
     zoom, row, col = tileindex
 
-    assert (isinstance(TilePyramid, TilePyramid) or
-        isinstance(TilePyramid, MetaTilePyramid))
+    assert (isinstance(tile_pyramid, TilePyramid) or
+        isinstance(tile_pyramid, MetaTilePyramid))
 
     # read source metadata
-    source_envelope = raster_bbox(input_file, TilePyramid)
+    source_envelope = raster_bbox(input_file, tile_pyramid)
     with rasterio.open(input_file) as source:
         source_crs = source.crs
         source_affine = source.affine
@@ -35,24 +35,25 @@ def read_raster_window(input_file,
             source_nodata = 0
 
     # compute target metadata and initiate numpy array
-    tile_geom = TilePyramid.tile_bbox(zoom, row, col, pixelbuffer)
+    tile_geom = tile_pyramid.tile_bbox(zoom, row, col, pixelbuffer)
 
     try:
         assert tile_geom.intersects(source_envelope)
 
-        left, bottom, right, top = TilePyramid.tile_bounds(
+        left, bottom, right, top = tile_pyramid.tile_bounds(
             zoom,
             row,
             col,
             pixelbuffer
             )
-        pixelsize = TilePyramid.pixelsize(zoom)
+        pixel_x_size = tile_pyramid.pixel_x_size(zoom)
+        pixel_y_size = tile_pyramid.pixel_y_size(zoom)
         if pixelbuffer:
-            destination_pixel = TilePyramid.px_per_tile + (pixelbuffer * 2)
+            destination_pixel = TilePyramid.tile_size + (pixelbuffer * 2)
         else:
-            destination_pixel = TilePyramid.px_per_tile
+            destination_pixel = tile_pyramid.tile_size
         destination_shape = (destination_pixel, destination_pixel)
-        destination_crs = TilePyramid.crs
+        destination_crs = tile_pyramid.crs
         width, height = destination_shape
         destination_data = np.zeros(destination_shape, dtype=source_dtype)
 
@@ -77,7 +78,7 @@ def read_raster_window(input_file,
             out_bottom,
             out_right,
             out_top,
-            resolution=(pixelsize, pixelsize)
+            resolution=(pixel_x_size, pixel_y_size)
         )[0]
 
         # open window with rasterio
@@ -187,7 +188,7 @@ def read_raster_window(input_file,
 
 
 def write_raster_window(output_file,
-    TilePyramid,
+    tile_pyramid,
     tileindex,
     metadata,
     bands,
@@ -196,22 +197,23 @@ def write_raster_window(output_file,
     zoom, row, col = tileindex
 
     # get write window bounds (i.e. tile bounds plus pixelbuffer) in affine
-    out_left, out_bottom, out_right, out_top = TilePyramid.tile_bounds(zoom,
+    out_left, out_bottom, out_right, out_top = tile_pyramid.tile_bounds(zoom,
         row, col, pixelbuffer)
 
-    out_width = TilePyramid.px_per_tile + (pixelbuffer * 2)
-    out_height = TilePyramid.px_per_tile + (pixelbuffer * 2)
-    pixelsize = TilePyramid.pixelsize(zoom)
+    out_width = tile_pyramid.tile_size + (pixelbuffer * 2)
+    out_height = tile_pyramid.tile_size + (pixelbuffer * 2)
+    pixel_x_size = tile_pyramid.pixel_x_size(zoom)
+    pixel_y_size = tile_pyramid.pixel_y_size(zoom)
     destination_affine = calculate_default_transform(
-        TilePyramid.crs,
-        TilePyramid.crs,
+        tile_pyramid.crs,
+        tile_pyramid.crs,
         out_width,
         out_height,
         out_left,
         out_bottom,
         out_right,
         out_top,
-        resolution=(pixelsize, pixelsize))[0]
+        resolution=(pixel_x_size, pixel_y_size))[0]
 
     # convert to pixel coordinates
     input_left = metadata["transform"][2]
@@ -222,10 +224,10 @@ def write_raster_window(output_file,
     ur = input_right, input_top
     lr = input_right, input_bottom
     ll = input_left, input_bottom
-    px_left = int(round(((out_left - input_left) / pixelsize), 0))
-    px_bottom = int(round(((input_top - out_bottom) / pixelsize), 0))
-    px_right = int(round(((out_right - input_left) / pixelsize), 0))
-    px_top = int(round(((input_top - out_top) / pixelsize), 0))
+    px_left = int(round(((out_left - input_left) / pixel_x_size), 0))
+    px_bottom = int(round(((input_top - out_bottom) / pixel_y_size), 0))
+    px_right = int(round(((out_right - input_left) / pixel_x_size), 0))
+    px_top = int(round(((input_top - out_top) / pixel_y_size), 0))
     window = (px_top, px_bottom), (px_left, px_right)
 
     # fill with nodata if necessary
@@ -233,7 +235,7 @@ def write_raster_window(output_file,
 
     dst_bands = []
 
-    if TilePyramid.format.name == "PNG_hillshade":
+    if tile_pyramid.format.name == "PNG_hillshade":
         zeros = np.zeros(bands[0][px_top:px_bottom, px_left:px_right].shape)
         for band in range(1,4):
             dst_bands.append(zeros)
@@ -242,14 +244,14 @@ def write_raster_window(output_file,
         dst_bands.append(band[px_top:px_bottom, px_left:px_right])
 
     # write to output file
-    dst_metadata = deepcopy(TilePyramid.format.profile)
-    dst_metadata["crs"] = TilePyramid.crs['init']
+    dst_metadata = deepcopy(tile_pyramid.format.profile)
+    dst_metadata["crs"] = tile_pyramid.crs['init']
     dst_metadata["width"] = out_width
     dst_metadata["height"] = out_height
     dst_metadata["transform"] = destination_affine
     dst_metadata["count"] = len(dst_bands)
     dst_metadata["dtype"] = dst_bands[0].dtype.name
-    if TilePyramid.format.name in ("PNG", "PNG_hillshade"):
+    if tile_pyramid.format.name in ("PNG", "PNG_hillshade"):
         dst_metadata.update(dtype='uint8')
     with rasterio.open(output_file, 'w', **dst_metadata) as dst:
         for band, data in enumerate(dst_bands):
@@ -260,15 +262,15 @@ def write_raster_window(output_file,
 
 
 def read_vector_window(input_file,
-    TilePyramid,
+    tile_pyramid,
     tileindex,
     pixelbuffer=None,
     tilify=True):
 
     zoom, row, col = tileindex
 
-    assert (isinstance(TilePyramid, TilePyramid) or
-        isinstance(TilePyramid, MetaTilePyramid))
+    assert (isinstance(tile_pyramid, TilePyramid) or
+        isinstance(tile_pyramid, MetaTilePyramid))
 
     # read source metadata
 
@@ -298,12 +300,12 @@ def clean_pixel_coordinates(coordinate, maximum):
     return coordinate, offset
 
 
-def raster_bbox(dataset, TilePyramid):
+def raster_bbox(dataset, tile_pyramid):
 
     with rasterio.open(dataset) as raster:
 
         out_left, out_bottom, out_right, out_top = transform_bounds(
-            raster.crs, TilePyramid.crs, raster.bounds.left,
+            raster.crs, tile_pyramid.crs, raster.bounds.left,
             raster.bounds.bottom, raster.bounds.right, raster.bounds.top,
             densify_pts=21)
 

@@ -16,6 +16,7 @@ setup(
         'shapely',
         'affine',
         'numpy',
+        'fiona'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
