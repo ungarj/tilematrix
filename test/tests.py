@@ -598,24 +598,25 @@ def main(args):
     # test io module
 
     dummy1 = os.path.join(testdata_directory, "dummy1.tif")
+    # dummy1 = os.path.join(testdata_directory, "/home/ungarj/geodata/S2A/S2A_OPER_PRD_MSIL1C_PDMC_20150714T123646_R019_V20150704T102427_20150704T102427.SAFE/GRANULE/S2A_OPER_MSI_L1C_TL_MPC__20150708T160339_A000162_T32TPQ_N77.00/IMG_DATA/S2A_OPER_MSI_L1C_TL_MPC__20150708T160339_A000162_T32TPQ_B01.jp2")
     dummy2 = os.path.join(testdata_directory, "dummy2.tif")
-
-    zoom = 8
+    zoom = 10
     tile_pyramid = TilePyramid("4326")
 
     dummy1_bbox = raster_bbox(dummy1, tile_pyramid.crs)
 
     tiles = tile_pyramid.tiles_from_geom(dummy1_bbox, zoom)
     tile_pyramid.format = OutputFormat("GTiff")
-    resampling = RESAMPLING.nearest
+    resampling = RESAMPLING.average
     for tile in tiles:
         metadata, data = read_raster_window(
             dummy1,
             tile_pyramid,
             tile,
             resampling=resampling,
-            # pixelbuffer=10
+            pixelbuffer=2
             )
+        # print metadata
         affine = metadata["affine"]
         out_left, out_top = affine * (0, 0)
         out_right, out_bottom = affine * (metadata["width"], metadata["height"])
@@ -634,6 +635,10 @@ def main(args):
             print "OK: read data georeference"
         except:
             print "FAILED: read data georeference"
+            print round(out_left, 8), round(tile_left, 8)
+            print round(out_bottom, 8), round(tile_bottom, 8)
+            print round(out_right, 8), round(tile_right, 8)
+            print round(out_top, 8), round(tile_top, 8)
         for band in data:
             # print band
             # print np.count_nonzero(band), str(tile_pyramid.tile_size**2)
@@ -641,7 +646,14 @@ def main(args):
         zoom, row, col = tile
         outname = str(zoom) + str(row) + str(col) + ".tif"
         outfile = os.path.join(outdata_directory, outname)
-        # write_raster_window(outfile, tile_pyramid, tile, metadata, data)
+        write_raster_window(
+            outfile,
+            tile_pyramid,
+            tile,
+            metadata,
+            data
+        )
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

@@ -41,6 +41,11 @@ def read_raster_window(
     tile_geom = tile_pyramid.tile_bbox(zoom, row, col, pixelbuffer)
     with rasterio.open(input_file, "r") as src:
         out_meta = src.meta
+        nodataval = src.nodata
+        # quick fix because None nodata is not allowed
+        if not nodataval:
+            nodataval = 0
+
         # return array filled with NAN values if tile does not intersect with
         # input data
         try:
@@ -48,18 +53,18 @@ def read_raster_window(
         except:
             out_data = ()
             for i, dtype in zip(src.indexes, src.dtypes):
-                out_data + (np.empty(shape=(dst_shape), dtype=dtype),)
+                out_data + (np.zeros(shape=(dst_shape), dtype=dtype),)
+                out_data[:] = nodataval
             return out_meta, out_data
-
-
-        # Compute target window in source file.
+        # Get tile bounds including pixel buffer.
         left, bottom, right, top = tile_pyramid.tile_bounds(
             zoom,
             row,
             col,
             pixelbuffer
             )
-        out_left, out_bottom, out_right, out_top = transform_bounds(
+        # Reproject tile bounds to source file SRS.
+        src_left, src_bottom, src_right, src_top = transform_bounds(
             tile_pyramid.crs,
             src.crs,
             left,
@@ -68,27 +73,32 @@ def read_raster_window(
             top,
             densify_pts=21
             )
+        print src_left, src_bottom, src_right, src_top
+        # TODO https://github.com/mapbox/rasterio/blob/master/examples/reproject.py
         # Compute target affine
-        dst_affine = calculate_default_transform(
+        dst_affine, dst_width, dst_height = calculate_default_transform(
             src.crs,
             tile_pyramid.crs,
             dst_tile_size,
             dst_tile_size,
-            out_left,
-            out_bottom,
-            out_right,
-            out_top,
-            resolution=(
-                tile_pyramid.pixel_x_size(zoom),
-                tile_pyramid.pixel_y_size(zoom)
-            )
-        )[0]
+            src_left,
+            src_bottom,
+            src_right,
+            src_top,
+            # resolution=(
+            #     tile_pyramid.pixel_x_size(zoom),
+            #     tile_pyramid.pixel_y_size(zoom)
+            # )
+        )
+        print dst_width, dst_height
 
-        # minrow, mincol = src.index(out_left, out_top)
-        # maxrow, maxcol = src.index(out_right, out_bottom)
+        minrow, mincol = src.index(src_left, src_top)
+        maxrow, maxcol = src.index(src_right, src_bottom)
         # has rasterio indexing changed?
-        minrow, maxcol = src.index(out_left, out_top)
-        maxrow, mincol = src.index(out_right, out_bottom)
+        if mincol > maxcol:
+            minrow, maxcol = src.index(src_left, src_top)
+            maxrow, mincol = src.index(src_right, src_bottom)
+        # calculate new Affine object for window
         window = (minrow, maxrow), (mincol, maxcol)
         window_vector_affine = src.affine.translation(
             mincol,
@@ -98,20 +108,18 @@ def read_raster_window(
 
         # Finally read data.
         out_data = ()
-        for index, dtype, nodataval in zip(
+        for index, dtype in zip(
             src.indexes,
-            src.dtypes,
-            src.nodatavals
+            src.dtypes
             ):
             src_band_data = _read_band_to_tile(
                 index,
                 src,
-                window
+                window,
+                nodataval
             )
-            dst_band_data = np.empty(shape=(dst_shape), dtype=dtype)
-            # quick fix because None nodata is not allowed
-            if not nodataval:
-                nodataval = 0
+            dst_band_data = np.zeros(shape=(dst_shape), dtype=dtype)
+            dst_band_data[:] = nodataval
             try:
                 reproject(
                     src_band_data,
@@ -129,6 +137,7 @@ def read_raster_window(
             out_data = out_data + (dst_band_data, )
 
         out_meta = src.meta
+        out_meta['nodata'] = nodataval
         out_meta['affine'] = dst_affine
         out_meta['transform'] = dst_affine.to_gdal()
         out_meta['height'] = dst_tile_size
@@ -145,7 +154,81 @@ def write_raster_window(
     bands,
     pixelbuffer=0):
 
-    return None
+    try:
+        assert (isinstance(tile_pyramid, TilePyramid) or
+            isinstance(tile_pyramid, MetaTilePyramid))
+    except:
+        raise ValueError("no valid tile matrix given.")
+
+    zoom, row, col = tile
+
+    # get write window bounds (i.e. tile bounds plus pixelbuffer) in affine
+    dst_left, dst_bottom, dst_right, dst_top = tile_pyramid.tile_bounds(zoom,
+        row, col, pixelbuffer)
+
+    dst_width = tile_pyramid.tile_size + (pixelbuffer * 2)
+    dst_height = tile_pyramid.tile_size + (pixelbuffer * 2)
+    pixel_x_size = tile_pyramid.pixel_x_size(zoom)
+    pixel_y_size = tile_pyramid.pixel_y_size(zoom)
+    dst_affine = calculate_default_transform(
+        tile_pyramid.crs,
+        tile_pyramid.crs,
+        dst_width,
+        dst_height,
+        dst_left,
+        dst_bottom,
+        dst_right,
+        dst_top,
+        resolution=(
+            tile_pyramid.pixel_x_size(zoom),
+            tile_pyramid.pixel_y_size(zoom)
+        ))[0]
+
+    # convert to pixel coordinates
+    affine = metadata["affine"]
+    input_left, input_top = affine * (0, 0)
+    input_right, input_bottom = affine * (metadata["width"], metadata["height"])
+    ul = input_left, input_top
+    ur = input_right, input_top
+    lr = input_right, input_bottom
+    ll = input_left, input_bottom
+    px_left = int(round(((dst_left - input_left) / pixel_x_size), 0))
+    px_bottom = int(round(((input_top - dst_bottom) / pixel_y_size), 0))
+    px_right = int(round(((dst_right - input_left) / pixel_x_size), 0))
+    px_top = int(round(((input_top - dst_top) / pixel_y_size), 0))
+    window = (px_top, px_bottom), (px_left, px_right)
+
+    # fill with nodata if necessary
+    # TODO
+
+    dst_bands = []
+
+    if tile_pyramid.format.name == "PNG_hillshade":
+        zeros = np.zeros(bands[0][px_top:px_bottom, px_left:px_right].shape)
+        for band in range(1,4):
+            dst_bands.append(zeros)
+
+    for band in bands:
+        dst_bands.append(band[px_top:px_bottom, px_left:px_right])
+
+    # write to output file
+    dst_metadata = deepcopy(tile_pyramid.format.profile)
+    dst_metadata["nodata"] = metadata["nodata"]
+    dst_metadata["crs"] = tile_pyramid.crs['init']
+    dst_metadata["width"] = dst_width
+    dst_metadata["height"] = dst_height
+    dst_metadata["affine"] = dst_affine
+    dst_metadata["transform"] = dst_affine.to_gdal()
+    dst_metadata["count"] = len(dst_bands)
+    dst_metadata["dtype"] = dst_bands[0].dtype.name
+    if tile_pyramid.format.name in ("PNG", "PNG_hillshade"):
+        dst_metadata.update(dtype='uint8')
+    with rasterio.open(output_file, 'w', **dst_metadata) as dst:
+        for band, data in enumerate(dst_bands):
+            dst.write_band(
+                (band+1),
+                data.astype(dst_metadata["dtype"])
+            )
 
 
 # auxiliary
@@ -173,7 +256,8 @@ def raster_bbox(dataset, crs):
 def _read_band_to_tile(
     index,
     src,
-    window
+    window,
+    nodataval
     ):
     """
     Reads window of a raster and if window is outside of input raster bounds,
@@ -204,35 +288,35 @@ def _read_band_to_tile(
 
     window_data = src.read(index, window=(rows, cols), masked=True)
     if minrow_offset:
-        nullarray = np.empty(
+        nullarray = np.zeros(
             (minrow_offset, window_data.shape[1]),
             dtype=window_data.dtype
             )
-        # nullarray[:] = src.nodata
+        nullarray[:] = nodataval
         newarray = np.concatenate((nullarray, window_data), axis=0)
         window_data = newarray
     if maxrow_offset:
-        nullarray = np.empty(
+        nullarray = np.zeros(
             (maxrow_offset, window_data.shape[1]),
             dtype=window_data.dtype
             )
-        # nullarray[:] = src.nodata
+        nullarray[:] = nodataval
         newarray = np.concatenate((window_data, nullarray), axis=0)
         window_data = newarray
     if mincol_offset:
-        nullarray = np.empty(
+        nullarray = np.zeros(
             (window_data.shape[0], mincol_offset),
             dtype=window_data.dtype
             )
-        # nullarray[:] = src.nodata
+        nullarray[:] = nodataval
         newarray = np.concatenate((nullarray, window_data), axis=1)
         window_data = newarray
     if maxcol_offset:
-        nullarray = np.empty(
+        nullarray = np.zeros(
             (window_data.shape[0], maxcol_offset),
             dtype=window_data.dtype
             )
-        # nullarray[:] = src.nodata
+        nullarray[:] = nodataval
         newarray = np.concatenate((window_data, nullarray), axis=1)
         window_data = newarray
 
