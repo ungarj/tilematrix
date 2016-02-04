@@ -33,6 +33,16 @@ def read_raster_window(
     except:
         raise IOError("input file does not exist: %s" % input_file)
 
+    try:
+        assert pixelbuffer >= 0
+    except:
+        raise ValueError("pixelbuffer must be 0 or greater")
+
+    try:
+        assert isinstance(pixelbuffer, int)
+    except:
+        raise ValueError("pixelbuffer must be an integer")
+
     zoom, row, col = tile
 
     src_bbox = raster_bbox(input_file, tile_pyramid.crs)
@@ -42,12 +52,12 @@ def read_raster_window(
     with rasterio.open(input_file, "r") as src:
         out_meta = src.meta
         nodataval = src.nodata
-        # quick fix because None nodata is not allowed
+        # Quick fix because None nodata is not allowed.
         if not nodataval:
             nodataval = 0
 
-        # return array filled with NAN values if tile does not intersect with
-        # input data
+        # Return array filled with NAN values if tile does not intersect with
+        # input raster.
         try:
             assert tile_geom.intersects(src_bbox)
         except:
@@ -56,49 +66,35 @@ def read_raster_window(
                 out_data + (np.zeros(shape=(dst_shape), dtype=dtype),)
                 out_data[:] = nodataval
             return out_meta, out_data
+
         # Get tile bounds including pixel buffer.
-        left, bottom, right, top = tile_pyramid.tile_bounds(
+        tile_left, tile_bottom, tile_right, tile_top = tile_pyramid.tile_bounds(
             zoom,
             row,
             col,
             pixelbuffer
             )
+
+        # Create tile affine
+        px_size = tile_pyramid.pixel_x_size(zoom)
+        tile_geotransform = (tile_left, px_size, 0.0, tile_top, 0.0, -px_size)
+        tile_affine = Affine.from_gdal(*tile_geotransform)
+
         # Reproject tile bounds to source file SRS.
         src_left, src_bottom, src_right, src_top = transform_bounds(
             tile_pyramid.crs,
             src.crs,
-            left,
-            bottom,
-            right,
-            top,
+            tile_left,
+            tile_bottom,
+            tile_right,
+            tile_top,
             densify_pts=21
             )
-        print src_left, src_bottom, src_right, src_top
-        # TODO https://github.com/mapbox/rasterio/blob/master/examples/reproject.py
-        # Compute target affine
-        dst_affine, dst_width, dst_height = calculate_default_transform(
-            src.crs,
-            tile_pyramid.crs,
-            dst_tile_size,
-            dst_tile_size,
-            src_left,
-            src_bottom,
-            src_right,
-            src_top,
-            # resolution=(
-            #     tile_pyramid.pixel_x_size(zoom),
-            #     tile_pyramid.pixel_y_size(zoom)
-            # )
-        )
-        print dst_width, dst_height
 
         minrow, mincol = src.index(src_left, src_top)
         maxrow, maxcol = src.index(src_right, src_bottom)
-        # has rasterio indexing changed?
-        if mincol > maxcol:
-            minrow, maxcol = src.index(src_left, src_top)
-            maxrow, mincol = src.index(src_right, src_bottom)
-        # calculate new Affine object for window
+
+        # Calculate new Affine object for read window.
         window = (minrow, maxrow), (mincol, maxcol)
         window_vector_affine = src.affine.translation(
             mincol,
@@ -106,7 +102,7 @@ def read_raster_window(
             )
         window_affine = src.affine * window_vector_affine
 
-        # Finally read data.
+        # Finally read data per band and store it in tuple.
         out_data = ()
         for index, dtype in zip(
             src.indexes,
@@ -127,7 +123,7 @@ def read_raster_window(
                     src_transform=window_affine,
                     src_crs=src.crs,
                     src_nodata=nodataval,
-                    dst_transform=dst_affine,
+                    dst_transform=tile_affine,
                     dst_crs=tile_pyramid.crs,
                     dst_nodata=nodataval,
                     resampling=resampling)
@@ -136,10 +132,11 @@ def read_raster_window(
             dst_band_data = ma.masked_equal(dst_band_data, nodataval)
             out_data = out_data + (dst_band_data, )
 
+        # Create output metadata
         out_meta = src.meta
         out_meta['nodata'] = nodataval
-        out_meta['affine'] = dst_affine
-        out_meta['transform'] = dst_affine.to_gdal()
+        out_meta['affine'] = tile_affine
+        out_meta['transform'] = tile_geotransform
         out_meta['height'] = dst_tile_size
         out_meta['width'] = dst_tile_size
 
@@ -153,12 +150,24 @@ def write_raster_window(
     metadata,
     bands,
     pixelbuffer=0):
-
+    """
+    Writes numpy array into a TilePyramid tile.
+    """
     try:
         assert (isinstance(tile_pyramid, TilePyramid) or
             isinstance(tile_pyramid, MetaTilePyramid))
     except:
-        raise ValueError("no valid tile matrix given.")
+        raise ValueError("no valid tile matrix given")
+
+    try:
+        assert pixelbuffer >= 0
+    except:
+        raise ValueError("pixelbuffer must be 0 or greater")
+
+    try:
+        assert isinstance(pixelbuffer, int)
+    except:
+        raise ValueError("pixelbuffer must be an integer")
 
     zoom, row, col = tile
 
@@ -198,9 +207,6 @@ def write_raster_window(
     px_top = int(round(((input_top - dst_top) / pixel_y_size), 0))
     window = (px_top, px_bottom), (px_left, px_right)
 
-    # fill with nodata if necessary
-    # TODO
-
     dst_bands = []
 
     if tile_pyramid.format.name == "PNG_hillshade":
@@ -231,7 +237,8 @@ def write_raster_window(
             )
 
 
-# auxiliary
+# Auxiliary functions
+#####################
 
 def raster_bbox(dataset, crs):
     """
@@ -252,6 +259,7 @@ def raster_bbox(dataset, crs):
     bbox = Polygon([tl, tr, br, bl])
 
     return bbox
+
 
 def _read_band_to_tile(
     index,
@@ -321,7 +329,6 @@ def _read_band_to_tile(
         window_data = newarray
 
     return window_data
-
 
 
 def _clean_coord_offset(px_coord, maximum):
