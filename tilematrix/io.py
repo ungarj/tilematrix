@@ -2,7 +2,13 @@
 
 import os
 import rasterio
-from rasterio.warp import *
+from rasterio.warp import (
+    transform_bounds,
+    reproject,
+    calculate_default_transform
+    )
+from rasterio.warp import RESAMPLING
+from affine import Affine
 import numpy as np
 import numpy.ma as ma
 from copy import deepcopy
@@ -14,7 +20,7 @@ def read_raster_window(
     tile_pyramid,
     tile,
     pixelbuffer=0,
-    resampling=Resampling.nearest
+    resampling=RESAMPLING.nearest
     ):
     """
     Reads an input raster dataset with rasterio and resamples array to target
@@ -126,7 +132,8 @@ def read_raster_window(
                     dst_transform=tile_affine,
                     dst_crs=tile_pyramid.crs,
                     dst_nodata=nodataval,
-                    resampling=resampling)
+                    resampling=resampling
+                )
             except:
                 raise
             dst_band_data = ma.masked_equal(dst_band_data, nodataval)
