@@ -14,7 +14,7 @@ def read_raster_window(
     tile_pyramid,
     tile,
     pixelbuffer=0,
-    resampling=RESAMPLING.nearest
+    resampling=Resampling.nearest
     ):
     """
     Reads an input raster dataset with rasterio and resamples array to target
