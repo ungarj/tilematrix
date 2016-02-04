@@ -8,6 +8,11 @@ from shapely.geometry import *
 from shapely.wkt import *
 from shapely.ops import cascaded_union
 import math
+import rasterio
+from rasterio.warp import RESAMPLING
+import affine
+import numpy as np
+
 
 from tilematrix import *
 
@@ -588,6 +593,75 @@ def main(args):
                 feature['properties']['col'] = col
                 feature['properties']['row'] = row
                 sink.write(feature)
+
+
+    # test io module
+
+    dummy1 = os.path.join(testdata_directory, "dummy1.tif")
+    # dummy1 = os.path.join(testdata_directory, "sentinel2.tif")
+    dummy2 = os.path.join(testdata_directory, "dummy2.tif")
+    zoom = 8
+    tile_pyramid = TilePyramid("4326")
+
+    dummy1_bbox = raster_bbox(dummy1, tile_pyramid.crs)
+
+    tiles = tile_pyramid.tiles_from_geom(dummy1_bbox, zoom)
+    tile_pyramid.format = OutputFormat("GTiff")
+    resampling = RESAMPLING.average
+    pixelbuffer=5
+    for tile in tiles:
+        metadata, data = read_raster_window(
+            dummy1,
+            tile_pyramid,
+            tile,
+            resampling=resampling,
+            pixelbuffer=pixelbuffer
+            )
+        # print metadata
+        affine = metadata["affine"]
+        out_left, out_top = affine * (0, 0)
+        out_right, out_bottom = affine * (metadata["width"], metadata["height"])
+        tile_left, tile_bottom, tile_right, tile_top = tile_pyramid.tile_bounds(
+            *tile,
+            pixelbuffer=pixelbuffer
+        )
+        try:
+            for band in data:
+                assert band.shape == (
+                    tile_pyramid.tile_size + 2 * pixelbuffer,
+                    tile_pyramid.tile_size + 2 * pixelbuffer
+                )
+            print "OK: read data size"
+        except:
+            print "FAILED: read data size"
+        try:
+            assert out_left == tile_left
+            assert out_bottom == tile_bottom
+            assert out_right == tile_right
+            assert out_top == tile_top
+            print "OK: read data georeference"
+        except:
+            print "FAILED: read data georeference"
+            print metadata
+            print round(out_left, 8), round(tile_left, 8)
+            print round(out_bottom, 8), round(tile_bottom, 8)
+            print round(out_right, 8), round(tile_right, 8)
+            print round(out_top, 8), round(tile_top, 8)
+
+        for band in data:
+            # print band
+            # print np.count_nonzero(band), str(tile_pyramid.tile_size**2)
+            pass
+        zoom, row, col = tile
+        outname = str(zoom) + str(row) + str(col) + ".tif"
+        outfile = os.path.join(outdata_directory, outname)
+        write_raster_window(
+            outfile,
+            tile_pyramid,
+            tile,
+            metadata,
+            data
+        )
 
 
 if __name__ == "__main__":
