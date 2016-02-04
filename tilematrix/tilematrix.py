@@ -5,8 +5,9 @@ from shapely.geometry import *
 from shapely.validation import *
 from shapely.prepared import prep
 from itertools import product
-from rasterio import profiles
 import math
+
+from .formats import OutputFormat
 
 ROUND = 20
 
@@ -519,62 +520,3 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
         sys.exit(0)
 
     return tilelist
-
-
-class OutputFormat(object):
-
-    def __init__(self, output_format):
-
-        supported_rasterformats = ["GTiff", "PNG", "PNG_hillshade"]
-        supported_vectorformats = ["GeoJSON"]
-        supported_formats = supported_rasterformats + supported_vectorformats
-
-        format_extensions = {
-            "GTiff": ".tif",
-            "PNG": ".png",
-            "PNG_hillshade": ".png",
-            "GeoJSON": ".geojson"
-        }
-
-        try:
-            assert output_format in supported_formats
-        except:
-            print "ERROR: Output format %s not found. Please use one of %s" %(
-                output_format, supported_formats)
-            sys.exit(0)
-
-        self.name = output_format
-
-        if output_format in supported_rasterformats:
-            self.format = output_format
-            self.type = "raster"
-        elif output_format in supported_vectorformats:
-            self.format = output_format
-            self.type = "vector"
-
-        # Default driver equals format name .
-
-        if self.format == "GTiff":
-            self.profile = profiles.DefaultGTiffProfile().defaults
-            self.profile.update(driver="GTiff")
-
-        if self.format == "PNG":
-            self.profile = {
-                'dtype': 'uint8',
-                'nodata': 0,
-                'driver': 'PNG'
-            }
-
-        if self.format == "PNG_hillshade":
-            self.profile = {
-                'dtype': 'uint8',
-                'nodata': 0,
-                'driver': 'PNG',
-                'count': 4
-            }
-
-
-        self.extension = format_extensions[self.name]
-
-    def set_dtype(self, dtype):
-        self.profile["dtype"] = dtype

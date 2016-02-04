@@ -2,7 +2,10 @@
 
 from .tilematrix import (
     TilePyramid,
-    MetaTilePyramid,
+    MetaTilePyramid
+)
+
+from .formats import (
     OutputFormat
 )
 
