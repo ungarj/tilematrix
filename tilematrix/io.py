@@ -69,8 +69,9 @@ def read_raster_window(
         except:
             out_data = ()
             for i, dtype in zip(src.indexes, src.dtypes):
-                out_data + (np.zeros(shape=(dst_shape), dtype=dtype),)
-                out_data[:] = nodataval
+                out_band = np.zeros(shape=(dst_shape), dtype=dtype)
+                out_band[:] = nodataval
+                out_data += (out_band,)
             return out_meta, out_data
 
         # Get tile bounds including pixel buffer.
