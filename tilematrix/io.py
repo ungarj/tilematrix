@@ -69,8 +69,12 @@ def read_raster_window(
         except:
             out_data = ()
             for i, dtype in zip(src.indexes, src.dtypes):
-                out_band = np.zeros(shape=(dst_shape), dtype=dtype)
-                out_band[:] = nodataval
+                zeros = np.zeros(shape=(dst_shape), dtype=dtype)
+                out_band = ma.masked_array(
+                    zeros,
+                    mask=True
+                )
+                # out_band[:] = nodataval
                 out_data += (out_band,)
             return out_meta, out_data
 
@@ -224,6 +228,14 @@ def write_raster_window(
 
     for band in bands:
         dst_bands.append(band[px_top:px_bottom, px_left:px_right])
+
+    if tile_pyramid.format.name == "PNG":
+        mask = ma.getmask(bands[0], )
+        nodata_alpha = np.zeros(bands[0].shape)
+        nodata_alpha[:] = 255
+        nodata_alpha[mask] = 0
+        dst_bands.append(nodata_alpha[px_top:px_bottom, px_left:px_right])
+
 
     # write to output file
     dst_metadata = deepcopy(tile_pyramid.format.profile)
