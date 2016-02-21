@@ -239,12 +239,13 @@ def write_raster_window(
 
     # write to output file
     dst_metadata = deepcopy(tile_pyramid.format.profile)
+    dst_metadata.pop("transform", None)
     dst_metadata["nodata"] = metadata["nodata"]
     dst_metadata["crs"] = tile_pyramid.crs['init']
     dst_metadata["width"] = dst_width
     dst_metadata["height"] = dst_height
     dst_metadata["affine"] = dst_affine
-    dst_metadata["transform"] = dst_affine.to_gdal()
+    dst_metadata["affine"] = dst_affine
     dst_metadata["count"] = len(dst_bands)
     dst_metadata["dtype"] = dst_bands[0].dtype.name
     if tile_pyramid.format.name in ("PNG", "PNG_hillshade"):
