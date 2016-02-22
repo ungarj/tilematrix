@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import fiona
 import rasterio
 from rasterio.warp import (
     transform_bounds,
@@ -14,6 +15,59 @@ import numpy.ma as ma
 from copy import deepcopy
 
 from tilematrix import *
+
+def read_vector_window(
+    input_file,
+    tile_pyramid,
+    tile,
+    pixelbuffer=0
+    ):
+    """
+    Reads an input vector dataset with fiona using the tile bounding box as
+    filter and clipping geometry. Returns a list of GeoJSON like features.
+    """
+
+    try:
+        assert (isinstance(tile_pyramid, TilePyramid) or
+            isinstance(tile_pyramid, MetaTilePyramid))
+    except:
+        raise ValueError("no valid tile matrix given.")
+
+    try:
+        assert os.path.isfile(input_file)
+    except:
+        raise IOError("input file does not exist: %s" % input_file)
+
+    try:
+        assert pixelbuffer >= 0
+    except:
+        raise ValueError("pixelbuffer must be 0 or greater")
+
+    try:
+        assert isinstance(pixelbuffer, int)
+    except:
+        raise ValueError("pixelbuffer must be an integer")
+
+
+    # TODO reproject tile_bounds to input file crs and reproject output clip to
+    # tile_pyramid crs
+
+    tile_bounds = tile_pyramid.tile_bounds(*tile, pixelbuffer=pixelbuffer)
+    tile_bbox = tile_pyramid.tile_bbox(*tile, pixelbuffer=pixelbuffer)
+
+    with fiona.open(input_file, 'r') as vector:
+        features_clipped = [
+            {
+                'properties': feature['properties'],
+                'geometry': mapping(
+                    tile_bbox.intersection(shape(feature['geometry']))
+                )
+            }
+            for feature in vector.filter(bbox=tile_bounds)
+        ]
+
+    return features_clipped
+
 
 def read_raster_window(
     input_file,
@@ -51,7 +105,7 @@ def read_raster_window(
 
     zoom, row, col = tile
 
-    src_bbox = raster_bbox(input_file, tile_pyramid.crs)
+    src_bbox = file_bbox(input_file, tile_pyramid.crs)
     dst_tile_size = tile_pyramid.tile_size + 2 * pixelbuffer
     dst_shape = (dst_tile_size, dst_tile_size)
     tile_geom = tile_pyramid.tile_bbox(zoom, row, col, pixelbuffer)
@@ -252,26 +306,68 @@ def write_raster_window(
         dst_metadata.update(dtype='uint8')
     with rasterio.open(output_file, 'w', **dst_metadata) as dst:
         for band, data in enumerate(dst_bands):
-            dst.write_band(
-                (band+1),
-                data.astype(dst_metadata["dtype"])
+            data = np.ma.filled(data, dst_metadata["nodata"])
+            dst.write(
+                data.astype(dst_metadata["dtype"]),
+                (band+1)
             )
 
 
 # Auxiliary functions
 #####################
 
-def raster_bbox(dataset, crs):
+
+def vector_bbox(dataset, out_crs):
     """
     Returns the bounding box of a raster file in a given CRS.
     """
-
-    with rasterio.open(dataset) as raster:
+    with fiona.open(dataset) as vector:
 
         out_left, out_bottom, out_right, out_top = transform_bounds(
-            raster.crs, crs, raster.bounds.left,
-            raster.bounds.bottom, raster.bounds.right, raster.bounds.top,
-            densify_pts=21)
+            vector.crs,
+            out_crs,
+            vector.bounds.left,
+            vector.bounds.bottom,
+            vector.bounds.right,
+            vector.bounds.top
+        )
+
+    tl = [out_left, out_top]
+    tr = [out_right, out_top]
+    br = [out_right, out_bottom]
+    bl = [out_left, out_bottom]
+    bbox = Polygon([tl, tr, br, bl])
+
+    return bbox
+
+
+def file_bbox(input_file, out_crs):
+    """
+    Returns the bounding box of a raster or vector file in a given CRS.
+    """
+
+    try:
+        inp = rasterio.open(input_file)
+        left = inp.bounds.left
+        bottom = inp.bounds.bottom
+        right = inp.bounds.right
+        top = inp.bounds.top
+    except IOError:
+        inp = fiona.open(input_file)
+        left, bottom, right, top = inp.bounds
+
+    out_left, out_bottom, out_right, out_top = transform_bounds(
+        inp.crs,
+        out_crs,
+        left,
+        bottom,
+        right,
+        top
+    )
+    try:
+        inp.close()
+    except:
+        pass
 
     tl = [out_left, out_top]
     tr = [out_right, out_top]

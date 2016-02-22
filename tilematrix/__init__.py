@@ -12,5 +12,6 @@ from .formats import (
 from .io import (
     read_raster_window,
     write_raster_window,
-    raster_bbox
+    read_vector_window,
+    file_bbox
 )
