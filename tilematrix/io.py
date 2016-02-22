@@ -13,6 +13,11 @@ from affine import Affine
 import numpy as np
 import numpy.ma as ma
 from copy import deepcopy
+from shapely.wkt import loads
+from shapely.ops import transform
+import ogr
+from functools import partial
+import pyproj
 
 from tilematrix import *
 
@@ -341,7 +346,7 @@ def vector_bbox(dataset, out_crs):
     return bbox
 
 
-def file_bbox(input_file, out_crs):
+def file_bbox(input_file, out_crs, segmentize_maxlen=0.01):
     """
     Returns the bounding box of a raster or vector file in a given CRS.
     """
@@ -356,26 +361,32 @@ def file_bbox(input_file, out_crs):
         inp = fiona.open(input_file)
         left, bottom, right, top = inp.bounds
 
-    out_left, out_bottom, out_right, out_top = transform_bounds(
-        inp.crs,
-        out_crs,
-        left,
-        bottom,
-        right,
-        top
+
+    tl = [left, top]
+    tr = [right, top]
+    br = [right, bottom]
+    bl = [left, bottom]
+    bbox = Polygon([tl, tr, br, bl])
+
+    ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
+    ogr_bbox.Segmentize(segmentize_maxlen)
+    segmentized = loads(ogr_bbox.ExportToWkt())
+
+    project = partial(
+        pyproj.transform,
+        pyproj.Proj(init=inp.srs),
+        pyproj.Proj(init=out_crs)
     )
+
+    projected_bbox = transform(project, segmentized)
+
     try:
         inp.close()
     except:
         pass
 
-    tl = [out_left, out_top]
-    tr = [out_right, out_top]
-    br = [out_right, out_bottom]
-    bl = [out_left, out_bottom]
-    bbox = Polygon([tl, tr, br, bl])
 
-    return bbox
+    return projected_bbox
 
 
 def _read_band_to_tile(
