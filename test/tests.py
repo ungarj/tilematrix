@@ -655,13 +655,13 @@ def main(args):
         zoom, row, col = tile
         outname = str(zoom) + str(row) + str(col) + ".tif"
         outfile = os.path.join(outdata_directory, outname)
-        write_raster_window(
-            outfile,
-            tile_pyramid,
-            tile,
-            metadata,
-            data
-        )
+        # write_raster_window(
+        #     outfile,
+        #     tile_pyramid,
+        #     tile,
+        #     metadata,
+        #     data
+        # )
 
 
 if __name__ == "__main__":
