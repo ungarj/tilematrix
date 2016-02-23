@@ -167,7 +167,7 @@ class MetaTilePyramid(TilePyramid):
         else:
             self.format = None
         self.metatiles = metatiles
-        self.tile_size = tilepyramid.tile_size
+        self.tile_size = tilepyramid.tile_size * metatiles
         # spatial extent:
         self.left = self.tilepyramid.left
         self.top = self.tilepyramid.top
