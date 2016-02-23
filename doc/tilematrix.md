@@ -8,11 +8,11 @@ This section describes how the ``TilePyramid`` and ``MetaTilePyramid`` objects w
 ```python
 TilePyramid(projection, tile_size=256)
 ```
-* ``projection``: One out of the [EPSG](http://www.epsg-registry.org/) numbers ``4326`` and ``3857``, although currently only ``4326`` is supported.
+* ``type``: One out of ``geodetic`` or ``mercator``, although currently only ``geodetic`` is supported.
 * ``tile_size``: Optional, specifies the target resolution of each tile (i.e. each tile will have 256x256 px). Default is ``256``.
 
 After that, the object has the following properties:
-* ``self.projection``: The projection it was initialized with (either ``4326`` or ``3857``).
+* ``self.type``: The projection it was initialized with (either ``geodetic`` or ``mercator``).
 * ``self.tile_size``: The pixelsize per tile it was initialized with (default ``256``).
 * ``self.left``: Left boundary of tile matrix.
 * ``self.top``: Top boundary of tile matrix.

@@ -18,16 +18,16 @@ class TilePyramid(object):
         """
         Initialize TilePyramid.
         """
-        projections = ("4326", "3857")
+        projections = ("geodetic", "mercator")
         try:
             assert projection in projections
         except:
             print "WMTS tileset '%s' not found. Use one of %s" %(projection,
                 projections)
             sys.exit(0)
-        self.projection = projection
+        self.type = projection
         self.tile_size = tile_size
-        if projection == "4326":
+        if projection == "geodetic":
             # spatial extent
             self.left = float(-180)
             self.top = float(90)
@@ -55,7 +55,7 @@ class TilePyramid(object):
         except:
             print "Zoom (%s) must be an integer." %(zoom)
             sys.exit(0)
-        if self.projection == "4326":
+        if self.type == "geodetic":
             width = 2**(zoom+1)
         return width
 
@@ -68,7 +68,7 @@ class TilePyramid(object):
         except:
             print "Zoom (%s) must be an integer." %(zoom)
             sys.exit(0)
-        if self.projection == "4326":
+        if self.type == "geodetic":
             height = 2**(zoom+1)/2
         return height
 
@@ -177,7 +177,7 @@ class MetaTilePyramid(TilePyramid):
         self.x_size = tilepyramid.x_size
         self.y_size = tilepyramid.y_size
         # SRS
-        self.projection = tilepyramid.projection
+        self.type = tilepyramid.type
         self.crs = tilepyramid.crs
 
 
@@ -191,7 +191,7 @@ class MetaTilePyramid(TilePyramid):
         except:
             print "Zoom (%s) must be an integer." %(zoom)
             sys.exit(0)
-        if self.projection == "4326":
+        if self.type == "geodetic":
             width = self.tilepyramid.matrix_width(zoom)
             width = math.ceil(width / float(self.metatiles))
             if width < 1:
@@ -207,7 +207,7 @@ class MetaTilePyramid(TilePyramid):
         except:
             print "Zoom (%s) must be an integer." %(zoom)
             sys.exit(0)
-        if self.projection == "4326":
+        if self.type == "geodetic":
             height = self.tilepyramid.matrix_height(zoom)
             height = math.ceil(height / float(self.metatiles))
             if height < 1:

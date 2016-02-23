@@ -29,7 +29,7 @@ def main(args):
 
     testdata_directory = os.path.join(scriptdir, "testdata")
     outdata_directory = os.path.join(testdata_directory, "out")
-    wgs84 = TilePyramid("4326")
+    wgs84 = TilePyramid("geodetic")
     wgs84.set_format("GTiff", dtype="uInt16")
     wgs84_meta = MetaTilePyramid(wgs84, 16)
     print wgs84_meta.format.profile["dtype"]
@@ -601,7 +601,7 @@ def main(args):
     # dummy1 = os.path.join(testdata_directory, "sentinel2.tif")
     dummy2 = os.path.join(testdata_directory, "dummy2.tif")
     zoom = 8
-    tile_pyramid = TilePyramid("4326")
+    tile_pyramid = TilePyramid("geodetic")
 
     dummy1_bbox = file_bbox(dummy1, tile_pyramid.crs)
 

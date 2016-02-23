@@ -36,10 +36,10 @@ class OutputFormat(object):
 
         if output_format in supported_rasterformats:
             self.format = output_format
-            self.type = "raster"
+            self.datatype = "raster"
         elif output_format in supported_vectorformats:
             self.format = output_format
-            self.type = "vector"
+            self.datatype = "vector"
 
         if self.format == "GTiff":
             self.profile = profiles.DefaultGTiffProfile().defaults
