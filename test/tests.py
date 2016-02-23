@@ -607,7 +607,7 @@ def main(args):
 
     tiles = tile_pyramid.tiles_from_geom(dummy1_bbox, zoom)
     tile_pyramid.format = OutputFormat("GTiff")
-    resampling = RESAMPLING.average
+    resampling = "average"
     pixelbuffer=5
     for tile in tiles:
         metadata, data = read_raster_window(
