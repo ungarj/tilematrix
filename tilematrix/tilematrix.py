@@ -37,7 +37,7 @@ class TilePyramid(object):
             self.x_size = float(round(self.right - self.left, ROUND))
             self.y_size = float(round(self.top - self.bottom, ROUND))
             # SRS
-            self.crs = {'init': u'EPSG:4326'}
+            self.crs = {'init': u'epsg:4326'}
             # optional output format
             self.format = None
 
