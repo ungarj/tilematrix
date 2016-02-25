@@ -317,6 +317,14 @@ def write_raster_window(
     dst_metadata["affine"] = dst_affine
     dst_metadata["count"] = len(dst_bands)
     dst_metadata["dtype"] = dst_bands[0].dtype.name
+    try:
+        dst_metadata.update(compress=metadata["compress"])
+    except:
+        pass
+    try:
+        dst_metadata.update(predictor=metadata["predictor"])
+    except:
+        pass
     if tile_pyramid.format.name in ("PNG", "PNG_hillshade"):
         dst_metadata.update(dtype='uint8')
     with rasterio.open(output_file, 'w', **dst_metadata) as dst:
