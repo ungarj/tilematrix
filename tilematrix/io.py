@@ -337,43 +337,21 @@ def write_raster_window(
 #####################
 
 
-def vector_bbox(dataset, out_crs):
-    """
-    Returns the bounding box of a raster file in a given CRS.
-    """
-    with fiona.open(dataset) as vector:
-
-        out_left, out_bottom, out_right, out_top = transform_bounds(
-            vector.crs,
-            out_crs,
-            vector.bounds.left,
-            vector.bounds.bottom,
-            vector.bounds.right,
-            vector.bounds.top
-        )
-
-    tl = [out_left, out_top]
-    tr = [out_right, out_top]
-    br = [out_right, out_bottom]
-    bl = [out_left, out_bottom]
-    bbox = Polygon([tl, tr, br, bl])
-
-    return bbox
-
-
-def file_bbox(input_file, out_crs, segmentize_maxlen=0.01):
+def file_bbox(input_file, out_crs, segmentize_maxlen=0.5):
     """
     Returns the bounding box of a raster or vector file in a given CRS.
     """
 
     try:
         inp = rasterio.open(input_file)
+        inp_crs = inp.crs
         left = inp.bounds.left
         bottom = inp.bounds.bottom
         right = inp.bounds.right
         top = inp.bounds.top
     except IOError:
         inp = fiona.open(input_file)
+        inp_crs = inp.srs
         left, bottom, right, top = inp.bounds
 
 
@@ -383,17 +361,19 @@ def file_bbox(input_file, out_crs, segmentize_maxlen=0.01):
     bl = [left, bottom]
     bbox = Polygon([tl, tr, br, bl])
 
-    ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
-    ogr_bbox.Segmentize(segmentize_maxlen)
-    segmentized = loads(ogr_bbox.ExportToWkt())
+    if inp_crs != out_crs:
+        ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
+        ogr_bbox.Segmentize(segmentize_maxlen)
+        segmentized = loads(ogr_bbox.ExportToWkt())
+        bbox = segmentized
 
     project = partial(
         pyproj.transform,
-        pyproj.Proj(init=inp.srs),
-        pyproj.Proj(init=out_crs)
+        pyproj.Proj(inp_crs),
+        pyproj.Proj(out_crs)
     )
 
-    projected_bbox = transform(project, segmentized)
+    projected_bbox = transform(project, bbox)
 
     try:
         inp.close()
