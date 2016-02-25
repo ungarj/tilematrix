@@ -509,11 +509,11 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
         "MultiPolygon", "MultiPoint"):
         prepared_geometry = prep(geometry)
         bbox_tilelist = tilepyramid.tiles_from_bbox(geometry, zoom)
-        for tile in bbox_tilelist:
-            zoom, row, col = tile
-            geometry = tilepyramid.tile_bbox(zoom, row, col)
-            if prepared_geometry.intersects(geometry):
-                tilelist.append((zoom, row, col))
+        tilelist = [
+            tile
+            for tile in bbox_tilelist
+            if prepared_geometry.intersects(tilepyramid.tile_bbox(*tile))
+        ]
 
     else:
         print "ERROR: no valid geometry"
