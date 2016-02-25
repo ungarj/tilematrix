@@ -13,6 +13,12 @@ from affine import Affine
 import numpy as np
 import numpy.ma as ma
 from copy import deepcopy
+from shapely.wkt import loads
+from shapely.ops import transform
+from shapely.validation import explain_validity
+import ogr
+from functools import partial
+import pyproj
 
 from tilematrix import *
 
@@ -340,65 +346,62 @@ def write_raster_window(
 #####################
 
 
-def vector_bbox(dataset, out_crs):
-    """
-    Returns the bounding box of a raster file in a given CRS.
-    """
-    with fiona.open(dataset) as vector:
-
-        out_left, out_bottom, out_right, out_top = transform_bounds(
-            vector.crs,
-            out_crs,
-            vector.bounds.left,
-            vector.bounds.bottom,
-            vector.bounds.right,
-            vector.bounds.top
-        )
-
-    tl = [out_left, out_top]
-    tr = [out_right, out_top]
-    br = [out_right, out_bottom]
-    bl = [out_left, out_bottom]
-    bbox = Polygon([tl, tr, br, bl])
-
-    return bbox
-
-
-def file_bbox(input_file, out_crs):
+def file_bbox(
+    input_file,
+    out_crs,
+    segmentize_maxlen=0.5
+):
     """
     Returns the bounding box of a raster or vector file in a given CRS.
     """
-
+    # Read raster data with rasterio, vector data with fiona.
     try:
         inp = rasterio.open(input_file)
+        inp_crs = inp.crs
         left = inp.bounds.left
         bottom = inp.bounds.bottom
         right = inp.bounds.right
         top = inp.bounds.top
     except IOError:
         inp = fiona.open(input_file)
+        inp_crs = inp.srs
         left, bottom, right, top = inp.bounds
-
-    out_left, out_bottom, out_right, out_top = transform_bounds(
-        inp.crs,
-        out_crs,
-        left,
-        bottom,
-        right,
-        top
-    )
+    # Create bounding box polygon.
+    tl = [left, top]
+    tr = [right, top]
+    br = [right, bottom]
+    bl = [left, bottom]
+    bbox = Polygon([tl, tr, br, bl])
+    out_bbox = bbox
+    # If soucre and target CRSes differ, segmentize and reproject
+    if inp_crs != out_crs:
+        ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
+        ogr_bbox.Segmentize(segmentize_maxlen)
+        segmentized = loads(ogr_bbox.ExportToWkt())
+        project = partial(
+            pyproj.transform,
+            pyproj.Proj(inp_crs),
+            pyproj.Proj(out_crs)
+        )
+        out_bbox = transform(project, segmentized)
+    else:
+        out_bbox = bbox
+    # Close input dataset.
     try:
         inp.close()
     except:
         pass
-
-    tl = [out_left, out_top]
-    tr = [out_right, out_top]
-    br = [out_right, out_bottom]
-    bl = [out_left, out_bottom]
-    bbox = Polygon([tl, tr, br, bl])
-
-    return bbox
+    # Validate and, if necessary, try to fix output geometry.
+    try:
+        assert out_bbox.is_valid
+    except:
+        cleaned = out_bbox.buffer(0)
+        try:
+            assert cleaned.is_valid
+        except:
+            raise TypeError(cleaned.explain_validity)
+        out_bbox = cleaned
+    return out_bbox
 
 
 def _read_band_to_tile(

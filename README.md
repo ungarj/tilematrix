@@ -11,6 +11,21 @@ pip install numpy
 pip install tilematrix
 ```
 
+In case there are problems installing GDAL/OGR for ``virtualenv``, try the following (from [here](https://gist.github.com/cspanring/5680334); works on Ubuntu 14.04):
+
+```shell
+sudo apt-add-repository ppa:ubuntugis/ubuntugis-unstable
+sudo apt-get update
+sudo apt-get install libgdal-dev
+```
+
+and run ``pip`` while also providing your GDAL version installed and the locations of the headers:
+
+```shell
+pip install gdal==1.11.2 --global-option=build_ext --global-option="-I/usr/include/gdal/"
+```
+
+
 # Documentation
 
 * [navigate through a tile pyramid](doc/tilematrix.md)
