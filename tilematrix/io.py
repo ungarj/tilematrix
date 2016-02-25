@@ -338,7 +338,11 @@ def write_raster_window(
 #####################
 
 
-def file_bbox(input_file, out_crs, segmentize_maxlen=0.1):
+def file_bbox(
+    input_file,
+    out_crs,
+    segmentize_maxlen=0.5
+):
     """
     Returns the bounding box of a raster or vector file in a given CRS.
     """
