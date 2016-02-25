@@ -29,7 +29,7 @@ def main(args):
 
     testdata_directory = os.path.join(scriptdir, "testdata")
     outdata_directory = os.path.join(testdata_directory, "out")
-    wgs84 = TilePyramid("4326")
+    wgs84 = TilePyramid("geodetic")
     wgs84.set_format("GTiff", dtype="uInt16")
     wgs84_meta = MetaTilePyramid(wgs84, 16)
     print wgs84_meta.format.profile["dtype"]
@@ -601,13 +601,13 @@ def main(args):
     # dummy1 = os.path.join(testdata_directory, "sentinel2.tif")
     dummy2 = os.path.join(testdata_directory, "dummy2.tif")
     zoom = 8
-    tile_pyramid = TilePyramid("4326")
+    tile_pyramid = TilePyramid("geodetic")
 
     dummy1_bbox = file_bbox(dummy1, tile_pyramid.crs)
 
     tiles = tile_pyramid.tiles_from_geom(dummy1_bbox, zoom)
     tile_pyramid.format = OutputFormat("GTiff")
-    resampling = RESAMPLING.average
+    resampling = "average"
     pixelbuffer=5
     for tile in tiles:
         metadata, data = read_raster_window(
@@ -655,13 +655,13 @@ def main(args):
         zoom, row, col = tile
         outname = str(zoom) + str(row) + str(col) + ".tif"
         outfile = os.path.join(outdata_directory, outname)
-        write_raster_window(
-            outfile,
-            tile_pyramid,
-            tile,
-            metadata,
-            data
-        )
+        # write_raster_window(
+        #     outfile,
+        #     tile_pyramid,
+        #     tile,
+        #     metadata,
+        #     data
+        # )
 
 
 if __name__ == "__main__":

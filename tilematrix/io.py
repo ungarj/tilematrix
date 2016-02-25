@@ -79,7 +79,7 @@ def read_raster_window(
     tile_pyramid,
     tile,
     pixelbuffer=0,
-    resampling=RESAMPLING.nearest
+    resampling="nearest"
     ):
     """
     Reads an input raster dataset with rasterio and resamples array to target
@@ -107,6 +107,21 @@ def read_raster_window(
         assert isinstance(pixelbuffer, int)
     except:
         raise ValueError("pixelbuffer must be an integer")
+
+    resampling_methods = {
+        "nearest": RESAMPLING.nearest,
+        "bilinear": RESAMPLING.bilinear,
+        "cubic": RESAMPLING.cubic,
+        "cubic_spline": RESAMPLING.cubic_spline,
+        "lanczos": RESAMPLING.lanczos,
+        "average": RESAMPLING.average,
+        "mode": RESAMPLING.mode
+    }
+
+    try:
+        assert resampling in resampling_methods
+    except:
+        raise ValueError("resampling method %s not found." % resampling)
 
     zoom, row, col = tile
 
@@ -196,7 +211,7 @@ def read_raster_window(
                     dst_transform=tile_affine,
                     dst_crs=tile_pyramid.crs,
                     dst_nodata=nodataval,
-                    resampling=resampling
+                    resampling=resampling_methods[resampling]
                 )
             except:
                 raise
