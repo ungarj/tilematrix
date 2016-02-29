@@ -383,7 +383,7 @@ def file_bbox(
                 ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
             # if not segmentize_maxlen:
             #     segmentize_maxlen = max([(right-left), (top-bottom)])/5
-                ogr_bbox.Segmentize(segmentize_maxlen)
+                ogr_bbox.Segmentize(segmentize)
                 segmentized_bbox = loads(ogr_bbox.ExportToWkt())
                 bbox = segmentized_bbox
             project = partial(
