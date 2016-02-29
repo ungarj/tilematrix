@@ -352,7 +352,7 @@ def write_raster_window(
 def file_bbox(
     input_file,
     out_crs,
-    segmentize_maxlen=None
+    segmentize=None
 ):
     """
     Returns the bounding box of a raster or vector file in a given CRS.
@@ -379,17 +379,19 @@ def file_bbox(
     # If soucre and target CRSes differ, segmentize and reproject
     if inp_crs != out_crs:
         try:
-            ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
-            if not segmentize_maxlen:
-                segmentize_maxlen = max([(right-left), (top-bottom)])/5
-            ogr_bbox.Segmentize(segmentize_maxlen)
-            segmentized = loads(ogr_bbox.ExportToWkt())
+            if segmentize:
+                ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
+            # if not segmentize_maxlen:
+            #     segmentize_maxlen = max([(right-left), (top-bottom)])/5
+                ogr_bbox.Segmentize(segmentize_maxlen)
+                segmentized_bbox = loads(ogr_bbox.ExportToWkt())
+                bbox = segmentized_bbox
             project = partial(
                 pyproj.transform,
                 pyproj.Proj(inp_crs),
                 pyproj.Proj(out_crs)
             )
-            out_bbox = transform(project, segmentized)
+            out_bbox = transform(project, bbox)
         except:
             raise
     else:
