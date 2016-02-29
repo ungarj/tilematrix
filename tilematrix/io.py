@@ -359,16 +359,17 @@ def file_bbox(
     """
     # Read raster data with rasterio, vector data with fiona.
     try:
-        inp = rasterio.open(input_file)
-        inp_crs = inp.crs
-        left = inp.bounds.left
-        bottom = inp.bounds.bottom
-        right = inp.bounds.right
-        top = inp.bounds.top
+        with rasterio.open(input_file) as inp:
+            inp_crs = inp.crs
+            left = inp.bounds.left
+            bottom = inp.bounds.bottom
+            right = inp.bounds.right
+            top = inp.bounds.top
     except IOError:
-        inp = fiona.open(input_file)
-        inp_crs = inp.srs
-        left, bottom, right, top = inp.bounds
+        with fiona.open(input_file) as inp:
+            inp_crs = inp.srs
+            left, bottom, right, top = inp.bounds
+
     # Create bounding box polygon.
     tl = [left, top]
     tr = [right, top]
@@ -381,8 +382,6 @@ def file_bbox(
         try:
             if segmentize:
                 ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
-            # if not segmentize_maxlen:
-            #     segmentize_maxlen = max([(right-left), (top-bottom)])/5
                 ogr_bbox.Segmentize(segmentize)
                 segmentized_bbox = loads(ogr_bbox.ExportToWkt())
                 bbox = segmentized_bbox
@@ -396,11 +395,7 @@ def file_bbox(
             raise
     else:
         out_bbox = bbox
-    # Close input dataset.
-    try:
-        inp.close()
-    except:
-        pass
+
     # Validate and, if necessary, try to fix output geometry.
     try:
         assert out_bbox.is_valid
