@@ -126,7 +126,10 @@ def read_raster_window(
 
     zoom, row, col = tile
 
-    src_bbox = file_bbox(input_file, tile_pyramid.crs)
+    try:
+        src_bbox = file_bbox(input_file, tile_pyramid.crs)
+    except:
+        raise
     dst_tile_size = tile_pyramid.tile_size + 2 * pixelbuffer
     dst_shape = (dst_tile_size, dst_tile_size)
     tile_geom = tile_pyramid.tile_bbox(zoom, row, col, pixelbuffer)
@@ -349,7 +352,7 @@ def write_raster_window(
 def file_bbox(
     input_file,
     out_crs,
-    segmentize_maxlen=0.5
+    segmentize_maxlen=None
 ):
     """
     Returns the bounding box of a raster or vector file in a given CRS.
@@ -375,15 +378,20 @@ def file_bbox(
     out_bbox = bbox
     # If soucre and target CRSes differ, segmentize and reproject
     if inp_crs != out_crs:
-        ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
-        ogr_bbox.Segmentize(segmentize_maxlen)
-        segmentized = loads(ogr_bbox.ExportToWkt())
-        project = partial(
-            pyproj.transform,
-            pyproj.Proj(inp_crs),
-            pyproj.Proj(out_crs)
-        )
-        out_bbox = transform(project, segmentized)
+        try:
+            ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
+            if not segmentize_maxlen:
+                segmentize_maxlen = max([(right-left), (top-bottom)])/5
+            ogr_bbox.Segmentize(segmentize_maxlen)
+            segmentized = loads(ogr_bbox.ExportToWkt())
+            project = partial(
+                pyproj.transform,
+                pyproj.Proj(inp_crs),
+                pyproj.Proj(out_crs)
+            )
+            out_bbox = transform(project, segmentized)
+        except:
+            raise
     else:
         out_bbox = bbox
     # Close input dataset.
