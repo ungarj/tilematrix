@@ -602,6 +602,13 @@ def main(args):
         assert len(wgs84_meta.get_neighbors(tile, count=count)) == count
     assert len(wgs84_meta.get_neighbors(tile, count=9)) == 8
 
+    ## test tile <--> metatile conversion
+    metatile = (10, 44, 33)
+    metatiling = 4
+    wgs84_meta = MetaTilePyramid(wgs84, metatiling)
+    tile = (10, 178, 133)
+    test_metatile = wgs84_meta.tiles_from_bbox(wgs84_meta.tilepyramid.tile_bbox(*tile), 10)
+    assert metatile == test_metatile
 
     # test io module
 
