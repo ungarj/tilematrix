@@ -594,6 +594,14 @@ def main(args):
                 feature['properties']['row'] = row
                 sink.write(feature)
 
+    ## test get neighbors
+    tile = (5, 4, 3)
+    metatiling = 1
+    wgs84_meta = MetaTilePyramid(wgs84, metatiling)
+    for count in range(0, 9):
+        assert len(wgs84_meta.get_neighbors(tile, count=count)) == count
+    assert len(wgs84_meta.get_neighbors(tile, count=9)) == 8
+
 
     # test io module
 

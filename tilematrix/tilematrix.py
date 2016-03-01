@@ -151,6 +151,19 @@ class TilePyramid(object):
         tilelist = tiles_from_geom(self, geometry, zoom)
         return tilelist
 
+    def get_neighbors(self, tile, count):
+        """
+        Returns tile neighbors.
+        """
+        neighbors = get_neighbors(self, tile, count)
+        return neighbors
+
+    def tile_is_valid(self, tile):
+        """
+        Returns True if tile is available in tile pyramid.
+        """
+        return tile_is_valid(self, tile)
+
 
 class MetaTilePyramid(TilePyramid):
 
@@ -350,6 +363,19 @@ class MetaTilePyramid(TilePyramid):
             tilelist = tilepyramid.tiles_from_bbox(metatile_bbox, zoom)
         return tilelist
 
+    def get_neighbors(self, tile, count):
+        """
+        Returns tile neighbors.
+        """
+        neighbors = get_neighbors(self, tile, count)
+        return neighbors
+
+    def tile_is_valid(self, tile):
+        """
+        Returns True if tile is available in tile pyramid.
+        """
+        return tile_is_valid(self, tile)
+
 """
 Shared methods for TilePyramid and MetaTilePyramid.
 """
@@ -520,3 +546,57 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
         sys.exit(0)
 
     return tilelist
+
+def get_neighbors(self, tile, count):
+    """
+    Returns tile neighbors.
+    -------------
+    | 8 | 1 | 5 |
+    -------------
+    | 4 | x | 2 |
+    -------------
+    | 7 | 3 | 6 |
+    -------------
+    """
+    if count > 8:
+        count = 8
+    if count == 0:
+        return []
+    zoom, row, col = tile
+    neighbors = []
+    # fill up set with up to 8 direct neighbors
+    for newtile in [
+        (zoom, row-1, col),
+        (zoom, row, col+1),
+        (zoom, row+1, col),
+        (zoom, row, col-1),
+        (zoom, row-1, col+1),
+        (zoom, row+1, col+1),
+        (zoom, row+1, col-1),
+        (zoom, row-1, col-1)
+        ]:
+        # top
+        if self.tile_is_valid(newtile):
+            neighbors.append(newtile)
+        if len(neighbors) >= count:
+            return neighbors
+
+
+def tile_is_valid(self, tile):
+    """
+    Returns True if tile is available in tile pyramid.
+    """
+    zoom, row, col = tile
+    try:
+        assert isinstance(zoom, int)
+        assert zoom >= 0
+        assert isinstance(col, int)
+        assert col >= 0
+        assert isinstance(col, int)
+        assert col >= 0
+        assert col <= self.matrix_width(zoom)
+        assert row <= self.matrix_height(zoom)
+    except:
+        return False
+    else:
+        return True
