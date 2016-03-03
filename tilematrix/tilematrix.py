@@ -462,7 +462,6 @@ def tiles_from_bbox(tilepyramid, geometry, zoom):
         sys.exit(0)
     tile_x_size = tilepyramid.tile_x_size(zoom)
     tile_y_size = tilepyramid.tile_y_size(zoom)
-    tilelist = []
     l, b, r, t = geometry.bounds
     tilelon = tilepyramid.left
     tilelat = tilepyramid.top
@@ -486,16 +485,14 @@ def tiles_from_bbox(tilepyramid, geometry, zoom):
         tilelat -= tile_y_size
         row += 1
         rows.append(row)
-    tilelist = list(product([zoom], rows, cols))
-    return tilelist
+    for tile in list(product([zoom], rows, cols)):
+        yield tile
 
 
 def tiles_from_geom(tilepyramid, geometry, zoom):
     """
     All tiles intersecting with input geometry.
     """
-
-    tilelist = []
 
     try:
         assert geometry.is_valid
@@ -510,10 +507,10 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
             print "... cleaning successful"
         except:
             print "... geometry could not be fixed"
-            sys.exit(0)
 
     if geometry.almost_equals(geometry.envelope, ROUND):
-        tilelist = tilepyramid.tiles_from_bbox(geometry, zoom)
+        for tile in tilepyramid.tiles_from_bbox(geometry, zoom):
+            yield tile
 
     elif geometry.geom_type == "Point":
         lon, lat = list(geometry.coords)[0]
@@ -529,23 +526,18 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
         while tilelat > lat:
             tilelat -= tile_y_size
             row += 1
-        tilelist.append((zoom, row, col))
+        yield (zoom, row, col)
 
     elif geometry.geom_type in ("LineString", "MultiLineString", "Polygon",
         "MultiPolygon", "MultiPoint"):
         prepared_geometry = prep(geometry)
-        bbox_tilelist = tilepyramid.tiles_from_bbox(geometry, zoom)
-        tilelist = [
-            tile
-            for tile in bbox_tilelist
-            if prepared_geometry.intersects(tilepyramid.tile_bbox(*tile))
-        ]
-
+        for tile in tilepyramid.tiles_from_bbox(geometry, zoom):
+            if prepared_geometry.intersects(tilepyramid.tile_bbox(*tile)):
+                yield tile
     else:
         print "ERROR: no valid geometry"
-        sys.exit(0)
 
-    return tilelist
+
 
 def get_neighbors(self, tile, count):
     """

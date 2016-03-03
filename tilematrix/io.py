@@ -152,7 +152,6 @@ def read_raster_window(
                     zeros,
                     mask=True
                 )
-                # out_band[:] = nodataval
                 out_data += (out_band,)
             return out_meta, out_data
 

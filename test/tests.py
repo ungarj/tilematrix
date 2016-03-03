@@ -157,10 +157,14 @@ def main(args):
     with fiona.open(point_location) as point_file:
         point = shape(point_file[0]["geometry"])
         try:
-            point_tile = wgs84.tiles_from_geom(point, zoom)
+            point_tile = [
+                tile
+                for tile in wgs84.tiles_from_geom(point, zoom)
+            ]
             assert point_tile == testtile
             print "Point OK"
         except:
+            print point_tile, testtile
             print "Point FAILED"
             raise
     if debug:
@@ -191,7 +195,10 @@ def main(args):
     with fiona.open(multipoint_location) as multipoint_file:
         multipoint = shape(multipoint_file[0]["geometry"])
         try:
-            multipoint_tiles = wgs84.tiles_from_geom(multipoint, zoom)
+            multipoint_tiles = [
+                tile
+                for tile in wgs84.tiles_from_geom(multipoint, zoom)
+            ]
             assert multipoint_tiles == testtiles
             print "MultiPoint OK"
         except:
@@ -603,12 +610,24 @@ def main(args):
     assert len(wgs84_meta.get_neighbors(tile, count=9)) == 8
 
     ## test tile <--> metatile conversion
-    metatile = (10, 44, 33)
+    metatile = [(10, 44, 33)]
     metatiling = 4
     wgs84_meta = MetaTilePyramid(wgs84, metatiling)
     tile = (10, 178, 133)
-    test_metatile = wgs84_meta.tiles_from_bbox(wgs84_meta.tilepyramid.tile_bbox(*tile), 10)
-    assert metatile == test_metatile
+    test_metatile = [
+        tile
+        for tile in wgs84_meta.tiles_from_bbox(
+            wgs84_meta.tilepyramid.tile_bbox(*tile),
+            10
+        )
+    ]
+    try:
+        assert metatile == test_metatile
+        print "OK: metatile <-> tile conversion"
+    except:
+        print metatile, test_metatile
+        raise
+        print "ERROR: metatile <-> tile conversion"
 
     # test io module
 
