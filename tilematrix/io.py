@@ -350,14 +350,12 @@ def write_raster_window(
 
 def file_bbox(
     input_file,
-    tile_pyramid,
-    zoom=None
+    tile_pyramid
 ):
     """
     Returns the bounding box of a raster or vector file in a given CRS.
     """
     out_crs = tile_pyramid.crs
-
     # Read raster data with rasterio, vector data with fiona.
     try:
         with rasterio.open(input_file) as inp:
@@ -380,7 +378,7 @@ def file_bbox(
     out_bbox = bbox
     # If soucre and target CRSes differ, segmentize and reproject
     if inp_crs != out_crs:
-        segmentize = _get_segmentize_value(input_file, tile_pyramid, zoom)
+        segmentize = _get_segmentize_value(input_file, tile_pyramid)
         try:
             ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
             ogr_bbox.Segmentize(segmentize)
@@ -410,13 +408,10 @@ def file_bbox(
     return out_bbox
 
 
-def _get_segmentize_value(input_file, tile_pyramid, zoom=None):
+def _get_segmentize_value(input_file, tile_pyramid):
     """
     Returns the recommended segmentize value in input file units.
     """
-    if not zoom:
-        zoom = get_best_zoom_level(input_file, tile_pyramid.type)
-
     with rasterio.open(input_file, "r") as input_raster:
         pixelsize = input_raster.affine[0]
 
