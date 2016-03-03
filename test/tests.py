@@ -637,7 +637,7 @@ def main(args):
     zoom = 8
     tile_pyramid = TilePyramid("geodetic")
 
-    dummy1_bbox = file_bbox(dummy1, tile_pyramid.crs)
+    dummy1_bbox = file_bbox(dummy1, tile_pyramid)
 
     tiles = tile_pyramid.tiles_from_geom(dummy1_bbox, zoom)
     tile_pyramid.format = OutputFormat("GTiff")

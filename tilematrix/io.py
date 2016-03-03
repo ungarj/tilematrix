@@ -127,7 +127,7 @@ def read_raster_window(
     zoom, row, col = tile
 
     try:
-        src_bbox = file_bbox(input_file, tile_pyramid.crs)
+        src_bbox = file_bbox(input_file, tile_pyramid)
     except:
         raise
     dst_tile_size = tile_pyramid.tile_size + 2 * pixelbuffer
@@ -350,12 +350,14 @@ def write_raster_window(
 
 def file_bbox(
     input_file,
-    out_crs,
-    segmentize=None
+    tile_pyramid,
+    zoom=None
 ):
     """
     Returns the bounding box of a raster or vector file in a given CRS.
     """
+    out_crs = tile_pyramid.crs
+
     # Read raster data with rasterio, vector data with fiona.
     try:
         with rasterio.open(input_file) as inp:
@@ -378,12 +380,12 @@ def file_bbox(
     out_bbox = bbox
     # If soucre and target CRSes differ, segmentize and reproject
     if inp_crs != out_crs:
+        segmentize = _get_segmentize_value(input_file, tile_pyramid, zoom)
         try:
-            if segmentize:
-                ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
-                ogr_bbox.Segmentize(segmentize)
-                segmentized_bbox = loads(ogr_bbox.ExportToWkt())
-                bbox = segmentized_bbox
+            ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
+            ogr_bbox.Segmentize(segmentize)
+            segmentized_bbox = loads(ogr_bbox.ExportToWkt())
+            bbox = segmentized_bbox
             project = partial(
                 pyproj.transform,
                 pyproj.Proj(inp_crs),
@@ -406,6 +408,57 @@ def file_bbox(
             raise TypeError(cleaned.explain_validity)
         out_bbox = cleaned
     return out_bbox
+
+
+def _get_segmentize_value(input_file, tile_pyramid, zoom=None):
+    """
+    Returns the recommended segmentize value in input file units.
+    """
+    if not zoom:
+        zoom = get_best_zoom_level(input_file, tile_pyramid.type)
+
+    with rasterio.open(input_file, "r") as input_raster:
+        pixelsize = input_raster.affine[0]
+
+    return pixelsize * tile_pyramid.tile_size
+
+
+def get_best_zoom_level(input_file, tile_pyramid_type):
+    """
+    Determines the best base zoom level for a raster. "Best" means the maximum
+    zoom level where no oversampling has to be done.
+    """
+    tile_pyramid = TilePyramid(tile_pyramid_type)
+    dst_crs = tile_pyramid.crs
+    with rasterio.open(input_file, "r") as input_raster:
+        src_crs = input_raster.crs
+        src_width = input_raster.width
+        src_height = input_raster.height
+        src_left, src_bottom, src_right, src_top = input_raster.bounds
+
+    xmin, ymin, xmax, ymax = transform_bounds(
+        src_crs,
+        dst_crs,
+        src_left,
+        src_bottom,
+        src_right,
+        src_top
+        )
+
+    x_dif = xmax - xmin
+    y_dif = ymax - ymin
+    size = float(src_width + src_height)
+    avg_resolution = (
+        (x_dif / float(src_width)) * (float(src_width) / size) +
+        (y_dif / float(src_height)) * (float(src_height) / size)
+    )
+
+    for zoom in range(0, 25):
+        print tile_pyramid.pixel_x_size(zoom), avg_resolution
+        if (tile_pyramid.pixel_x_size(zoom) < avg_resolution):
+            return zoom-1
+
+    raise ValueError("no fitting zoom level found")
 
 
 def _read_band_to_tile(
