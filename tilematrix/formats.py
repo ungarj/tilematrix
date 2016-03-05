@@ -2,6 +2,7 @@
 
 import os
 from rasterio import profiles
+import numpy as np
 
 class OutputFormat(object):
     """
@@ -48,9 +49,10 @@ class OutputFormat(object):
 
         if self.format == "PNG":
             self.profile = {
-                'dtype': 'uint8',
+                'dtype': np.uint8,
                 'nodata': 0,
-                'driver': 'PNG'
+                'driver': 'PNG',
+                'count': 3
             }
             self._gpkg = False
 

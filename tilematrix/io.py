@@ -79,6 +79,7 @@ def read_raster_window(
     input_file,
     tile_pyramid,
     tile,
+    bands=None,
     pixelbuffer=0,
     resampling="nearest"
     ):
@@ -87,7 +88,6 @@ def read_raster_window(
     tile. Returns a tuple of (metadata, data), where metadata is a rasterio
     meta dictionary and data a multidimensional numpy array.
     """
-
     try:
         assert (isinstance(tile_pyramid, TilePyramid) or
             isinstance(tile_pyramid, MetaTilePyramid))
@@ -134,6 +134,10 @@ def read_raster_window(
     dst_shape = (dst_tile_size, dst_tile_size)
     tile_geom = tile_pyramid.tile_bbox(zoom, row, col, pixelbuffer)
     with rasterio.open(input_file, "r") as src:
+        if bands:
+            band_indexes = range(1, bands+1)
+        else:
+            band_indexes = src.indexes
         out_meta = src.meta
         nodataval = src.nodata
         # Quick fix because None nodata is not allowed.
@@ -146,7 +150,7 @@ def read_raster_window(
             assert tile_geom.intersects(src_bbox)
         except:
             out_data = ()
-            for i, dtype in zip(src.indexes, src.dtypes):
+            for i, dtype in zip(band_indexes, src.dtypes):
                 zeros = np.zeros(shape=(dst_shape), dtype=dtype)
                 out_band = ma.masked_array(
                     zeros,
@@ -193,7 +197,7 @@ def read_raster_window(
         # Finally read data per band and store it in tuple.
         out_data = ()
         for index, dtype in zip(
-            src.indexes,
+            band_indexes,
             src.dtypes
             ):
             src_band_data = _read_band_to_tile(
@@ -322,7 +326,6 @@ def write_raster_window(
     dst_metadata["width"] = dst_width
     dst_metadata["height"] = dst_height
     dst_metadata["affine"] = dst_affine
-    dst_metadata["affine"] = dst_affine
     dst_metadata["count"] = len(dst_bands)
     dst_metadata["dtype"] = dst_bands[0].dtype.name
     try:
@@ -449,7 +452,6 @@ def get_best_zoom_level(input_file, tile_pyramid_type):
     )
 
     for zoom in range(0, 25):
-        print tile_pyramid.pixel_x_size(zoom), avg_resolution
         if (tile_pyramid.pixel_x_size(zoom) < avg_resolution):
             return zoom-1
 
