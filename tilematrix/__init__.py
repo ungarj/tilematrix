@@ -14,5 +14,6 @@ from .io import (
     write_raster_window,
     read_vector_window,
     file_bbox,
-    get_best_zoom_level
+    get_best_zoom_level,
+    resampling_methods
 )

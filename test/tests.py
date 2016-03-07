@@ -12,6 +12,7 @@ import rasterio
 from rasterio.warp import RESAMPLING
 import affine
 import numpy as np
+import numpy.ma as ma
 
 
 from tilematrix import *
@@ -644,48 +645,36 @@ def main(args):
     resampling = "average"
     pixelbuffer=5
     for tile in tiles:
-        metadata, data = read_raster_window(
+        for band in read_raster_window(
             dummy1,
             tile_pyramid,
             tile,
             resampling=resampling,
             pixelbuffer=pixelbuffer
-            )
-        # print metadata
-        affine = metadata["affine"]
-        out_left, out_top = affine * (0, 0)
-        out_right, out_bottom = affine * (metadata["width"], metadata["height"])
-        tile_left, tile_bottom, tile_right, tile_top = tile_pyramid.tile_bounds(
-            *tile,
-            pixelbuffer=pixelbuffer
-        )
-        try:
-            for band in data:
+            ):
+            try:
                 assert band.shape == (
                     tile_pyramid.tile_size + 2 * pixelbuffer,
                     tile_pyramid.tile_size + 2 * pixelbuffer
                 )
-            print "OK: read data size"
-        except:
-            print "FAILED: read data size"
-        try:
-            assert out_left == tile_left
-            assert out_bottom == tile_bottom
-            assert out_right == tile_right
-            assert out_top == tile_top
-            print "OK: read data georeference"
-        except:
-            print "FAILED: read data georeference"
-            print metadata
-            print round(out_left, 8), round(tile_left, 8)
-            print round(out_bottom, 8), round(tile_bottom, 8)
-            print round(out_right, 8), round(tile_right, 8)
-            print round(out_top, 8), round(tile_top, 8)
+                print "OK: read data size"
+            except:
+                print "FAILED: read data size"
+            # TODO: move tests to mapchete
+            # try:
+            #     assert out_left == tile_left
+            #     assert out_bottom == tile_bottom
+            #     assert out_right == tile_right
+            #     assert out_top == tile_top
+            #     print "OK: read data georeference"
+            # except:
+            #     print "FAILED: read data georeference"
+            #     print metadata
+            #     print round(out_left, 8), round(tile_left, 8)
+            #     print round(out_bottom, 8), round(tile_bottom, 8)
+            #     print round(out_right, 8), round(tile_right, 8)
+            #     print round(out_top, 8), round(tile_top, 8)
 
-        for band in data:
-            # print band
-            # print np.count_nonzero(band), str(tile_pyramid.tile_size**2)
-            pass
         zoom, row, col = tile
         outname = str(zoom) + str(row) + str(col) + ".tif"
         outfile = os.path.join(outdata_directory, outname)
@@ -696,6 +685,18 @@ def main(args):
         #     metadata,
         #     data
         # )
+
+    # from tilematrix import rastertile
+    # print tile_pyramid.format.profile
+    #
+    # with rastertile(dummy1, pyramid=tile_pyramid, tile=tile) as testfile:
+    #     print "testfile", testfile
+    #     print "testfile.tile", testfile.tile
+    #     print "testfile.profile", testfile.profile
+    #     print "is empty", testfile.is_empty()
+    #     for band in testfile.read():
+    #         print "hubert"
+    #         print band.shape
 
 
 if __name__ == "__main__":

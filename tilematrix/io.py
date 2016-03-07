@@ -22,6 +22,16 @@ import pyproj
 
 from tilematrix import *
 
+resampling_methods = {
+    "nearest": RESAMPLING.nearest,
+    "bilinear": RESAMPLING.bilinear,
+    "cubic": RESAMPLING.cubic,
+    "cubic_spline": RESAMPLING.cubic_spline,
+    "lanczos": RESAMPLING.lanczos,
+    "average": RESAMPLING.average,
+    "mode": RESAMPLING.mode
+}
+
 def read_vector_window(
     input_file,
     tile_pyramid,
@@ -74,114 +84,51 @@ def read_vector_window(
 
     return features_clipped
 
-
 def read_raster_window(
     input_file,
     tile_pyramid,
     tile,
-    bands=None,
+    indexes=None,
     pixelbuffer=0,
     resampling="nearest"
     ):
     """
-    Reads an input raster dataset with rasterio and resamples array to target
-    tile. Returns a tuple of (metadata, data), where metadata is a rasterio
-    meta dictionary and data a multidimensional numpy array.
+    Generates numpy arrays from input raster.
     """
-    try:
-        assert (isinstance(tile_pyramid, TilePyramid) or
-            isinstance(tile_pyramid, MetaTilePyramid))
-    except:
-        raise ValueError("no valid tile matrix given.")
-
     try:
         assert os.path.isfile(input_file)
     except:
-        raise IOError("input file does not exist: %s" % input_file)
-
-    try:
-        assert pixelbuffer >= 0
-    except:
-        raise ValueError("pixelbuffer must be 0 or greater")
-
-    try:
-        assert isinstance(pixelbuffer, int)
-    except:
-        raise ValueError("pixelbuffer must be an integer")
-
-    resampling_methods = {
-        "nearest": RESAMPLING.nearest,
-        "bilinear": RESAMPLING.bilinear,
-        "cubic": RESAMPLING.cubic,
-        "cubic_spline": RESAMPLING.cubic_spline,
-        "lanczos": RESAMPLING.lanczos,
-        "average": RESAMPLING.average,
-        "mode": RESAMPLING.mode
-    }
-
-    try:
-        assert resampling in resampling_methods
-    except:
-        raise ValueError("resampling method %s not found." % resampling)
-
-    zoom, row, col = tile
-
-    try:
-        src_bbox = file_bbox(input_file, tile_pyramid)
-    except:
-        raise
-    dst_tile_size = tile_pyramid.tile_size + 2 * pixelbuffer
-    dst_shape = (dst_tile_size, dst_tile_size)
-    tile_geom = tile_pyramid.tile_bbox(zoom, row, col, pixelbuffer)
+        raise IOError("input file not found %s" % input_file)
     with rasterio.open(input_file, "r") as src:
-        if bands:
-            band_indexes = range(1, bands+1)
+
+        if indexes:
+            if isinstance(indexes, list):
+                band_indexes = indexes
+            else:
+                band_indexes = [indexes]
         else:
             band_indexes = src.indexes
-        out_meta = src.meta
-        nodataval = src.nodata
-        # Quick fix because None nodata is not allowed.
-        if not nodataval:
-            nodataval = 0
 
-        # Return array filled with NAN values if tile does not intersect with
-        # input raster.
-        try:
-            assert tile_geom.intersects(src_bbox)
-        except:
-            out_data = ()
-            for i, dtype in zip(band_indexes, src.dtypes):
-                zeros = np.zeros(shape=(dst_shape), dtype=dtype)
-                out_band = ma.masked_array(
-                    zeros,
-                    mask=True
-                )
-                out_data += (out_band,)
-            return out_meta, out_data
-
-        # Get tile bounds including pixel buffer.
-        tile_left, tile_bottom, tile_right, tile_top = tile_pyramid.tile_bounds(
-            zoom,
-            row,
-            col,
-            pixelbuffer
+        shape = (
+            tile_pyramid.tile_size + 2 * pixelbuffer,
+            tile_pyramid.tile_size + 2 * pixelbuffer
             )
-
-        # Create tile affine
-        px_size = tile_pyramid.pixel_x_size(zoom)
-        tile_geotransform = (tile_left, px_size, 0.0, tile_top, 0.0, -px_size)
-        tile_affine = Affine.from_gdal(*tile_geotransform)
 
         # Reproject tile bounds to source file SRS.
         src_left, src_bottom, src_right, src_top = transform_bounds(
             tile_pyramid.crs,
             src.crs,
-            tile_left,
-            tile_bottom,
-            tile_right,
-            tile_top,
+            *tile_pyramid.tile_bounds(
+                *tile,
+                pixelbuffer=pixelbuffer
+                ),
             densify_pts=21
             )
+
+        nodataval = src.nodata
+        # Quick fix because None nodata is not allowed.
+        if not nodataval:
+            nodataval = 0
 
         minrow, mincol = src.index(src_left, src_top)
         maxrow, maxcol = src.index(src_right, src_bottom)
@@ -195,45 +142,30 @@ def read_raster_window(
         window_affine = src.affine * window_vector_affine
 
         # Finally read data per band and store it in tuple.
-        out_data = ()
-        for index, dtype in zip(
-            band_indexes,
-            src.dtypes
-            ):
-            src_band_data = _read_band_to_tile(
-                index,
-                src,
-                window,
-                nodataval
+        bands = (
+            src.read(index, window=window, masked=True, boundless=True)
+            for index in band_indexes
             )
-            dst_band_data = np.zeros(shape=(dst_shape), dtype=dtype)
-            dst_band_data[:] = nodataval
-            try:
-                reproject(
-                    src_band_data,
-                    dst_band_data,
-                    src_transform=window_affine,
-                    src_crs=src.crs,
-                    src_nodata=nodataval,
-                    dst_transform=tile_affine,
-                    dst_crs=tile_pyramid.crs,
-                    dst_nodata=nodataval,
-                    resampling=resampling_methods[resampling]
-                )
-            except:
-                raise
-            dst_band_data = ma.masked_equal(dst_band_data, nodataval)
-            out_data = out_data + (dst_band_data, )
-
-        # Create output metadata
-        out_meta = src.meta
-        out_meta['nodata'] = nodataval
-        out_meta['affine'] = tile_affine
-        out_meta['transform'] = tile_geotransform
-        out_meta['height'] = dst_tile_size
-        out_meta['width'] = dst_tile_size
-
-    return out_meta, out_data
+        dst_bands = ()
+        for index in band_indexes:
+            dst_band = np.ma.zeros(shape=(shape), dtype=src.dtypes[index-1])
+            dst_band[:] = nodataval
+            reproject(
+                next(bands),
+                dst_band,
+                src_transform=window_affine,
+                src_crs=src.crs,
+                src_nodata=nodataval,
+                dst_transform=tile_pyramid.tile_affine(
+                    tile,
+                    pixelbuffer=pixelbuffer
+                    ),
+                dst_crs=tile_pyramid.crs,
+                dst_nodata=nodataval,
+                resampling=resampling_methods[resampling]
+            )
+            dst_band = ma.masked_equal(dst_band, nodataval)
+            yield dst_band
 
 
 def write_raster_window(

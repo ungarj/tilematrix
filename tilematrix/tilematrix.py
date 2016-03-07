@@ -6,6 +6,7 @@ from shapely.validation import *
 from shapely.prepared import prep
 from itertools import product
 import math
+from affine import Affine
 
 from .formats import OutputFormat
 
@@ -163,6 +164,12 @@ class TilePyramid(object):
         Returns True if tile is available in tile pyramid.
         """
         return tile_is_valid(self, tile)
+
+    def tile_affine(self, tile, pixelbuffer=0):
+        """
+        Returns an Affine object of tile.
+        """
+        return tile_affine(self, tile)
 
 
 class MetaTilePyramid(TilePyramid):
@@ -375,6 +382,13 @@ class MetaTilePyramid(TilePyramid):
         Returns True if tile is available in tile pyramid.
         """
         return tile_is_valid(self, tile)
+
+    def tile_affine(self, tile, pixelbuffer=0):
+        """
+        Returns an Affine object of tile.
+        """
+        return tile_affine(self, tile)
+
 
 """
 Shared methods for TilePyramid and MetaTilePyramid.
@@ -592,3 +606,19 @@ def tile_is_valid(self, tile):
         return False
     else:
         return True
+
+
+def tile_affine(self, tile, pixelbuffer=0):
+    """
+    Returns an Affine object of tile.
+    """
+    zoom, row, col = tile
+    # Get tile bounds including pixel buffer.
+    left, bottom, right, top = self.tile_bounds(
+        *tile,
+        pixelbuffer=pixelbuffer
+        )
+    px_size = self.pixel_x_size(zoom)
+    tile_geotransform = (left, px_size, 0.0, top, 0.0, -px_size)
+    tile_affine = Affine.from_gdal(*tile_geotransform)
+    return tile_affine
