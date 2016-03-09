@@ -34,7 +34,6 @@ resampling_methods = {
 
 def read_vector_window(
     input_file,
-    tile_pyramid,
     tile,
     pixelbuffer=0
     ):
@@ -42,12 +41,6 @@ def read_vector_window(
     Reads an input vector dataset with fiona using the tile bounding box as
     filter and clipping geometry. Returns a list of GeoJSON like features.
     """
-
-    try:
-        assert (isinstance(tile_pyramid, TilePyramid) or
-            isinstance(tile_pyramid, MetaTilePyramid))
-    except:
-        raise ValueError("no valid tile matrix given.")
 
     try:
         assert os.path.isfile(input_file)
@@ -68,25 +61,25 @@ def read_vector_window(
     # TODO reproject tile_bounds to input file crs and reproject output clip to
     # tile_pyramid crs
 
-    tile_bounds = tile_pyramid.tile_bounds(*tile, pixelbuffer=pixelbuffer)
-    tile_bbox = tile_pyramid.tile_bbox(*tile, pixelbuffer=pixelbuffer)
-
     with fiona.open(input_file, 'r') as vector:
         features_clipped = [
             {
                 'properties': feature['properties'],
                 'geometry': mapping(
-                    tile_bbox.intersection(shape(feature['geometry']))
+                    tile.bbox(pixelbuffer=pixelbuffer).intersection(
+                        shape(feature['geometry'])
+                    )
                 )
             }
-            for feature in vector.filter(bbox=tile_bounds)
+            for feature in vector.filter(
+                bbox=tile.bounds(pixelbuffer=pixelbuffer)
+            )
         ]
 
     return features_clipped
 
 def read_raster_window(
     input_file,
-    tile_pyramid,
     tile,
     indexes=None,
     pixelbuffer=0,
@@ -109,19 +102,11 @@ def read_raster_window(
         else:
             band_indexes = src.indexes
 
-        shape = (
-            tile_pyramid.tile_size + 2 * pixelbuffer,
-            tile_pyramid.tile_size + 2 * pixelbuffer
-            )
-
         # Reproject tile bounds to source file SRS.
         src_left, src_bottom, src_right, src_top = transform_bounds(
-            tile_pyramid.crs,
+            tile.crs,
             src.crs,
-            *tile_pyramid.tile_bounds(
-                *tile,
-                pixelbuffer=pixelbuffer
-                ),
+            *tile.bounds(pixelbuffer=pixelbuffer),
             densify_pts=21
             )
 
@@ -147,7 +132,10 @@ def read_raster_window(
             for index in band_indexes
             )
         for index in band_indexes:
-            dst_band = np.ma.zeros(shape=(shape), dtype=src.dtypes[index-1])
+            dst_band = np.ma.zeros(
+                shape=(tile.shape(pixelbuffer=pixelbuffer)),
+                dtype=src.dtypes[index-1]
+            )
             dst_band[:] = nodataval
             reproject(
                 next(bands),
@@ -155,11 +143,8 @@ def read_raster_window(
                 src_transform=window_affine,
                 src_crs=src.crs,
                 src_nodata=nodataval,
-                dst_transform=tile_pyramid.tile_affine(
-                    tile,
-                    pixelbuffer=pixelbuffer
-                    ),
-                dst_crs=tile_pyramid.crs,
+                dst_transform=tile.affine(pixelbuffer=pixelbuffer),
+                dst_crs=tile.crs,
                 dst_nodata=nodataval,
                 resampling=resampling_methods[resampling]
             )
@@ -388,88 +373,3 @@ def get_best_zoom_level(input_file, tile_pyramid_type):
             return zoom-1
 
     raise ValueError("no fitting zoom level found")
-
-
-def _read_band_to_tile(
-    index,
-    src,
-    window,
-    nodataval
-    ):
-    """
-    Reads window of a raster and if window is outside of input raster bounds,
-    fills these values with numpy nan. Returns a metadata and data tuple.
-    """
-
-    (minrow, maxrow), (mincol, maxcol) = window
-    window_offset_row = minrow
-    window_offset_col = mincol
-    minrow, minrow_offset = _clean_coord_offset(
-        minrow,
-        src.shape[0]
-        )
-    maxrow, maxrow_offset = _clean_coord_offset(
-        maxrow,
-        src.shape[0]
-        )
-    mincol, mincol_offset = _clean_coord_offset(
-        mincol,
-        src.shape[1]
-        )
-    maxcol, maxcol_offset = _clean_coord_offset(
-        maxcol,
-        src.shape[1]
-        )
-    rows = (minrow, maxrow)
-    cols = (mincol, maxcol)
-
-    window_data = src.read(index, window=(rows, cols), masked=True)
-    if minrow_offset:
-        nullarray = np.zeros(
-            (minrow_offset, window_data.shape[1]),
-            dtype=window_data.dtype
-            )
-        nullarray[:] = nodataval
-        newarray = np.concatenate((nullarray, window_data), axis=0)
-        window_data = newarray
-    if maxrow_offset:
-        nullarray = np.zeros(
-            (maxrow_offset, window_data.shape[1]),
-            dtype=window_data.dtype
-            )
-        nullarray[:] = nodataval
-        newarray = np.concatenate((window_data, nullarray), axis=0)
-        window_data = newarray
-    if mincol_offset:
-        nullarray = np.zeros(
-            (window_data.shape[0], mincol_offset),
-            dtype=window_data.dtype
-            )
-        nullarray[:] = nodataval
-        newarray = np.concatenate((nullarray, window_data), axis=1)
-        window_data = newarray
-    if maxcol_offset:
-        nullarray = np.zeros(
-            (window_data.shape[0], maxcol_offset),
-            dtype=window_data.dtype
-            )
-        nullarray[:] = nodataval
-        newarray = np.concatenate((window_data, nullarray), axis=1)
-        window_data = newarray
-
-    return window_data
-
-
-def _clean_coord_offset(px_coord, maximum):
-    """
-    Crops pixel coordinate to 0 and maximum (array.shape) if necessary. Returns
-    new pixel value and an offset if necessary.
-    """
-    offset = None
-    if px_coord < 0:
-        offset = -px_coord
-        px_coord = 0
-    if px_coord > maximum:
-        offset = px_coord - maximum
-        px_coord = maximum
-    return px_coord, offset

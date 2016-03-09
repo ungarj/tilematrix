@@ -51,17 +51,20 @@ def main(args):
 
     # top left coordinate
     try:
-        tl = wgs84.top_left_tile_coords(5, 3, 3)
+        tile = wgs84.tile(5, 3, 3)
+        tl = (tile.left,tile.top)
         assert tl == (-163.125, 73.125)
         print "top left coordinate OK"
     except:
         print "top left coordinate FAILED"
+        print tl
         raise
 
 
     # tile bounding box
     try:
-        bbox = wgs84.tile_bbox(5, 3, 3)
+        tile = wgs84.tile(5, 3, 3)
+        bbox = tile.bbox()
         testpolygon = Polygon([[-163.125, 73.125], [-157.5, 73.125],
             [-157.5, 67.5], [-163.125, 67.5], [-163.125, 73.125]])
         assert bbox.equals(testpolygon)
@@ -73,7 +76,8 @@ def main(args):
 
     # tile bounding box with buffer
     try:
-        bbox = wgs84.tile_bbox(5, 3, 3, 1)
+        tile = wgs84.tile(5, 3, 3)
+        bbox = tile.bbox(1)
         testpolygon = Polygon([[-163.14697265625, 73.14697265625],
             [-157.47802734375, 73.14697265625],
             [-157.47802734375, 67.47802734375],
@@ -83,12 +87,14 @@ def main(args):
         print "tile bounding box with buffer OK"
     except:
         print "tile bounding box with buffer FAILED"
+        print bbox
         raise
 
 
     # tile bounds
     try:
-        bounds = wgs84.tile_bounds(5, 3, 3)
+        tile = wgs84.tile(5, 3, 3)
+        bounds = tile.bounds()
         testbounds = (-163.125, 67.5, -157.5, 73.125)
         assert bounds == testbounds
         print "tile bounds OK"
@@ -99,7 +105,8 @@ def main(args):
 
     # tile bounds buffer
     try:
-        bounds = wgs84.tile_bounds(5, 3, 3, 1)
+        tile = wgs84.tile(5, 3, 3)
+        bounds = tile.bounds(1)
         testbounds = (-163.14697265625, 67.47802734375, -157.47802734375,
             73.14697265625)
         assert bounds == testbounds
@@ -123,7 +130,10 @@ def main(args):
         (5, 5, 41), (5, 6, 41), (5, 7, 41), (5, 8, 41), (5, 9, 41), (5, 10, 41)]
     with fiona.open(bbox_location) as bbox_file:
         try:
-            bbox_tiles = wgs84.tiles_from_bbox(bbox_file, zoom)
+            bbox_tiles = [
+                (tile.zoom, tile.row, tile.col)
+                for tile in wgs84.tiles_from_bbox(bbox_file, zoom)
+            ]
             assert len(set(bbox_tiles).symmetric_difference(set(testtiles))) == 0
             print "bounding box OK"
         except:
@@ -159,7 +169,7 @@ def main(args):
         point = shape(point_file[0]["geometry"])
         try:
             point_tile = [
-                tile
+                (tile.zoom, tile.row, tile.col)
                 for tile in wgs84.tiles_from_geom(point, zoom)
             ]
             assert point_tile == testtile
@@ -197,7 +207,7 @@ def main(args):
         multipoint = shape(multipoint_file[0]["geometry"])
         try:
             multipoint_tiles = [
-                tile
+                (tile.zoom, tile.row, tile.col)
                 for tile in wgs84.tiles_from_geom(multipoint, zoom)
             ]
             assert multipoint_tiles == testtiles
@@ -237,7 +247,10 @@ def main(args):
     with fiona.open(linestring_location) as linestring_file:
         linestring = shape(linestring_file[0]["geometry"])
         try:
-            linestring_tiles = wgs84.tiles_from_geom(linestring, zoom)
+            linestring_tiles = [
+                (tile.zoom, tile.row, tile.col)
+                for tile in wgs84.tiles_from_geom(linestring, zoom)
+                ]
             assert len(set(linestring_tiles).symmetric_difference(set(testtiles))) == 0
             print "LineString OK"
         except:
@@ -277,8 +290,10 @@ def main(args):
     with fiona.open(multilinestring_location) as multilinestring_file:
         multilinestring = shape(multilinestring_file[0]["geometry"])
         try:
-            multilinestring_tiles = wgs84.tiles_from_geom(multilinestring,
-                zoom)
+            multilinestring_tiles = [
+                (tile.zoom, tile.row, tile.col)
+                for tile in wgs84.tiles_from_geom(multilinestring, zoom)
+                ]
             assert len(set(multilinestring_tiles).symmetric_difference(set(testtiles))) == 0
             print "MultiLineString OK"
         except:
@@ -318,7 +333,10 @@ def main(args):
         (8, 59, 280), (8, 60, 280)]
     with fiona.open(polygon_location) as polygon_file:
         polygon = shape(polygon_file[0]["geometry"])
-        polygon_tiles = wgs84.tiles_from_geom(polygon, zoom)
+        polygon_tiles = [
+            (tile.zoom, tile.row, tile.col)
+            for tile in wgs84.tiles_from_geom(polygon, zoom)
+            ]
         try:
             assert len(set(polygon_tiles).symmetric_difference(set(testtiles))) == 0
             print "Polygon OK"
@@ -368,7 +386,10 @@ def main(args):
         (10, 245, 1097), (10, 246, 1097)]
     with fiona.open(multipolygon_location) as multipolygon_file:
         multipolygon = shape(multipolygon_file[0]["geometry"])
-        multipolygon_tiles = wgs84.tiles_from_geom(multipolygon, zoom)
+        multipolygon_tiles = [
+            (tile.zoom, tile.row, tile.col)
+            for tile in wgs84.tiles_from_geom(multipolygon, zoom)
+            ]
         try:
             assert len(set(multipolygon_tiles).symmetric_difference(set(testtiles))) == 0
             print "MultiPolygon OK"
@@ -603,22 +624,22 @@ def main(args):
                 sink.write(feature)
 
     ## test get neighbors
-    tile = (5, 4, 3)
     metatiling = 1
     wgs84_meta = MetaTilePyramid(wgs84, metatiling)
+    tile = wgs84_meta.tile(5, 4, 3)
     for count in range(0, 9):
-        assert len(wgs84_meta.get_neighbors(tile, count=count)) == count
-    assert len(wgs84_meta.get_neighbors(tile, count=9)) == 8
+        assert len(tile.get_neighbors(count=count)) == count
+    assert len(tile.get_neighbors(count=9)) == 8
 
     ## test tile <--> metatile conversion
     metatile = [(10, 44, 33)]
     metatiling = 4
     wgs84_meta = MetaTilePyramid(wgs84, metatiling)
-    tile = (10, 178, 133)
+    small_tile = wgs84_meta.tilepyramid.tile(10, 178, 133)
     test_metatile = [
-        tile
+        (tile.zoom, tile.row, tile.col)
         for tile in wgs84_meta.tiles_from_bbox(
-            wgs84_meta.tilepyramid.tile_bbox(*tile),
+            small_tile.bbox(),
             10
         )
     ]
@@ -647,7 +668,6 @@ def main(args):
     for tile in tiles:
         for band in read_raster_window(
             dummy1,
-            tile_pyramid,
             tile,
             resampling=resampling,
             pixelbuffer=pixelbuffer
@@ -675,8 +695,7 @@ def main(args):
             #     print round(out_right, 8), round(tile_right, 8)
             #     print round(out_top, 8), round(tile_top, 8)
 
-        zoom, row, col = tile
-        outname = str(zoom) + str(row) + str(col) + ".tif"
+        outname = str(tile.zoom) + str(tile.row) + str(tile.col) + ".tif"
         outfile = os.path.join(outdata_directory, outname)
         # write_raster_window(
         #     outfile,
@@ -697,7 +716,6 @@ def main(args):
     #     for band in testfile.read():
     #         print "hubert"
     #         print band.shape
-
 
 if __name__ == "__main__":
     main(sys.argv[1:])
