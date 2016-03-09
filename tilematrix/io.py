@@ -146,7 +146,6 @@ def read_raster_window(
             src.read(index, window=window, masked=True, boundless=True)
             for index in band_indexes
             )
-        dst_bands = ()
         for index in band_indexes:
             dst_band = np.ma.zeros(shape=(shape), dtype=src.dtypes[index-1])
             dst_band[:] = nodataval
@@ -165,6 +164,7 @@ def read_raster_window(
                 resampling=resampling_methods[resampling]
             )
             dst_band = ma.masked_equal(dst_band, nodataval)
+
             yield dst_band
 
 
