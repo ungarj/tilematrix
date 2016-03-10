@@ -13,6 +13,153 @@ from .formats import OutputFormat
 ROUND = 20
 
 
+class Tile(object):
+
+    def __init__(self, tile_pyramid, zoom, row, col):
+        try:
+            assert isinstance(zoom, int)
+        except:
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
+        self.tile_pyramid = tile_pyramid
+        self.crs = tile_pyramid.crs
+        self.zoom = zoom
+        self.row = row
+        self.col = col
+        self.id = (zoom, row, col)
+        self.x_size = self.x_size()
+        self.y_size = self.y_size()
+        self.pixel_x_size = self.tile_pyramid.pixel_x_size(self.zoom)
+        self.pixel_y_size = self.tile_pyramid.pixel_y_size(self.zoom)
+        self.left = float(round(
+            self.tile_pyramid.left+((self.col)*self.x_size),
+            ROUND
+        ))
+        self.top = float(round(
+            self.tile_pyramid.top-((self.row)*self.y_size),
+            ROUND
+        ))
+        self.right = self.left + self.x_size
+        self.bottom = self.top - self.y_size
+        self.width = tile_pyramid.tile_size
+        self.height = tile_pyramid.tile_size
+
+    def x_size(self):
+        """
+        Width of tile in SRID units.
+        """
+        matrix_width = self.tile_pyramid.matrix_width(self.zoom)
+        return float(round(self.tile_pyramid.x_size/matrix_width, ROUND))
+
+    def y_size(self):
+        """
+        Height of tile in SRID units at zoom level.
+        """
+        matrix_height = self.tile_pyramid.matrix_height(self.zoom)
+        return float(round(self.tile_pyramid.y_size/matrix_height, ROUND))
+
+    def bounds(self, pixelbuffer=0):
+        """
+        Tile boundaries with optional pixelbuffer.
+        """
+        left = self.left
+        bottom = self.top - self.y_size
+        right = self.left + self.x_size
+        top = self.top
+        if pixelbuffer > 0:
+            assert isinstance(pixelbuffer, int)
+            offset = self.pixel_x_size * float(pixelbuffer)
+            left -= offset
+            bottom -= offset
+            right += offset
+            top += offset
+        if right > self.tile_pyramid.right:
+            right = self.tile_pyramid.right
+        if bottom < self.tile_pyramid.bottom:
+            bottom = self.tile_pyramid.bottom
+        return (left, bottom, right, top)
+
+    def bbox(self, pixelbuffer=0):
+        """
+        Tile bounding box with optional pixelbuffer.
+        """
+        left, bottom, right, top = self.bounds(pixelbuffer=pixelbuffer)
+        ul = left, top
+        ur = right, top
+        lr = right, bottom
+        ll = left, bottom
+        return Polygon([ul, ur, lr, ll])
+
+    def affine(self, pixelbuffer=0):
+        """
+        Returns an Affine object of tile.
+        """
+        left, bottom, right, top = self.bounds(pixelbuffer=pixelbuffer)
+        px_size = self.pixel_x_size
+        tile_geotransform = (left, px_size, 0.0, top, 0.0, -px_size)
+        tile_affine = Affine.from_gdal(*tile_geotransform)
+        return tile_affine
+
+    def shape(self, pixelbuffer=0):
+        """
+        Returns a tuple of tile width and height
+        """
+        return (self.width + 2 * pixelbuffer, self.height + 2 * pixelbuffer)
+
+    def is_valid(self):
+        """
+        Returns True if tile is available in tile pyramid.
+        """
+        zoom, row, col = tile
+        try:
+            assert isinstance(self.zoom, int)
+            assert self.zoom >= 0
+            assert isinstance(self.col, int)
+            assert self.col >= 0
+            assert isinstance(self.col, int)
+            assert self.col >= 0
+            assert self.col <= self.tile_pyramid.matrix_width(self.zoom)
+            assert self.row <= self.tile_pyramid.matrix_height(self.zoom)
+        except:
+            return False
+        else:
+            return True
+
+    def get_neighbors(self, count=8):
+        """
+        Returns tile neighbors.
+        -------------
+        | 8 | 1 | 5 |
+        -------------
+        | 4 | x | 2 |
+        -------------
+        | 7 | 3 | 6 |
+        -------------
+        """
+        if count > 8:
+            count = 8
+        if count == 0:
+            return []
+        zoom, row, col = self.zoom, self.row, self.col
+        neighbors = []
+        # fill up set with up to 8 direct neighbors
+        for newtile in [
+            self.tile_pyramid.tile(zoom, row-1, col),
+            self.tile_pyramid.tile(zoom, row, col+1),
+            self.tile_pyramid.tile(zoom, row+1, col),
+            self.tile_pyramid.tile(zoom, row, col-1),
+            self.tile_pyramid.tile(zoom, row-1, col+1),
+            self.tile_pyramid.tile(zoom, row+1, col+1),
+            self.tile_pyramid.tile(zoom, row+1, col-1),
+            self.tile_pyramid.tile(zoom, row-1, col-1)
+            ]:
+            # top
+            if newtile.is_valid:
+                neighbors.append(newtile)
+            if len(neighbors) >= count:
+                return neighbors
+
+
+
 class TilePyramid(object):
 
     def __init__(self, projection, tile_size=256):
@@ -23,9 +170,10 @@ class TilePyramid(object):
         try:
             assert projection in projections
         except:
-            print "WMTS tileset '%s' not found. Use one of %s" %(projection,
+            raise ValueError("WMTS tileset '%s' not found. Use one of %s" %(
+                projection,
                 projections)
-            sys.exit(0)
+                )
         self.type = projection
         self.tile_size = tile_size
         if projection == "geodetic":
@@ -42,6 +190,12 @@ class TilePyramid(object):
             # optional output format
             self.format = None
 
+    def tile(self, zoom, row, col):
+        """
+        Returns Tile object.
+        """
+        return Tile(self, zoom, row, col)
+
     def set_format(self, output_format, dtype=None):
         self.format = OutputFormat(output_format)
         if dtype:
@@ -54,8 +208,7 @@ class TilePyramid(object):
         try:
             assert isinstance(zoom, int)
         except:
-            print "Zoom (%s) must be an integer." %(zoom)
-            sys.exit(0)
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
         if self.type == "geodetic":
             width = 2**(zoom+1)
         return width
@@ -67,41 +220,38 @@ class TilePyramid(object):
         try:
             assert isinstance(zoom, int)
         except:
-            print "Zoom (%s) must be an integer." %(zoom)
-            sys.exit(0)
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
         if self.type == "geodetic":
             height = 2**(zoom+1)/2
         return height
 
     def tile_x_size(self, zoom):
         """
-        Width of tile in SRID units at zoom level.
+        Width of a tile in SRID units at zoom level.
         """
         matrix_width = self.matrix_width(zoom)
         try:
             assert isinstance(zoom, int)
         except:
-            print "Zoom (%s) must be an integer." %(zoom)
-            sys.exit(0)
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
         tile_x_size = float(round(self.x_size/matrix_width, ROUND))
         return tile_x_size
 
     def tile_y_size(self, zoom):
         """
-        Height of tile in SRID units at zoom level.
+        Height of a tile in SRID units at zoom level.
         """
         matrix_height = self.matrix_height(zoom)
         try:
             assert isinstance(zoom, int)
         except:
-            print "Zoom (%s) must be an integer." %(zoom)
-            sys.exit(0)
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
         tile_y_size = float(round(self.y_size/matrix_height, ROUND))
         return tile_y_size
 
     def pixel_x_size(self, zoom):
         """
-        Size of pixels in SRID units at zoom level.
+        Size of a pixel in SRID units at zoom level.
         """
         pixel_x_size = float(round(
             self.tile_x_size(zoom) / self.tile_size,
@@ -110,66 +260,24 @@ class TilePyramid(object):
 
     def pixel_y_size(self, zoom):
         """
-        Size of pixels in SRID units at zoom level.
+        Size of a pixel in SRID units at zoom level.
         """
         pixel_y_size = float(round(
             self.tile_y_size(zoom) / self.tile_size,
             ROUND))
         return pixel_y_size
 
-    def top_left_tile_coords(self, zoom, row, col):
-        """
-        Top left coordinate of tile.
-        """
-        left, upper = top_left_tile_coords(self, zoom, row, col)
-        return left, upper
-
-    def tile_bounds(self, zoom, row, col, pixelbuffer=None):
-        """
-        Tile boundaries with optional pixelbuffer.
-        """
-        bounds = tile_bounds(self, zoom, row, col, pixelbuffer=pixelbuffer)
-        return bounds
-
-    def tile_bbox(self, zoom, row, col, pixelbuffer=None):
-        """
-        Tile bounding box with optional pixelbuffer as WKT.
-        """
-        bbox = tile_bbox(self, zoom, row, col, pixelbuffer=pixelbuffer)
-        return bbox
-
     def tiles_from_bbox(self, geometry, zoom):
         """
-        All tiles intersecting with given bounding box.
+        All metatiles intersecting with given bounding box.
         """
-        tilelist = tiles_from_bbox(self, geometry, zoom)
-        return tilelist
+        return tiles_from_bbox(self, geometry, zoom)
 
     def tiles_from_geom(self, geometry, zoom):
         """
-        All tiles intersecting with input geometry.
+        All metatiles intersecting with input geometry.
         """
-        tilelist = tiles_from_geom(self, geometry, zoom)
-        return tilelist
-
-    def get_neighbors(self, tile, count):
-        """
-        Returns tile neighbors.
-        """
-        neighbors = get_neighbors(self, tile, count)
-        return neighbors
-
-    def tile_is_valid(self, tile):
-        """
-        Returns True if tile is available in tile pyramid.
-        """
-        return tile_is_valid(self, tile)
-
-    def tile_affine(self, tile, pixelbuffer=0):
-        """
-        Returns an Affine object of tile.
-        """
-        return tile_affine(self, tile)
+        return tiles_from_geom(self, geometry, zoom)
 
 
 class MetaTilePyramid(TilePyramid):
@@ -200,7 +308,11 @@ class MetaTilePyramid(TilePyramid):
         self.type = tilepyramid.type
         self.crs = tilepyramid.crs
 
-
+    def tile(self, zoom, row, col):
+        """
+        Returns Tile object of underlying tile_pyramid.
+        """
+        return Tile(self, zoom, row, col)
 
     def matrix_width(self, zoom):
         """
@@ -209,8 +321,7 @@ class MetaTilePyramid(TilePyramid):
         try:
             assert isinstance(zoom, int)
         except:
-            print "Zoom (%s) must be an integer." %(zoom)
-            sys.exit(0)
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
         if self.type == "geodetic":
             width = self.tilepyramid.matrix_width(zoom)
             width = math.ceil(width / float(self.metatiles))
@@ -225,8 +336,7 @@ class MetaTilePyramid(TilePyramid):
         try:
             assert isinstance(zoom, int)
         except:
-            print "Zoom (%s) must be an integer." %(zoom)
-            sys.exit(0)
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
         if self.type == "geodetic":
             height = self.tilepyramid.matrix_height(zoom)
             height = math.ceil(height / float(self.metatiles))
@@ -242,8 +352,7 @@ class MetaTilePyramid(TilePyramid):
         try:
             assert isinstance(zoom, int)
         except:
-            print "Zoom (%s) must be an integer." %(zoom)
-            sys.exit(0)
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
         if self.tilepyramid.matrix_width(zoom) >= self.metatiles:
             metatile_width = self.tilepyramid.tile_size*self.metatiles
         else:
@@ -260,8 +369,7 @@ class MetaTilePyramid(TilePyramid):
         try:
             assert isinstance(zoom, int)
         except:
-            print "Zoom (%s) must be an integer." %(zoom)
-            sys.exit(0)
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
         if self.tilepyramid.matrix_height(zoom) >= self.metatiles:
             metatile_height = self.tilepyramid.tile_size*self.metatiles
         else:
@@ -277,8 +385,7 @@ class MetaTilePyramid(TilePyramid):
         try:
             assert isinstance(zoom, int)
         except:
-            print "Zoom (%s) must be an integer." %(zoom)
-            sys.exit(0)
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
         tile_x_size = self.tilepyramid.tile_x_size(zoom)
         metatile_x_size = tile_x_size * float(self.metatiles)
         if metatile_x_size > self.x_size:
@@ -292,8 +399,7 @@ class MetaTilePyramid(TilePyramid):
         try:
             assert isinstance(zoom, int)
         except:
-            print "Zoom (%s) must be an integer." %(zoom)
-            sys.exit(0)
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
         tile_y_size = self.tilepyramid.tile_y_size(zoom)
         metatile_y_size = tile_y_size * float(self.metatiles)
         if metatile_y_size > self.y_size:
@@ -302,7 +408,7 @@ class MetaTilePyramid(TilePyramid):
 
     def pixel_x_size(self, zoom):
         """
-        Size of pixels in SRID units at zoom level.
+        Size of a pixel in SRID units at zoom level.
         """
         pixel_x_size = float(round(
             self.metatile_x_size(zoom) / self.metatile_width(zoom),
@@ -311,51 +417,24 @@ class MetaTilePyramid(TilePyramid):
 
     def pixel_y_size(self, zoom):
         """
-        Size of pixels in SRID units at zoom level.
+        Size of a pixel in SRID units at zoom level.
         """
         pixel_y_size = float(round(
             self.metatile_y_size(zoom) / self.metatile_height(zoom),
             ROUND))
         return pixel_y_size
 
-    def top_left_tile_coords(self, zoom, row, col):
-        """
-        Top left coordinate of metatile.
-        """
-        try:
-            left, upper = top_left_tile_coords(self, zoom, row, col)
-            return left, upper
-        except:
-            print "ERROR determining tile coordinates."
-            raise
-
-    def tile_bounds(self, zoom, row, col, pixelbuffer=None):
-        """
-        Metatile boundaries with optional pixelbuffer.
-        """
-        bounds = tile_bounds(self, zoom, row, col, pixelbuffer=pixelbuffer)
-        return bounds
-
-    def tile_bbox(self, zoom, row, col, pixelbuffer=None):
-        """
-        Metatile bounding box with optional pixelbuffer as WKT.
-        """
-        bbox = tile_bbox(self, zoom, row, col, pixelbuffer=pixelbuffer)
-        return bbox
-
     def tiles_from_bbox(self, geometry, zoom):
         """
         All metatiles intersecting with given bounding box.
         """
-        tilelist = tiles_from_bbox(self, geometry, zoom)
-        return tilelist
+        return tiles_from_bbox(self, geometry, zoom)
 
     def tiles_from_geom(self, geometry, zoom):
         """
         All metatiles intersecting with input geometry.
         """
-        tilelist = tiles_from_geom(self, geometry, zoom)
-        return tilelist
+        return tiles_from_geom(self, geometry, zoom)
 
     def tiles_from_tilepyramid(self, zoom, row, col, geometry=None):
         """
@@ -369,100 +448,9 @@ class MetaTilePyramid(TilePyramid):
         else:
             tilelist = tilepyramid.tiles_from_bbox(metatile_bbox, zoom)
         return tilelist
-
-    def get_neighbors(self, tile, count):
-        """
-        Returns tile neighbors.
-        """
-        neighbors = get_neighbors(self, tile, count)
-        return neighbors
-
-    def tile_is_valid(self, tile):
-        """
-        Returns True if tile is available in tile pyramid.
-        """
-        return tile_is_valid(self, tile)
-
-    def tile_affine(self, tile, pixelbuffer=0):
-        """
-        Returns an Affine object of tile.
-        """
-        return tile_affine(self, tile)
-
-
 """
 Shared methods for TilePyramid and MetaTilePyramid.
 """
-def tile_bounds(tilepyramid, zoom, row, col, pixelbuffer=None):
-    """
-    Tile boundaries with optional pixelbuffer.
-    """
-    try:
-        assert isinstance(zoom, int)
-    except:
-        print "Zoom (%s) must be an integer." %(zoom)
-        sys.exit(0)
-    tile_x_size = tilepyramid.tile_x_size(zoom)
-    tile_y_size = tilepyramid.tile_y_size(zoom)
-    ul = tilepyramid.top_left_tile_coords(zoom, row, col)
-    left = ul[0]
-    bottom = ul[1] - tile_y_size
-    right = ul[0] + tile_x_size
-    top = ul[1]
-    if pixelbuffer:
-        assert isinstance(pixelbuffer, int)
-        offset = tilepyramid.pixel_x_size(zoom) * float(pixelbuffer)
-        left -= offset
-        bottom -= offset
-        right += offset
-        top += offset
-    if right > tilepyramid.right:
-        right = tilepyramid.right
-    if bottom < tilepyramid.bottom:
-        bottom = tilepyramid.bottom
-    return (left, bottom, right, top)
-
-
-def tile_bbox(tilepyramid, zoom, row, col, pixelbuffer=None):
-    """
-    Tile bounding box with optional pixelbuffer as WKT.
-    """
-    try:
-        assert isinstance(zoom, int)
-    except:
-        print "Zoom (%s) must be an integer." %(zoom)
-        sys.exit(0)
-    left, bottom, right, top = tilepyramid.tile_bounds(zoom, row, col,
-        pixelbuffer=pixelbuffer)
-    ul = left, top
-    ur = right, top
-    lr = right, bottom
-    ll = left, bottom
-    return Polygon([ul, ur, lr, ll])
-
-
-def top_left_tile_coords(tilepyramid, zoom, row, col):
-    """
-    Top left coordinate of tile.
-    """
-    try:
-        assert isinstance(zoom, int)
-    except:
-        print "Zoom (%s) must be an integer." %(zoom)
-        sys.exit(0)
-    tile_x_size = tilepyramid.tile_x_size(zoom)
-    tile_y_size = tilepyramid.tile_y_size(zoom)
-    matrix_width = tilepyramid.matrix_width(zoom)
-    matrix_height = tilepyramid.matrix_height(zoom)
-
-    if (col > matrix_width) or (row > matrix_height):
-        print "no tile indices available on this zoom"
-        print zoom, row, col
-        print tilepyramid.tiles_per_zoom(zoom)
-    else:
-        left = float(round(tilepyramid.left+((col)*tile_x_size), ROUND))
-        upper = float(round(tilepyramid.top-((row)*tile_y_size), ROUND))
-        return left, upper
 
 
 def tiles_from_bbox(tilepyramid, geometry, zoom):
@@ -472,8 +460,7 @@ def tiles_from_bbox(tilepyramid, geometry, zoom):
     try:
         assert isinstance(zoom, int)
     except:
-        print "Zoom (%s) must be an integer." %(zoom)
-        sys.exit(0)
+        raise ValueError("Zoom (%s) must be an integer." %(zoom))
     tile_x_size = tilepyramid.tile_x_size(zoom)
     tile_y_size = tilepyramid.tile_y_size(zoom)
     l, b, r, t = geometry.bounds
@@ -500,7 +487,7 @@ def tiles_from_bbox(tilepyramid, geometry, zoom):
         row += 1
         rows.append(row)
     for tile in list(product([zoom], rows, cols)):
-        yield tile
+        yield tilepyramid.tile(*tile)
 
 
 def tiles_from_geom(tilepyramid, geometry, zoom):
@@ -512,7 +499,6 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
         assert geometry.is_valid
     except:
         print "WARNING: geometry seems not to be valid"
-        #print explain_validity(geometry)
         try:
             clean = geometry.buffer(0.0)
             assert clean.is_valid
@@ -520,7 +506,8 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
             geometry = clean
             print "... cleaning successful"
         except:
-            print "... geometry could not be fixed"
+            print explain_validity(geometry)
+            raise IOError("... geometry could not be fixed")
 
     if geometry.almost_equals(geometry.envelope, ROUND):
         for tile in tilepyramid.tiles_from_bbox(geometry, zoom):
@@ -540,85 +527,13 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
         while tilelat > lat:
             tilelat -= tile_y_size
             row += 1
-        yield (zoom, row, col)
+        yield tilepyramid.tile(zoom, row, col)
 
     elif geometry.geom_type in ("LineString", "MultiLineString", "Polygon",
         "MultiPolygon", "MultiPoint"):
         prepared_geometry = prep(geometry)
         for tile in tilepyramid.tiles_from_bbox(geometry, zoom):
-            if prepared_geometry.intersects(tilepyramid.tile_bbox(*tile)):
+            if prepared_geometry.intersects(tile.bbox()):
                 yield tile
     else:
         print "ERROR: no valid geometry"
-
-
-
-def get_neighbors(self, tile, count):
-    """
-    Returns tile neighbors.
-    -------------
-    | 8 | 1 | 5 |
-    -------------
-    | 4 | x | 2 |
-    -------------
-    | 7 | 3 | 6 |
-    -------------
-    """
-    if count > 8:
-        count = 8
-    if count == 0:
-        return []
-    zoom, row, col = tile
-    neighbors = []
-    # fill up set with up to 8 direct neighbors
-    for newtile in [
-        (zoom, row-1, col),
-        (zoom, row, col+1),
-        (zoom, row+1, col),
-        (zoom, row, col-1),
-        (zoom, row-1, col+1),
-        (zoom, row+1, col+1),
-        (zoom, row+1, col-1),
-        (zoom, row-1, col-1)
-        ]:
-        # top
-        if self.tile_is_valid(newtile):
-            neighbors.append(newtile)
-        if len(neighbors) >= count:
-            return neighbors
-
-
-def tile_is_valid(self, tile):
-    """
-    Returns True if tile is available in tile pyramid.
-    """
-    zoom, row, col = tile
-    try:
-        assert isinstance(zoom, int)
-        assert zoom >= 0
-        assert isinstance(col, int)
-        assert col >= 0
-        assert isinstance(col, int)
-        assert col >= 0
-        assert col <= self.matrix_width(zoom)
-        assert row <= self.matrix_height(zoom)
-    except:
-        return False
-    else:
-        return True
-
-
-def tile_affine(self, tile, pixelbuffer=0):
-    """
-    Returns an Affine object of tile.
-    """
-    zoom, row, col = tile
-    # Get tile bounds including pixel buffer.
-    left, bottom, right, top = self.tile_bounds(
-        *tile,
-        pixelbuffer=pixelbuffer
-        )
-    px_size = self.pixel_x_size(zoom)
-    tile_geotransform = (left, px_size, 0.0, top, 0.0, -px_size)
-    tile_affine = Affine.from_gdal(*tile_geotransform)
-    return tile_affine
