@@ -155,7 +155,6 @@ def read_raster_window(
 
 def write_raster_window(
     output_file,
-    tile_pyramid,
     tile,
     metadata,
     bands,
@@ -163,12 +162,6 @@ def write_raster_window(
     """
     Writes numpy array into a TilePyramid tile.
     """
-    try:
-        assert (isinstance(tile_pyramid, TilePyramid) or
-            isinstance(tile_pyramid, MetaTilePyramid))
-    except:
-        raise ValueError("no valid tile matrix given")
-
     try:
         assert pixelbuffer >= 0
     except:
@@ -179,19 +172,16 @@ def write_raster_window(
     except:
         raise ValueError("pixelbuffer must be an integer")
 
-    zoom, row, col = tile
-
     # get write window bounds (i.e. tile bounds plus pixelbuffer) in affine
-    dst_left, dst_bottom, dst_right, dst_top = tile_pyramid.tile_bounds(zoom,
-        row, col, pixelbuffer)
+    dst_left, dst_bottom, dst_right, dst_top = tile.bounds(pixelbuffer)
 
-    dst_width = tile_pyramid.tile_size + (pixelbuffer * 2)
-    dst_height = tile_pyramid.tile_size + (pixelbuffer * 2)
-    pixel_x_size = tile_pyramid.pixel_x_size(zoom)
-    pixel_y_size = tile_pyramid.pixel_y_size(zoom)
+    dst_width = tile.width + (pixelbuffer * 2)
+    dst_height = tile.height + (pixelbuffer * 2)
+    pixel_x_size = tile.pixel_x_size
+    pixel_y_size = tile.pixel_y_size
     dst_affine = calculate_default_transform(
-        tile_pyramid.crs,
-        tile_pyramid.crs,
+        tile.crs,
+        tile.crs,
         dst_width,
         dst_height,
         dst_left,
@@ -199,8 +189,8 @@ def write_raster_window(
         dst_right,
         dst_top,
         resolution=(
-            tile_pyramid.pixel_x_size(zoom),
-            tile_pyramid.pixel_y_size(zoom)
+            tile.pixel_x_size,
+            tile.pixel_x_size
         ))[0]
 
     # convert to pixel coordinates
@@ -219,7 +209,7 @@ def write_raster_window(
 
     dst_bands = []
 
-    if tile_pyramid.format.name == "PNG_hillshade":
+    if tile.tile_pyramid.format.name == "PNG_hillshade":
         zeros = np.zeros(bands[0][px_top:px_bottom, px_left:px_right].shape)
         for band in range(1,4):
             dst_bands.append(zeros)
@@ -227,7 +217,7 @@ def write_raster_window(
     for band in bands:
         dst_bands.append(band[px_top:px_bottom, px_left:px_right])
 
-    if tile_pyramid.format.name == "PNG":
+    if tile.tile_pyramid.format.name == "PNG":
         mask = ma.getmask(bands[0], )
         nodata_alpha = np.zeros(bands[0].shape)
         nodata_alpha[:] = 255
@@ -236,10 +226,10 @@ def write_raster_window(
 
 
     # write to output file
-    dst_metadata = deepcopy(tile_pyramid.format.profile)
+    dst_metadata = deepcopy(tile.tile_pyramid.format.profile)
     dst_metadata.pop("transform", None)
     dst_metadata["nodata"] = metadata["nodata"]
-    dst_metadata["crs"] = tile_pyramid.crs['init']
+    dst_metadata["crs"] = tile.crs['init']
     dst_metadata["width"] = dst_width
     dst_metadata["height"] = dst_height
     dst_metadata["affine"] = dst_affine
@@ -253,7 +243,7 @@ def write_raster_window(
         dst_metadata.update(predictor=metadata["predictor"])
     except:
         pass
-    if tile_pyramid.format.name in ("PNG", "PNG_hillshade"):
+    if tile.tile_pyramid.format.name in ("PNG", "PNG_hillshade"):
         dst_metadata.update(dtype='uint8')
     with rasterio.open(output_file, 'w', **dst_metadata) as dst:
         for band, data in enumerate(dst_bands):

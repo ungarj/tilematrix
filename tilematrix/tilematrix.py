@@ -25,6 +25,7 @@ class Tile(object):
         self.zoom = zoom
         self.row = row
         self.col = col
+        self.id = (zoom, row, col)
         self.x_size = self.x_size()
         self.y_size = self.y_size()
         self.pixel_x_size = self.tile_pyramid.pixel_x_size(self.zoom)
