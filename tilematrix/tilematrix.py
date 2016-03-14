@@ -25,9 +25,9 @@ class Tile(object):
         self.zoom = zoom
         self.row = row
         self.col = col
+        self.x_size = self._get_x_size()
+        self.y_size = self._get_y_size()
         self.id = (zoom, row, col)
-        self.x_size = self.x_size()
-        self.y_size = self.y_size()
         self.pixel_x_size = self.tile_pyramid.pixel_x_size(self.zoom)
         self.pixel_y_size = self.tile_pyramid.pixel_y_size(self.zoom)
         self.left = float(round(
@@ -43,19 +43,34 @@ class Tile(object):
         self.width = tile_pyramid.tile_size
         self.height = tile_pyramid.tile_size
 
-    def x_size(self):
-        """
-        Width of tile in SRID units.
-        """
-        matrix_width = self.tile_pyramid.matrix_width(self.zoom)
-        return float(round(self.tile_pyramid.x_size/matrix_width, ROUND))
 
-    def y_size(self):
+    def _get_x_size(self):
+        """
+        Width of tile in SRID units at zoom level.
+        """
+        if isinstance(self.tile_pyramid, MetaTilePyramid):
+            tile_x_size = self.tile_pyramid.tilepyramid.tile_x_size(self.zoom)
+            metatile_x_size = tile_x_size * float(self.tile_pyramid.metatiles)
+            if metatile_x_size > self.tile_pyramid.x_size:
+                metatile_x_size = self.tile_pyramid.x_size
+            return metatile_x_size
+        else:
+            return self.tile_pyramid.tile_x_size(self.zoom)
+
+
+    def _get_y_size(self):
         """
         Height of tile in SRID units at zoom level.
         """
-        matrix_height = self.tile_pyramid.matrix_height(self.zoom)
-        return float(round(self.tile_pyramid.y_size/matrix_height, ROUND))
+        if isinstance(self.tile_pyramid, MetaTilePyramid):
+            tile_y_size = self.tile_pyramid.tilepyramid.tile_y_size(self.zoom)
+            metatile_y_size = tile_y_size * float(self.tile_pyramid.metatiles)
+            if metatile_y_size > self.tile_pyramid.y_size:
+                metatile_y_size = self.tile_pyramid.y_size
+            return metatile_y_size
+        else:
+            return self.tile_pyramid.tile_y_size(self.zoom)
+
 
     def bounds(self, pixelbuffer=0):
         """
