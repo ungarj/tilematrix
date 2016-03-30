@@ -133,8 +133,8 @@ def read_raster_window(
             )
         for index in band_indexes:
             dst_band = np.ma.zeros(
-                shape=(tile.shape(pixelbuffer=pixelbuffer)),
-                dtype=src.dtypes[index-1]
+                (tile.shape(pixelbuffer=pixelbuffer)),
+                src.dtypes[index-1]
             )
             dst_band[:] = nodataval
             reproject(
@@ -267,17 +267,18 @@ def file_bbox(
     """
     out_crs = tile_pyramid.crs
     # Read raster data with rasterio, vector data with fiona.
-    try:
+    extension = os.path.splitext(input_file)[1][1:]
+    if extension in ["shp", "geojson"]:
+        with fiona.open(input_file) as inp:
+            inp_crs = inp.crs
+            left, bottom, right, top = inp.bounds
+    else:
         with rasterio.open(input_file) as inp:
             inp_crs = inp.crs
             left = inp.bounds.left
             bottom = inp.bounds.bottom
             right = inp.bounds.right
             top = inp.bounds.top
-    except IOError:
-        with fiona.open(input_file) as inp:
-            inp_crs = inp.srs
-            left, bottom, right, top = inp.bounds
 
     # Create bounding box polygon.
     tl = [left, top]

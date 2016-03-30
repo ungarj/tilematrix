@@ -550,5 +550,7 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
         for tile in tilepyramid.tiles_from_bbox(geometry, zoom):
             if prepared_geometry.intersects(tile.bbox()):
                 yield tile
+    elif geometry.is_empty:
+        pass
     else:
-        print "ERROR: no valid geometry"
+        raise ValueError("ERROR: no valid geometry")
