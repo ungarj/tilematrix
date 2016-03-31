@@ -175,36 +175,17 @@ def write_raster_window(
     # get write window bounds (i.e. tile bounds plus pixelbuffer) in affine
     dst_left, dst_bottom, dst_right, dst_top = tile.bounds(pixelbuffer)
 
-    dst_width = tile.width + (pixelbuffer * 2)
-    dst_height = tile.height + (pixelbuffer * 2)
+    dst_width, dst_height = tile.shape(pixelbuffer)
     pixel_x_size = tile.pixel_x_size
     pixel_y_size = tile.pixel_y_size
-    dst_affine = calculate_default_transform(
-        tile.crs,
-        tile.crs,
-        dst_width,
-        dst_height,
-        dst_left,
-        dst_bottom,
-        dst_right,
-        dst_top,
-        resolution=(
-            tile.pixel_x_size,
-            tile.pixel_x_size
-        ))[0]
+    dst_affine = tile.affine(pixelbuffer)
 
-    # convert to pixel coordinates
-    affine = metadata["affine"]
-    input_left, input_top = affine * (0, 0)
-    input_right, input_bottom = affine * (metadata["width"], metadata["height"])
-    ul = input_left, input_top
-    ur = input_right, input_top
-    lr = input_right, input_bottom
-    ll = input_left, input_bottom
-    px_left = int(round(((dst_left - input_left) / pixel_x_size), 0))
-    px_bottom = int(round(((input_top - dst_bottom) / pixel_y_size), 0))
-    px_right = int(round(((dst_right - input_left) / pixel_x_size), 0))
-    px_top = int(round(((input_top - dst_top) / pixel_y_size), 0))
+    # determine pixelbuffer from shape and determine pixel window
+    src_pixelbuffer = (bands[0].shape[0] - tile.width) / 2
+    px_top, px_left = src_pixelbuffer, src_pixelbuffer
+    other_bound = src_pixelbuffer + tile.width
+    px_bottom, px_right = other_bound, other_bound
+
     window = (px_top, px_bottom), (px_left, px_right)
 
     dst_bands = []
