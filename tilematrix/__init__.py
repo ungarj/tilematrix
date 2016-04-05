@@ -16,5 +16,5 @@ from .io import (
     read_vector_window,
     file_bbox,
     get_best_zoom_level,
-    resampling_methods
+    RESAMPLING_METHODS
 )

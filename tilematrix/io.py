@@ -22,7 +22,7 @@ import pyproj
 
 from tilematrix import *
 
-resampling_methods = {
+RESAMPLING_METHODS = {
     "nearest": RESAMPLING.nearest,
     "bilinear": RESAMPLING.bilinear,
     "cubic": RESAMPLING.cubic,
@@ -146,10 +146,9 @@ def read_raster_window(
                 dst_transform=tile.affine(pixelbuffer=pixelbuffer),
                 dst_crs=tile.crs,
                 dst_nodata=nodataval,
-                resampling=resampling_methods[resampling]
+                resampling=RESAMPLING_METHODS[resampling]
             )
             dst_band = ma.masked_equal(dst_band, nodataval)
-
             yield dst_band
 
 
@@ -193,18 +192,22 @@ def write_raster_window(
     if tile.tile_pyramid.format.name == "PNG_hillshade":
         zeros = np.zeros(bands[0][px_top:px_bottom, px_left:px_right].shape)
         for band in range(1,4):
+            band[band>255] = 255
+            band[band<0] = 0
             dst_bands.append(zeros)
 
     for band in bands:
         dst_bands.append(band[px_top:px_bottom, px_left:px_right])
 
     if tile.tile_pyramid.format.name == "PNG":
+        for band in bands:
+            band[band>255] = 255
+            band[band<0] = 0
         mask = ma.getmask(bands[0], )
         nodata_alpha = np.zeros(bands[0].shape)
         nodata_alpha[:] = 255
         nodata_alpha[mask] = 0
         dst_bands.append(nodata_alpha[px_top:px_bottom, px_left:px_right])
-
 
     # write to output file
     dst_metadata = deepcopy(tile.tile_pyramid.format.profile)
