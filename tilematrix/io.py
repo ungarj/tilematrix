@@ -149,6 +149,7 @@ def read_raster_window(
                 resampling=RESAMPLING_METHODS[resampling]
             )
             dst_band = ma.masked_equal(dst_band, nodataval)
+            dst_band.harden_mask()
             yield dst_band
 
 
@@ -199,15 +200,18 @@ def write_raster_window(
     for band in bands:
         dst_bands.append(band[px_top:px_bottom, px_left:px_right])
 
+    bandcount = tile.tile_pyramid.format.profile["count"]
+
     if tile.tile_pyramid.format.name == "PNG":
         for band in bands:
             band[band>255] = 255
             band[band<0] = 0
-        mask = ma.getmask(bands[0], )
-        nodata_alpha = np.zeros(bands[0].shape)
-        nodata_alpha[:] = 255
-        nodata_alpha[mask] = 0
-        dst_bands.append(nodata_alpha[px_top:px_bottom, px_left:px_right])
+        if tile.tile_pyramid.format.profile["nodata"]:
+            nodata_alpha = np.zeros(bands[0].shape)
+            nodata_alpha[:] = 255
+            nodata_alpha[bands[0].mask] = 0
+            dst_bands.append(nodata_alpha[px_top:px_bottom, px_left:px_right])
+            bandcount += 1
 
     # write to output file
     dst_metadata = deepcopy(tile.tile_pyramid.format.profile)
@@ -218,7 +222,12 @@ def write_raster_window(
     dst_metadata["affine"] = dst_affine
 
     if tile.tile_pyramid.format.name in ("PNG", "PNG_hillshade"):
-        dst_metadata.update(dtype='uint8')
+        dst_metadata.update(
+            dtype='uint8',
+            count=bandcount
+        )
+
+    assert len(dst_bands) == dst_metadata["count"]
     with rasterio.open(output_file, 'w', **dst_metadata) as dst:
         for band, data in enumerate(dst_bands):
             data = np.ma.filled(data, dst_metadata["nodata"])
@@ -334,7 +343,7 @@ def get_best_zoom_level(input_file, tile_pyramid_type):
     )
 
     for zoom in range(0, 25):
-        if (tile_pyramid.pixel_x_size(zoom) < avg_resolution):
+        if (tile_pyramid.pixel_x_size(zoom) <= avg_resolution):
             return zoom-1
 
     raise ValueError("no fitting zoom level found")
