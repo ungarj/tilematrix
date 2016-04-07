@@ -44,13 +44,16 @@ class OutputFormat(object):
 
         if self.format == "GTiff":
             self.profile = profiles.DefaultGTiffProfile().defaults
-            self.profile.update(driver="GTiff")
+            self.profile.update(
+                driver="GTiff",
+                nodata=None
+                )
             self._gpkg = False
 
         if self.format == "PNG":
             self.profile = {
-                'dtype': np.uint8,
-                'nodata': 0,
+                'dtype': 'uint8',
+                'nodata': None,
                 'driver': 'PNG',
                 'count': 3
             }
