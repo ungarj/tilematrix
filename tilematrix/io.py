@@ -62,21 +62,18 @@ def read_vector_window(
     # tile_pyramid crs
 
     with fiona.open(input_file, 'r') as vector:
-        features_clipped = [
-            {
-                'properties': feature['properties'],
-                'geometry': mapping(
-                    tile.bbox(pixelbuffer=pixelbuffer).intersection(
-                        shape(feature['geometry'])
-                    )
-                )
-            }
-            for feature in vector.filter(
-                bbox=tile.bounds(pixelbuffer=pixelbuffer)
+        for feature in vector.filter(
+            bbox=tile.bounds(pixelbuffer=pixelbuffer)
+        ):
+            geom = tile.bbox(pixelbuffer=pixelbuffer).intersection(
+                shape(feature['geometry'])
             )
-        ]
+            feature = {
+                'properties': feature['properties'],
+                'geometry': mapping(geom)
+            }
 
-    return features_clipped
+        yield feature
 
 def read_raster_window(
     input_file,
