@@ -190,8 +190,7 @@ def write_raster_window(
     if tile.tile_pyramid.format.name == "PNG_hillshade":
         zeros = np.zeros(bands[0][px_top:px_bottom, px_left:px_right].shape)
         for band in range(1,4):
-            band[band>255] = 255
-            band[band<0] = 0
+            band = np.clip(band, 0, 255)
             dst_bands.append(zeros)
 
     for band in bands:
@@ -201,8 +200,7 @@ def write_raster_window(
 
     if tile.tile_pyramid.format.name == "PNG":
         for band in bands:
-            band[band>255] = 255
-            band[band<0] = 0
+            band = np.clip(band, 0, 255)
         if tile.tile_pyramid.format.profile["nodata"]:
             nodata_alpha = np.zeros(bands[0].shape)
             nodata_alpha[:] = 255
