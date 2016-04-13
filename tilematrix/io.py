@@ -73,7 +73,7 @@ def read_vector_window(
                 'geometry': mapping(geom)
             }
 
-        yield feature
+            yield feature
 
 def read_raster_window(
     input_file,
