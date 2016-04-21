@@ -146,6 +146,10 @@ def read_raster_window(
                 resampling=RESAMPLING_METHODS[resampling]
             )
             dst_band = ma.masked_equal(dst_band, nodataval)
+            dst_band = ma.masked_array(
+                dst_band,
+                mask=ma.fix_invalid(dst_band, fill_value=0).mask
+            )
             dst_band.harden_mask()
             yield dst_band
 
