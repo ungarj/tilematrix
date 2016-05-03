@@ -1,8 +1,82 @@
-# TilePyramid
+# The tilematrix objects
 
-This section describes how the ``TilePyramid`` and ``MetaTilePyramid`` objects work.
+## Tile
 
-## The TilePyramid object
+**Create a Tile object**
+```python
+Tile(tile_pyramid, zoom, row, col)
+```
+* ``self.type``: A ``TilePyramid`` or ``MetaTilePyramid`` this tile inherits certain attributes from.
+* ``self.zoom``: Tile zoom level.
+* ``self.row``: Tile row.
+* ``self.col``: Tile column.
+
+After initializing, the object has the following properties:
+* ``self.tile_pyramid``: ``TilePyramid`` or ``MetaTilePyramid`` it was initialized with.
+* ``self.crs``: Coordinate reference system.
+* ``self.zoom``: Zoom.
+* ``self.row``: Row.
+* ``self.col``: Col.
+* ``self.x_size``: Horizontal size in SRID units.
+* ``self.y_size``: Vertical size in SRID units.
+* ``self.id``: Tuple of ``(zoom, col, row)``
+* ``self.pixel_x_size``: Horizontal pixel size in SRID units.
+* ``self.pixel_y_size``: Vertical pixel size in SRID units.
+* ``self.left``: Left coordinate.
+* ``self.top``: Top coordinate.
+* ``self.right``: Right coordinate.
+* ``self.bottom``: Bottom coordinate.
+* ``self.width``: Horizontal size in pixels.
+* ``self.height``: Vertical size in pixels.
+
+**Get tile bounds**
+```python
+bounds(self, pixelbuffer=0)
+```
+* ``pixelbuffer``: Optional buffer around tile boundaries in pixels.
+
+Returns a tuple of ``(left, bottom, right, top)`` coordinates.
+
+**Get tile bounding box**
+```python
+bbox(self, pixelbuffer=0)
+```
+* ``pixelbuffer``: Optional buffer around tile boundaries in pixels.
+
+Returns a ``Polygon`` geometry.
+
+**Get affine matrix**
+```python
+affine(self, pixelbuffer=0)
+```
+* ``pixelbuffer``: Optional buffer around tile boundaries in pixels.
+
+Returns an ``affine`` object.
+
+**Get tile shape**
+```python
+shape(self, pixelbuffer=0)
+```
+* ``pixelbuffer``: Optional buffer around tile boundaries in pixels.
+
+Returns a tuple with ``(width, height)``.
+
+**Check validity**
+```python
+is_valid(self)
+```
+
+Returns ``True`` if tile ID is valid in this tile matrix and ``False`` if it isn't.
+
+**Get tile neighbors**
+```python
+bbox(self, count=0)
+```
+* ``count``: Number of neighbors to be returned (maximum 8).
+
+Returns neighbor tiles.
+
+## TilePyramid
 
 **Create a TilePyramid object**
 ```python
@@ -107,7 +181,7 @@ tiles_from_geom(self, geometry, zoom):
 Returns tiles intersecting with the given geometry at given zoom level.
 
 
-## The MetaTilePyramid object
+## MetaTilePyramid
 
 A ``MetaTilePyramid`` object needs a ``TilePyramid`` object to be initialized and shares all its attributes and functions. It is basically a commen tile matrix with bigger tiles. This is usefull, as processing bigger tiles increases the performance.
 

@@ -2,6 +2,7 @@
 
 import os
 from rasterio import profiles
+import numpy as np
 
 class OutputFormat(object):
     """
@@ -43,14 +44,18 @@ class OutputFormat(object):
 
         if self.format == "GTiff":
             self.profile = profiles.DefaultGTiffProfile().defaults
-            self.profile.update(driver="GTiff")
+            self.profile.update(
+                driver="GTiff",
+                nodata=None
+                )
             self._gpkg = False
 
         if self.format == "PNG":
             self.profile = {
                 'dtype': 'uint8',
-                'nodata': 0,
-                'driver': 'PNG'
+                'nodata': None,
+                'driver': 'PNG',
+                'count': 3
             }
             self._gpkg = False
 
@@ -75,9 +80,7 @@ class OutputFormat(object):
             pass
             # TODO initialize SQLite file
         else:
-            zoom, row, col = tile
-
-            zoomdir = os.path.join(output_name, str(zoom))
+            zoomdir = os.path.join(output_name, str(tile.zoom))
             if os.path.exists(zoomdir):
                 pass
             else:
@@ -85,7 +88,7 @@ class OutputFormat(object):
                     os.makedirs(zoomdir)
                 except:
                     pass
-            rowdir = os.path.join(zoomdir, str(row))
+            rowdir = os.path.join(zoomdir, str(tile.row))
             if os.path.exists(rowdir):
                 pass
             else:
@@ -102,10 +105,9 @@ class OutputFormat(object):
         if self._gpkg:
             return None
         else:
-            zoom, row, col = tile
-            zoomdir = os.path.join(output_name, str(zoom))
-            rowdir = os.path.join(zoomdir, str(row))
-            tile_name = os.path.join(rowdir, str(col)+self.extension)
+            zoomdir = os.path.join(output_name, str(tile.zoom))
+            rowdir = os.path.join(zoomdir, str(tile.row))
+            tile_name = os.path.join(rowdir, str(tile.col)+self.extension)
             return tile_name
 
 
