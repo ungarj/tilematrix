@@ -680,42 +680,11 @@ def main(args):
                 print "OK: read data size"
             except:
                 print "FAILED: read data size"
-            # TODO: move tests to mapchete
-            # try:
-            #     assert out_left == tile_left
-            #     assert out_bottom == tile_bottom
-            #     assert out_right == tile_right
-            #     assert out_top == tile_top
-            #     print "OK: read data georeference"
-            # except:
-            #     print "FAILED: read data georeference"
-            #     print metadata
-            #     print round(out_left, 8), round(tile_left, 8)
-            #     print round(out_bottom, 8), round(tile_bottom, 8)
-            #     print round(out_right, 8), round(tile_right, 8)
-            #     print round(out_top, 8), round(tile_top, 8)
+
 
         outname = str(tile.zoom) + str(tile.row) + str(tile.col) + ".tif"
         outfile = os.path.join(outdata_directory, outname)
-        # write_raster_window(
-        #     outfile,
-        #     tile_pyramid,
-        #     tile,
-        #     metadata,
-        #     data
-        # )
 
-    # from tilematrix import rastertile
-    # print tile_pyramid.format.profile
-    #
-    # with rastertile(dummy1, pyramid=tile_pyramid, tile=tile) as testfile:
-    #     print "testfile", testfile
-    #     print "testfile.tile", testfile.tile
-    #     print "testfile.profile", testfile.profile
-    #     print "is empty", testfile.is_empty()
-    #     for band in testfile.read():
-    #         print "hubert"
-    #         print band.shape
 
 if __name__ == "__main__":
     main(sys.argv[1:])
