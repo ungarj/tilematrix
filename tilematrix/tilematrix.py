@@ -124,7 +124,6 @@ class Tile(object):
         """
         Returns True if tile is available in tile pyramid.
         """
-        zoom, row, col = tile
         try:
             assert isinstance(self.zoom, int)
             assert self.zoom >= 0
@@ -501,8 +500,10 @@ def tiles_from_bbox(tilepyramid, geometry, zoom):
         tilelat -= tile_y_size
         row += 1
         rows.append(row)
-    for tile in list(product([zoom], rows, cols)):
-        yield tilepyramid.tile(*tile)
+    for tile_id in product([zoom], rows, cols):
+        tile = tilepyramid.tile(*tile_id)
+        if tile.is_valid():
+            yield tile
 
 
 def tiles_from_geom(tilepyramid, geometry, zoom):
