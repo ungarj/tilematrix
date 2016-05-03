@@ -6,10 +6,10 @@
 ```python
 Tile(tile_pyramid, zoom, row, col)
 ```
-* ``type``: A ``TilePyramid`` or ``MetaTilePyramid`` this tile inherits certain attributes from.
-* ``zoom``: Tile zoom level.
-* ``row``: Tile row.
-* ``col``: Tile column.
+* ``self.type``: A ``TilePyramid`` or ``MetaTilePyramid`` this tile inherits certain attributes from.
+* ``self.zoom``: Tile zoom level.
+* ``self.row``: Tile row.
+* ``self.col``: Tile column.
 
 After initializing, the object has the following properties:
 * ``self.tile_pyramid``: ``TilePyramid`` or ``MetaTilePyramid`` it was initialized with.
@@ -34,6 +34,7 @@ After initializing, the object has the following properties:
 bounds(self, pixelbuffer=0)
 ```
 * ``pixelbuffer``: Optional buffer around tile boundaries in pixels.
+
 Returns a tuple of ``(left, bottom, right, top)`` coordinates.
 
 **Get tile bounding box**
@@ -41,13 +42,15 @@ Returns a tuple of ``(left, bottom, right, top)`` coordinates.
 bbox(self, pixelbuffer=0)
 ```
 * ``pixelbuffer``: Optional buffer around tile boundaries in pixels.
+
 Returns a ``Polygon`` geometry.
 
 **Get affine matrix**
 ```python
-bbox(self, pixelbuffer=0)
+affine(self, pixelbuffer=0)
 ```
 * ``pixelbuffer``: Optional buffer around tile boundaries in pixels.
+
 Returns an ``affine`` object.
 
 **Get tile shape**
@@ -55,12 +58,14 @@ Returns an ``affine`` object.
 shape(self, pixelbuffer=0)
 ```
 * ``pixelbuffer``: Optional buffer around tile boundaries in pixels.
+
 Returns a tuple with ``(width, height)``.
 
 **Check validity**
 ```python
 is_valid(self)
 ```
+
 Returns ``True`` if tile ID is valid in this tile matrix and ``False`` if it isn't.
 
 **Get tile neighbors**
@@ -68,6 +73,7 @@ Returns ``True`` if tile ID is valid in this tile matrix and ``False`` if it isn
 bbox(self, count=0)
 ```
 * ``count``: Number of neighbors to be returned (maximum 8).
+
 Returns neighbor tiles.
 
 ## TilePyramid
