@@ -127,8 +127,8 @@ class Tile(object):
         try:
             assert isinstance(self.zoom, int)
             assert self.zoom >= 0
-            assert isinstance(self.col, int)
-            assert self.col >= 0
+            assert isinstance(self.row, int)
+            assert self.row >= 0
             assert isinstance(self.col, int)
             assert self.col >= 0
             assert self.col <= self.tile_pyramid.matrix_width(self.zoom)
