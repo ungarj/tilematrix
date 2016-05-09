@@ -16,6 +16,7 @@ from copy import deepcopy
 from shapely.wkt import loads
 from shapely.ops import transform
 from shapely.validation import explain_validity
+from shapely.geometry import *
 import ogr
 from functools import partial
 import pyproj
@@ -152,6 +153,51 @@ def read_raster_window(
             )
             dst_band.harden_mask()
             yield dst_band
+
+
+def write_vector_window(
+    output_file,
+    tile,
+    metadata,
+    data,
+    pixelbuffer=0):
+    """
+    Writes GeoJSON-like objects to GeoJSON.
+    """
+    try:
+        assert pixelbuffer >= 0
+    except:
+        raise ValueError("pixelbuffer must be 0 or greater")
+
+    try:
+        assert isinstance(pixelbuffer, int)
+    except:
+        raise ValueError("pixelbuffer must be an integer")
+
+
+
+    with fiona.open(
+        output_file,
+        'w',
+        schema=metadata.schema,
+        driver=metadata.driver,
+        crs=tile.crs
+        ) as dst:
+        for feature in data:
+            # clip with bounding box
+            clipped = shape(feature["geometry"]).intersection(
+                tile.bbox(pixelbuffer)
+            )
+            out_geom = clipped
+            target_type = metadata.schema["geometry"]
+            if out_geom.geom_type != target_type:
+                cleaned = clean_geometry_type(clipped, target_type)
+                out_geom = cleaned
+            feature.update(
+                geometry=mapping(out_geom)
+            )
+            # write output
+            dst.write(feature)
 
 
 def write_raster_window(
@@ -346,3 +392,51 @@ def get_best_zoom_level(input_file, tile_pyramid_type):
             return zoom-1
 
     raise ValueError("no fitting zoom level found")
+
+
+def clean_geometry_type(geometry, target_type, allow_multipart=True):
+    """
+    Returns None if input geometry type differs from target type. Filters and
+    splits up GeometryCollection into target types.
+    allow_multipart allows multipart geometries (e.g. MultiPolygon for Polygon
+    type and so on).
+    """
+
+    multipart_geoms = {
+        "Point": MultiPoint,
+        "LineString": MultiLineString,
+        "Polygon": MultiPolygon
+    }
+    multipart_geom = multipart_geoms[target_type]
+
+    if geometry.geom_type == target_type:
+        out_geom = geometry
+
+    elif geometry.geom_type == "GeometryCollection":
+        subgeoms = [
+            clean_geometry_type(
+                subgeom,
+                target_type,
+                allow_multipart=allow_multipart
+            )
+            for subgeom in geometry
+        ]
+        out_geom = multipart_geom(subgeoms)
+
+    elif allow_multipart and isinstance(geometry, multipart_geom):
+        out_geom = geometry
+
+    else:
+        return None
+
+    try:
+        assert out_geom.is_valid
+    except:
+        try:
+            out_geom_cleaned = out_geom.buffer(0)
+            out_geom = out_geom_cleaned
+            assert out_geom.is_valid
+        except:
+            raise ValueError("geometry is not valid")
+
+    return out_geom
