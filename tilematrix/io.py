@@ -66,15 +66,20 @@ def read_vector_window(
         for feature in vector.filter(
             bbox=tile.bounds(pixelbuffer=pixelbuffer)
         ):
-            geom = tile.bbox(pixelbuffer=pixelbuffer).intersection(
-                shape(feature['geometry'])
+            feature_geom = shape(feature['geometry'])
+            geom = clean_geometry_type(
+                feature_geom.intersection(
+                    tile.bbox(pixelbuffer=pixelbuffer)
+                ),
+                feature_geom.geom_type
             )
-            feature = {
-                'properties': feature['properties'],
-                'geometry': mapping(geom)
-            }
+            if geom:
+                feature = {
+                    'properties': feature['properties'],
+                    'geometry': mapping(geom)
+                }
+                yield feature
 
-            yield feature
 
 def read_raster_window(
     input_file,
@@ -174,8 +179,6 @@ def write_vector_window(
     except:
         raise ValueError("pixelbuffer must be an integer")
 
-
-
     with fiona.open(
         output_file,
         'w',
@@ -185,19 +188,21 @@ def write_vector_window(
         ) as dst:
         for feature in data:
             # clip with bounding box
-            clipped = shape(feature["geometry"]).intersection(
+            feature_geom = shape(feature["geometry"])
+            clipped = feature_geom.intersection(
                 tile.bbox(pixelbuffer)
             )
             out_geom = clipped
             target_type = metadata.schema["geometry"]
-            if out_geom.geom_type != target_type:
+            if clipped.geom_type != target_type:
                 cleaned = clean_geometry_type(clipped, target_type)
                 out_geom = cleaned
-            feature.update(
-                geometry=mapping(out_geom)
-            )
             # write output
-            dst.write(feature)
+            if out_geom:
+                feature.update(
+                    geometry=mapping(out_geom)
+                )
+                dst.write(feature)
 
 
 def write_raster_window(
@@ -405,7 +410,10 @@ def clean_geometry_type(geometry, target_type, allow_multipart=True):
     multipart_geoms = {
         "Point": MultiPoint,
         "LineString": MultiLineString,
-        "Polygon": MultiPolygon
+        "Polygon": MultiPolygon,
+        "MultiPoint": MultiPoint,
+        "MultiLineString": MultiLineString,
+        "MultiPolygon": MultiPolygon
     }
     multipart_geom = multipart_geoms[target_type]
 
@@ -426,17 +434,10 @@ def clean_geometry_type(geometry, target_type, allow_multipart=True):
     elif allow_multipart and isinstance(geometry, multipart_geom):
         out_geom = geometry
 
+    elif multipart_geoms[geometry.geom_type] == multipart_geom:
+        out_geom = geometry
+
     else:
         return None
-
-    try:
-        assert out_geom.is_valid
-    except:
-        try:
-            out_geom_cleaned = out_geom.buffer(0)
-            out_geom = out_geom_cleaned
-            assert out_geom.is_valid
-        except:
-            raise ValueError("geometry is not valid")
 
     return out_geom
