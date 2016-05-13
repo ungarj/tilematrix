@@ -18,6 +18,7 @@ from shapely.ops import transform
 from shapely.validation import explain_validity
 from shapely.geometry import *
 import ogr
+import osr
 from functools import partial
 import pyproj
 
@@ -63,17 +64,62 @@ def read_vector_window(
     # tile_pyramid crs
 
     with fiona.open(input_file, 'r') as vector:
-        for feature in vector.filter(
-            bbox=tile.bounds(pixelbuffer=pixelbuffer)
-        ):
+        tile_bounds = tile.bounds(pixelbuffer=pixelbuffer)
+        tile_bbox = tile.bbox(pixelbuffer=pixelbuffer)
+
+        # Reproject tile bounding box to source file CRS for filter:
+        if vector.crs != tile.crs:
+            bbox = tile.bbox(pixelbuffer=pixelbuffer)
+
+            # Attemtp below produces inf coordinates
+            project = partial(
+                pyproj.transform,
+                pyproj.Proj(tile.crs),
+                pyproj.Proj(vector.crs)
+            )
+
+            project = partial(
+                pyproj.transform,
+                pyproj.Proj(tile.crs),
+                pyproj.Proj(vector.crs)
+            )
+            tile_bbox = transform(project, bbox)
+            print tile_bbox.is_valid
+            print tile_bbox.dump_coords
+
+            # # Very hacky.
+            # source = osr.SpatialReference()
+            # # source.ImportFromEPSG(int(vector.crs['init'].split(':')[1]))
+            # source.SetWellKnownGeogCS(vector.crs['init'])
+            # target = osr.SpatialReference()
+            # target.ImportFromEPSG(int(tile.crs['init'].split(':')[1]))
+            # transform = osr.CoordinateTransformation(source, target)
+            # ogr_tile_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
+            # print ogr_tile_bbox
+            # print source
+            # print target
+            # print transform
+            # reprojected = ogr_tile_bbox.Transform(transform)
+            # print reprojected
+            # tile_box = loads(reprojected.ExportToWkt())
+        print tile_bbox
+        for feature in vector.filter(bbox=tile_bbox.bounds):
             feature_geom = shape(feature['geometry'])
             geom = clean_geometry_type(
-                feature_geom.intersection(
-                    tile.bbox(pixelbuffer=pixelbuffer)
-                ),
+                feature_geom.intersection(tile_bbox),
                 feature_geom.geom_type
             )
+            print feature
             if geom:
+                # Reproject each feature to tile CRS
+                if vector.crs != tile.crs:
+                    project = partial(
+                        pyproj.transform,
+                        pyproj.Proj(vector.crs),
+                        pyproj.Proj(tile.crs)
+                    )
+                    out_geom = transform(project, geom)
+                    geom = out_geom
                 feature = {
                     'properties': feature['properties'],
                     'geometry': mapping(geom)
@@ -302,6 +348,11 @@ def file_bbox(
     # Read raster data with rasterio, vector data with fiona.
     extension = os.path.splitext(input_file)[1][1:]
     if extension in ["shp", "geojson"]:
+        is_vector = True
+    else:
+        is_vector = False
+
+    if is_vector:
         with fiona.open(input_file) as inp:
             inp_crs = inp.crs
             left, bottom, right, top = inp.bounds
@@ -322,12 +373,16 @@ def file_bbox(
     out_bbox = bbox
     # If soucre and target CRSes differ, segmentize and reproject
     if inp_crs != out_crs:
-        segmentize = _get_segmentize_value(input_file, tile_pyramid)
+        if not is_vector:
+            segmentize = _get_segmentize_value(input_file, tile_pyramid)
+            try:
+                ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
+                ogr_bbox.Segmentize(segmentize)
+                segmentized_bbox = loads(ogr_bbox.ExportToWkt())
+                bbox = segmentized_bbox
+            except:
+                raise
         try:
-            ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
-            ogr_bbox.Segmentize(segmentize)
-            segmentized_bbox = loads(ogr_bbox.ExportToWkt())
-            bbox = segmentized_bbox
             project = partial(
                 pyproj.transform,
                 pyproj.Proj(inp_crs),
