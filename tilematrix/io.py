@@ -59,10 +59,6 @@ def read_vector_window(
     except:
         raise ValueError("pixelbuffer must be an integer")
 
-
-    # TODO reproject tile_bounds to input file crs and reproject output clip to
-    # tile_pyramid crs
-
     with fiona.open(input_file, 'r') as vector:
         tile_bounds = tile.bounds(pixelbuffer=pixelbuffer)
         tile_bbox = tile.bbox(pixelbuffer=pixelbuffer)
@@ -70,61 +66,68 @@ def read_vector_window(
         # Reproject tile bounding box to source file CRS for filter:
         if vector.crs != tile.crs:
             bbox = tile.bbox(pixelbuffer=pixelbuffer)
+            tile_bbox = _reproject(bbox, src_crs=tile.crs, dst_crs=vector.crs)
 
-            # Attemtp below produces inf coordinates
-            project = partial(
-                pyproj.transform,
-                pyproj.Proj(tile.crs),
-                pyproj.Proj(vector.crs)
-            )
-
-            project = partial(
-                pyproj.transform,
-                pyproj.Proj(tile.crs),
-                pyproj.Proj(vector.crs)
-            )
-            tile_bbox = transform(project, bbox)
-            print tile_bbox.is_valid
-            print tile_bbox.dump_coords
-
-            # # Very hacky.
-            # source = osr.SpatialReference()
-            # # source.ImportFromEPSG(int(vector.crs['init'].split(':')[1]))
-            # source.SetWellKnownGeogCS(vector.crs['init'])
-            # target = osr.SpatialReference()
-            # target.ImportFromEPSG(int(tile.crs['init'].split(':')[1]))
-            # transform = osr.CoordinateTransformation(source, target)
-            # ogr_tile_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
-            # print ogr_tile_bbox
-            # print source
-            # print target
-            # print transform
-            # reprojected = ogr_tile_bbox.Transform(transform)
-            # print reprojected
-            # tile_box = loads(reprojected.ExportToWkt())
-        print tile_bbox
         for feature in vector.filter(bbox=tile_bbox.bounds):
             feature_geom = shape(feature['geometry'])
             geom = clean_geometry_type(
                 feature_geom.intersection(tile_bbox),
                 feature_geom.geom_type
             )
-            print feature
             if geom:
                 # Reproject each feature to tile CRS
                 if vector.crs != tile.crs:
-                    project = partial(
-                        pyproj.transform,
-                        pyproj.Proj(vector.crs),
-                        pyproj.Proj(tile.crs)
-                    )
-                    out_geom = transform(project, geom)
-                    geom = out_geom
+                    geom = _reproject(
+                        geom,
+                        src_crs=vector.crs,
+                        dst_crs=tile.crs)
                 feature = {
                     'properties': feature['properties'],
                     'geometry': mapping(geom)
                 }
                 yield feature
+
+def _reproject(
+    geometry,
+    src_crs=None,
+    dst_crs=None
+    ):
+    """
+    Reproject a geometry and returns the reprojected geometry.
+    """
+    assert src_crs
+    assert dst_crs
+
+    # clip input geometry to dst_crs boundaries if necessary
+    l, b, r, t = -180, -85.0511, 180, 85.0511
+    crs_bbox = Polygon((
+       [l, b],
+       [r, b],
+       [r, t],
+       [l, t],
+       [l, b]
+    ))
+    crs_bounds = {
+        "epsg:3857": crs_bbox,
+        "epsg:3785": crs_bbox
+    }
+    if dst_crs["init"] in crs_bounds:
+        project = partial(
+            pyproj.transform,
+            pyproj.Proj({"init": "epsg:4326"}),
+            pyproj.Proj(src_crs)
+        )
+        src_bbox = transform(project, crs_bounds[dst_crs["init"]])
+        geometry = geometry.intersection(src_bbox)
+
+    # create reproject function
+    project = partial(
+        pyproj.transform,
+        pyproj.Proj(src_crs),
+        pyproj.Proj(dst_crs)
+    )
+    # return reprojected geometry
+    return transform(project, geometry)
 
 
 def read_raster_window(
