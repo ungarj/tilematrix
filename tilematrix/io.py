@@ -16,7 +16,9 @@ from copy import deepcopy
 from shapely.wkt import loads
 from shapely.ops import transform
 from shapely.validation import explain_validity
+from shapely.geometry import *
 import ogr
+import osr
 from functools import partial
 import pyproj
 
@@ -57,23 +59,76 @@ def read_vector_window(
     except:
         raise ValueError("pixelbuffer must be an integer")
 
-
-    # TODO reproject tile_bounds to input file crs and reproject output clip to
-    # tile_pyramid crs
-
     with fiona.open(input_file, 'r') as vector:
-        for feature in vector.filter(
-            bbox=tile.bounds(pixelbuffer=pixelbuffer)
-        ):
-            geom = tile.bbox(pixelbuffer=pixelbuffer).intersection(
-                shape(feature['geometry'])
-            )
-            feature = {
-                'properties': feature['properties'],
-                'geometry': mapping(geom)
-            }
+        tile_bounds = tile.bounds(pixelbuffer=pixelbuffer)
+        tile_bbox = tile.bbox(pixelbuffer=pixelbuffer)
 
-            yield feature
+        # Reproject tile bounding box to source file CRS for filter:
+        if vector.crs != tile.crs:
+            bbox = tile.bbox(pixelbuffer=pixelbuffer)
+            tile_bbox = _reproject(bbox, src_crs=tile.crs, dst_crs=vector.crs)
+
+        for feature in vector.filter(bbox=tile_bbox.bounds):
+            feature_geom = shape(feature['geometry'])
+            geom = clean_geometry_type(
+                feature_geom.intersection(tile_bbox),
+                feature_geom.geom_type
+            )
+            if geom:
+                # Reproject each feature to tile CRS
+                if vector.crs != tile.crs:
+                    geom = _reproject(
+                        geom,
+                        src_crs=vector.crs,
+                        dst_crs=tile.crs)
+                feature = {
+                    'properties': feature['properties'],
+                    'geometry': mapping(geom)
+                }
+                yield feature
+
+def _reproject(
+    geometry,
+    src_crs=None,
+    dst_crs=None
+    ):
+    """
+    Reproject a geometry and returns the reprojected geometry.
+    """
+    assert src_crs
+    assert dst_crs
+
+    # clip input geometry to dst_crs boundaries if necessary
+    l, b, r, t = -180, -85.0511, 180, 85.0511
+    crs_bbox = Polygon((
+       [l, b],
+       [r, b],
+       [r, t],
+       [l, t],
+       [l, b]
+    ))
+    crs_bounds = {
+        "epsg:3857": crs_bbox,
+        "epsg:3785": crs_bbox
+    }
+    if dst_crs["init"] in crs_bounds:
+        project = partial(
+            pyproj.transform,
+            pyproj.Proj({"init": "epsg:4326"}),
+            pyproj.Proj(src_crs)
+        )
+        src_bbox = transform(project, crs_bounds[dst_crs["init"]])
+        geometry = geometry.intersection(src_bbox)
+
+    # create reproject function
+    project = partial(
+        pyproj.transform,
+        pyproj.Proj(src_crs),
+        pyproj.Proj(dst_crs)
+    )
+    # return reprojected geometry
+    return transform(project, geometry)
+
 
 def read_raster_window(
     input_file,
@@ -152,6 +207,51 @@ def read_raster_window(
             )
             dst_band.harden_mask()
             yield dst_band
+
+
+def write_vector_window(
+    output_file,
+    tile,
+    metadata,
+    data,
+    pixelbuffer=0):
+    """
+    Writes GeoJSON-like objects to GeoJSON.
+    """
+    try:
+        assert pixelbuffer >= 0
+    except:
+        raise ValueError("pixelbuffer must be 0 or greater")
+
+    try:
+        assert isinstance(pixelbuffer, int)
+    except:
+        raise ValueError("pixelbuffer must be an integer")
+
+    with fiona.open(
+        output_file,
+        'w',
+        schema=metadata.schema,
+        driver=metadata.driver,
+        crs=tile.crs
+        ) as dst:
+        for feature in data:
+            # clip with bounding box
+            feature_geom = shape(feature["geometry"])
+            clipped = feature_geom.intersection(
+                tile.bbox(pixelbuffer)
+            )
+            out_geom = clipped
+            target_type = metadata.schema["geometry"]
+            if clipped.geom_type != target_type:
+                cleaned = clean_geometry_type(clipped, target_type)
+                out_geom = cleaned
+            # write output
+            if out_geom:
+                feature.update(
+                    geometry=mapping(out_geom)
+                )
+                dst.write(feature)
 
 
 def write_raster_window(
@@ -251,6 +351,11 @@ def file_bbox(
     # Read raster data with rasterio, vector data with fiona.
     extension = os.path.splitext(input_file)[1][1:]
     if extension in ["shp", "geojson"]:
+        is_vector = True
+    else:
+        is_vector = False
+
+    if is_vector:
         with fiona.open(input_file) as inp:
             inp_crs = inp.crs
             left, bottom, right, top = inp.bounds
@@ -271,12 +376,16 @@ def file_bbox(
     out_bbox = bbox
     # If soucre and target CRSes differ, segmentize and reproject
     if inp_crs != out_crs:
-        segmentize = _get_segmentize_value(input_file, tile_pyramid)
+        if not is_vector:
+            segmentize = _get_segmentize_value(input_file, tile_pyramid)
+            try:
+                ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
+                ogr_bbox.Segmentize(segmentize)
+                segmentized_bbox = loads(ogr_bbox.ExportToWkt())
+                bbox = segmentized_bbox
+            except:
+                raise
         try:
-            ogr_bbox = ogr.CreateGeometryFromWkb(bbox.wkb)
-            ogr_bbox.Segmentize(segmentize)
-            segmentized_bbox = loads(ogr_bbox.ExportToWkt())
-            bbox = segmentized_bbox
             project = partial(
                 pyproj.transform,
                 pyproj.Proj(inp_crs),
@@ -346,3 +455,47 @@ def get_best_zoom_level(input_file, tile_pyramid_type):
             return zoom-1
 
     raise ValueError("no fitting zoom level found")
+
+
+def clean_geometry_type(geometry, target_type, allow_multipart=True):
+    """
+    Returns None if input geometry type differs from target type. Filters and
+    splits up GeometryCollection into target types.
+    allow_multipart allows multipart geometries (e.g. MultiPolygon for Polygon
+    type and so on).
+    """
+
+    multipart_geoms = {
+        "Point": MultiPoint,
+        "LineString": MultiLineString,
+        "Polygon": MultiPolygon,
+        "MultiPoint": MultiPoint,
+        "MultiLineString": MultiLineString,
+        "MultiPolygon": MultiPolygon
+    }
+    multipart_geom = multipart_geoms[target_type]
+
+    if geometry.geom_type == target_type:
+        out_geom = geometry
+
+    elif geometry.geom_type == "GeometryCollection":
+        subgeoms = [
+            clean_geometry_type(
+                subgeom,
+                target_type,
+                allow_multipart=allow_multipart
+            )
+            for subgeom in geometry
+        ]
+        out_geom = multipart_geom(subgeoms)
+
+    elif allow_multipart and isinstance(geometry, multipart_geom):
+        out_geom = geometry
+
+    elif multipart_geoms[geometry.geom_type] == multipart_geom:
+        out_geom = geometry
+
+    else:
+        return None
+
+    return out_geom

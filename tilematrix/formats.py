@@ -68,6 +68,11 @@ class OutputFormat(object):
             }
             self._gpkg = False
 
+        if self.format == "GeoJSON":
+            self.schema = {}
+            self.driver = "GeoJSON"
+            self._gpkg = False
+
         self.extension = format_extensions[self.name]
 
     def prepare(self, output_name, tile):
