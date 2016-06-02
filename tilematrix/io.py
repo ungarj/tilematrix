@@ -21,6 +21,7 @@ import ogr
 import osr
 from functools import partial
 import pyproj
+import warnings
 
 from tilematrix import *
 
@@ -237,22 +238,24 @@ def write_vector_window(
         ) as dst:
         for feature in data:
             # clip with bounding box
-            feature_geom = shape(feature["geometry"])
-            clipped = feature_geom.intersection(
-                tile.bbox(pixelbuffer)
-            )
-            out_geom = clipped
-            target_type = metadata.schema["geometry"]
-            if clipped.geom_type != target_type:
-                cleaned = clean_geometry_type(clipped, target_type)
-                out_geom = cleaned
-            # write output
-            if out_geom:
-                feature.update(
-                    geometry=mapping(out_geom)
+            try:
+                feature_geom = shape(feature["geometry"])
+                clipped = feature_geom.intersection(
+                    tile.bbox(pixelbuffer)
                 )
-                dst.write(feature)
-
+                out_geom = clipped
+                target_type = metadata.schema["geometry"]
+                if clipped.geom_type != target_type:
+                    cleaned = clean_geometry_type(clipped, target_type)
+                    out_geom = cleaned
+                # write output
+                if out_geom:
+                    feature.update(
+                        geometry=mapping(out_geom)
+                    )
+                    dst.write(feature)
+            except ValueError:
+                warnings.warn("failed on geometry")
 
 def write_raster_window(
     output_file,
