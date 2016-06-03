@@ -4,6 +4,7 @@ import os
 from rasterio import profiles
 import numpy as np
 
+
 class OutputFormat(object):
     """
     Class which handles different output formats and their properties. The
@@ -12,23 +13,28 @@ class OutputFormat(object):
         name/zoom/row/col.tif), or
     (2) store tile pyramid in an extended geopackage.
     """
-    def __init__(self, output_format):
+    def __init__(
+        self,
+        output_format,
+        db_params=None
+        ):
 
         supported_rasterformats = ["GTiff", "PNG", "PNG_hillshade"]
-        supported_vectorformats = ["GeoJSON"]
+        supported_vectorformats = ["GeoJSON", "postgis"]
         supported_formats = supported_rasterformats + supported_vectorformats
 
         format_extensions = {
             "GTiff": ".tif",
             "PNG": ".png",
             "PNG_hillshade": ".png",
-            "GeoJSON": ".geojson"
+            "GeoJSON": ".geojson",
+            "postgis": None
         }
 
         try:
             assert output_format in supported_formats
         except:
-            return ValueError(
+            raise ValueError(
                 "ERROR: Output format %s not found. Please use one of %s" %(
                 output_format, supported_formats)
             )
@@ -48,7 +54,7 @@ class OutputFormat(object):
                 driver="GTiff",
                 nodata=None
                 )
-            self._gpkg = False
+            self.is_db = False
 
         if self.format == "PNG":
             self.profile = {
@@ -57,7 +63,7 @@ class OutputFormat(object):
                 'driver': 'PNG',
                 'count': 3
             }
-            self._gpkg = False
+            self.is_db = False
 
         if self.format == "PNG_hillshade":
             self.profile = {
@@ -66,12 +72,25 @@ class OutputFormat(object):
                 'driver': 'PNG',
                 'count': 4
             }
-            self._gpkg = False
+            self.is_db = False
 
         if self.format == "GeoJSON":
             self.schema = {}
             self.driver = "GeoJSON"
-            self._gpkg = False
+            self.is_db = False
+
+        if self.format == "postgis":
+            self.is_db = True
+            self.driver = "postgis"
+            if not db_params:
+                raise ValueError("please provide database credentials")
+            for param in ["db", "host", "port", "user", "password", "table"]:
+                try:
+                    assert param in db_params
+                    assert db_params[param]
+                except:
+                    raise ValueError("database parameter %s is missing" %param)
+            self.db_params = db_params
 
         self.extension = format_extensions[self.name]
 
@@ -81,7 +100,7 @@ class OutputFormat(object):
         directories.
         If it is a GeoPackage, it shall initialize the SQLite file.
         """
-        if self._gpkg:
+        if self.is_db:
             pass
             # TODO initialize SQLite file
         else:
@@ -107,7 +126,7 @@ class OutputFormat(object):
         """
         Returns full name of tile.
         """
-        if self._gpkg:
+        if self.is_db:
             return None
         else:
             zoomdir = os.path.join(output_name, str(tile.zoom))

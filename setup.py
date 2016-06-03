@@ -18,7 +18,8 @@ setup(
         'numpy',
         'fiona',
         'pyproj',
-        'six'
+        'six',
+        'geoalchemy2'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
