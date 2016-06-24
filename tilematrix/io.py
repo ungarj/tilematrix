@@ -294,7 +294,7 @@ def write_raster_window(
 
     dst_bands = []
 
-    if tile.tile_pyramid.format.name == "PNG_hillshade":
+    if tile.output.format == "PNG_hillshade":
         zeros = np.zeros(bands[0][px_top:px_bottom, px_left:px_right].shape)
         for band in range(1,4):
             band = np.clip(band, 0, 255)
@@ -303,27 +303,28 @@ def write_raster_window(
     for band in bands:
         dst_bands.append(band[px_top:px_bottom, px_left:px_right])
 
-    bandcount = tile.tile_pyramid.format.profile["count"]
-
-    if tile.tile_pyramid.format.name == "PNG":
+    bandcount = tile.output.bands
+    if tile.output.format == "PNG":
         for band in bands:
             band = np.clip(band, 0, 255)
-        if tile.tile_pyramid.format.profile["nodata"]:
+        if tile.output.nodataval:
             nodata_alpha = np.zeros(bands[0].shape)
             nodata_alpha[:] = 255
             nodata_alpha[bands[0].mask] = 0
             dst_bands.append(nodata_alpha[px_top:px_bottom, px_left:px_right])
             bandcount += 1
 
+    # print tile.output.nodataval
+    # print tile.output.profile
     # write to output file
-    dst_metadata = deepcopy(tile.tile_pyramid.format.profile)
+    dst_metadata = deepcopy(tile.output.profile)
     dst_metadata.pop("transform", None)
     dst_metadata["crs"] = tile.crs['init']
     dst_metadata["width"] = dst_width
     dst_metadata["height"] = dst_height
     dst_metadata["affine"] = dst_affine
 
-    if tile.tile_pyramid.format.name in ("PNG", "PNG_hillshade"):
+    if tile.output.format in ("PNG", "PNG_hillshade"):
         dst_metadata.update(
             dtype='uint8',
             count=bandcount
