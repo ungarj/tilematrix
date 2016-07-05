@@ -2,7 +2,6 @@
 
 import os
 from rasterio import profiles
-import numpy as np
 
 
 class OutputFormat(object):
@@ -102,24 +101,23 @@ class OutputFormat(object):
         """
         if self.is_db:
             pass
-            # TODO initialize SQLite file
         else:
             zoomdir = os.path.join(output_name, str(tile.zoom))
-            if os.path.exists(zoomdir):
-                pass
-            else:
-                try:
-                    os.makedirs(zoomdir)
-                except:
+            try:
+                os.makedirs(zoomdir)
+            except OSError, err:
+                if err.errno == 17:
                     pass
+                else:
+                    raise
             rowdir = os.path.join(zoomdir, str(tile.row))
-            if os.path.exists(rowdir):
-                pass
-            else:
-                try:
-                    os.makedirs(rowdir)
-                except:
+            try:
+                os.makedirs(rowdir)
+            except OSError, err:
+                if err.errno == 17:
                     pass
+                else:
+                    raise
 
 
     def get_tile_name(self, output_name, tile):
@@ -136,4 +134,7 @@ class OutputFormat(object):
 
 
     def set_dtype(self, dtype):
+        """
+        Sets profile data type.
+        """
         self.profile["dtype"] = dtype

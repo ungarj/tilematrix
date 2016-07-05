@@ -8,7 +8,7 @@ from rasterio.warp import (
     reproject,
     calculate_default_transform
     )
-from rasterio.warp import RESAMPLING
+from rasterio.warp import Resampling
 from affine import Affine
 import numpy as np
 import numpy.ma as ma
@@ -16,23 +16,30 @@ from copy import deepcopy
 from shapely.wkt import loads
 from shapely.ops import transform
 from shapely.validation import explain_validity
-from shapely.geometry import *
+from shapely.geometry import (
+    Polygon,
+    MultiPoint,
+    MultiLineString,
+    MultiPolygon,
+    shape,
+    mapping
+    )
 import ogr
 import osr
 from functools import partial
 import pyproj
 import warnings
 
-from tilematrix import *
+from tilematrix import Tile, TilePyramid, MetaTilePyramid
 
 RESAMPLING_METHODS = {
-    "nearest": RESAMPLING.nearest,
-    "bilinear": RESAMPLING.bilinear,
-    "cubic": RESAMPLING.cubic,
-    "cubic_spline": RESAMPLING.cubic_spline,
-    "lanczos": RESAMPLING.lanczos,
-    "average": RESAMPLING.average,
-    "mode": RESAMPLING.mode
+    "nearest": Resampling.nearest,
+    "bilinear": Resampling.bilinear,
+    "cubic": Resampling.cubic,
+    "cubic_spline": Resampling.cubic_spline,
+    "lanczos": Resampling.lanczos,
+    "average": Resampling.average,
+    "mode": Resampling.mode
 }
 
 def read_vector_window(
@@ -296,7 +303,7 @@ def write_raster_window(
 
     if tile.output.format == "PNG_hillshade":
         zeros = np.zeros(bands[0][px_top:px_bottom, px_left:px_right].shape)
-        for band in range(1,4):
+        for band in range(1, 4):
             band = np.clip(band, 0, 255)
             dst_bands.append(zeros)
 
@@ -314,9 +321,6 @@ def write_raster_window(
             dst_bands.append(nodata_alpha[px_top:px_bottom, px_left:px_right])
             bandcount += 1
 
-    # print tile.output.nodataval
-    # print tile.output.profile
-    # write to output file
     dst_metadata = deepcopy(tile.output.profile)
     dst_metadata.pop("transform", None)
     dst_metadata["crs"] = tile.crs['init']
@@ -455,7 +459,7 @@ def get_best_zoom_level(input_file, tile_pyramid_type):
     )
 
     for zoom in range(0, 25):
-        if (tile_pyramid.pixel_x_size(zoom) <= avg_resolution):
+        if tile_pyramid.pixel_x_size(zoom) <= avg_resolution:
             return zoom-1
 
     raise ValueError("no fitting zoom level found")
