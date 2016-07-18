@@ -25,6 +25,7 @@ class Tile(object):
         self.zoom = zoom
         self.row = row
         self.col = col
+        self.index = (zoom, row, col)
         self.x_size = self._get_x_size()
         self.y_size = self._get_y_size()
         self.id = (zoom, row, col)
@@ -42,6 +43,7 @@ class Tile(object):
         self.bottom = self.top - self.y_size
         self.width = tile_pyramid.tile_size
         self.height = tile_pyramid.tile_size
+        self.srid = tile_pyramid.srid
 
 
     def _get_x_size(self):
@@ -203,6 +205,7 @@ class TilePyramid(object):
             self.crs = {'init': u'epsg:4326'}
             # optional output format
             self.format = None
+            self.srid = 4326
 
     def tile(self, zoom, row, col):
         """
@@ -210,8 +213,16 @@ class TilePyramid(object):
         """
         return Tile(self, zoom, row, col)
 
-    def set_format(self, output_format, dtype=None):
-        self.format = OutputFormat(output_format)
+    def set_format(
+        self,
+        output_format,
+        dtype=None,
+        db_params=None,
+        ):
+        self.format = OutputFormat(
+            output_format,
+            db_params=db_params
+            )
         if dtype:
             self.format.set_dtype(dtype)
 
@@ -321,6 +332,7 @@ class MetaTilePyramid(TilePyramid):
         # SRS
         self.type = tilepyramid.type
         self.crs = tilepyramid.crs
+        self.srid = tilepyramid.srid
 
     def tile(self, zoom, row, col):
         """

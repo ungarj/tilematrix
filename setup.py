@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name='tilematrix',
@@ -18,7 +18,8 @@ setup(
         'numpy',
         'fiona',
         'pyproj',
-        'six'
+        'six',
+        'geoalchemy2'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
