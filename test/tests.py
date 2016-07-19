@@ -685,6 +685,21 @@ def main(args):
         outname = str(tile.zoom) + str(tile.row) + str(tile.col) + ".tif"
         outfile = os.path.join(outdata_directory, outname)
 
+    # test mercator tile pyramid
+    tile_pyramid = TilePyramid("mercator")
+    assert tile_pyramid.srid == 3857
+    try:
+        for zoom in range(15):
+            assert (
+                (tile_pyramid.matrix_width(zoom), tile_pyramid.matrix_height(zoom)
+                ) == (2**zoom, 2**zoom)
+            )
+        print "OK: mercator tile matrix widths"
+    except:
+        print "ERROR: mercator tile matrix widths"
+
+
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

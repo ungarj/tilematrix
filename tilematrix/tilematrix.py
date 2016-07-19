@@ -192,20 +192,32 @@ class TilePyramid(object):
                 )
         self.type = projection
         self.tile_size = tile_size
+        # TODO: make obsolete:
+        self.format = None
         if projection == "geodetic":
             # spatial extent
             self.left = float(-180)
             self.top = float(90)
             self.right = float(180)
             self.bottom = float(-90)
-            # size in degrees
+            # size in map units
             self.x_size = float(round(self.right - self.left, ROUND))
             self.y_size = float(round(self.top - self.bottom, ROUND))
             # SRS
             self.crs = {'init': u'epsg:4326'}
-            # optional output format
-            self.format = None
             self.srid = 4326
+        if projection == "mercator":
+            # spatial extent
+            self.left = float(-20026376.39)
+            self.top = float(20048966.10)
+            self.right = float(20026376.39)
+            self.bottom = float(-20048966.10)
+            # size in map units
+            self.x_size = float(round(self.right - self.left, ROUND))
+            self.y_size = float(round(self.top - self.bottom, ROUND))
+            # SRS
+            self.crs = {'init': u'epsg:3857'}
+            self.srid = 3857
 
     def tile(self, zoom, row, col):
         """
@@ -235,8 +247,9 @@ class TilePyramid(object):
         except:
             raise ValueError("Zoom (%s) must be an integer." %(zoom))
         if self.type == "geodetic":
-            width = 2**(zoom+1)
-        return width
+            return 2**(zoom+1)
+        if self.type == "mercator":
+            return 2**(zoom)
 
     def matrix_height(self, zoom):
         """
@@ -247,8 +260,9 @@ class TilePyramid(object):
         except:
             raise ValueError("Zoom (%s) must be an integer." %(zoom))
         if self.type == "geodetic":
-            height = 2**(zoom+1)/2
-        return height
+            return 2**(zoom+1)/2
+        if self.type == "mercator":
+            return 2**(zoom)
 
     def tile_x_size(self, zoom):
         """
@@ -348,11 +362,10 @@ class MetaTilePyramid(TilePyramid):
             assert isinstance(zoom, int)
         except:
             raise ValueError("Zoom (%s) must be an integer." %(zoom))
-        if self.type == "geodetic":
-            width = self.tilepyramid.matrix_width(zoom)
-            width = math.ceil(width / float(self.metatiles))
-            if width < 1:
-                width = 1
+        width = self.tilepyramid.matrix_width(zoom)
+        width = math.ceil(width / float(self.metatiles))
+        if width < 1:
+            width = 1
         return int(width)
 
     def matrix_height(self, zoom):
@@ -363,11 +376,10 @@ class MetaTilePyramid(TilePyramid):
             assert isinstance(zoom, int)
         except:
             raise ValueError("Zoom (%s) must be an integer." %(zoom))
-        if self.type == "geodetic":
-            height = self.tilepyramid.matrix_height(zoom)
-            height = math.ceil(height / float(self.metatiles))
-            if height < 1:
-                height = 1
+        height = self.tilepyramid.matrix_height(zoom)
+        height = math.ceil(height / float(self.metatiles))
+        if height < 1:
+            height = 1
         return int(height)
 
     def metatile_width(self, zoom):
