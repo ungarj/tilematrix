@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-import sys
-from shapely.geometry import *
-from shapely.validation import *
+from shapely.geometry import Polygon
+from shapely.validation import explain_validity
 from shapely.prepared import prep
 from itertools import product
 import math
@@ -110,10 +109,10 @@ class Tile(object):
         """
         Returns an Affine object of tile.
         """
-        left, bottom, right, top = self.bounds(pixelbuffer=pixelbuffer)
+        left = self.bounds(pixelbuffer=pixelbuffer)[0]
+        top = self.bounds(pixelbuffer=pixelbuffer)[3]
         px_size = self.pixel_x_size
-        tile_geotransform = (left, px_size, 0.0, top, 0.0, -px_size)
-        tile_affine = Affine.from_gdal(*tile_geotransform)
+        tile_affine = Affine.from_gdal(left, px_size, 0.0, top, 0.0, -px_size)
         return tile_affine
 
     def shape(self, pixelbuffer=0):
@@ -135,7 +134,7 @@ class Tile(object):
             assert self.col >= 0
             assert self.col <= self.tile_pyramid.matrix_width(self.zoom)
             assert self.row <= self.tile_pyramid.matrix_height(self.zoom)
-        except:
+        except AssertionError:
             return False
         else:
             return True
@@ -208,10 +207,10 @@ class TilePyramid(object):
             self.srid = 4326
         if projection == "mercator":
             # spatial extent
-            self.left = float(-20026376.39)
-            self.top = float(20048966.10)
-            self.right = float(20026376.39)
-            self.bottom = float(-20048966.10)
+            self.left = float(-20037508.3427892)
+            self.top = float(20037508.3427892)
+            self.right = float(20037508.3427892)
+            self.bottom = float(-20037508.3427892)
             # size in map units
             self.x_size = float(round(self.right - self.left, ROUND))
             self.y_size = float(round(self.top - self.bottom, ROUND))
@@ -537,7 +536,7 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
 
     try:
         assert geometry.is_valid
-    except:
+    except AssertionError:
         print "WARNING: geometry seems not to be valid"
         try:
             clean = geometry.buffer(0.0)
