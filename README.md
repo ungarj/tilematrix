@@ -5,6 +5,8 @@ Python module to help handling tile pyramids. The module is designed to help pre
 
 ``tilematrix`` supports metatiling as well and makes heavy use of [Fiona](https://github.com/Toblerity/Fiona), [shapely](https://github.com/Toblerity/shapely) and [rasterio](https://github.com/mapbox/rasterio).
 
+It is very similar to [https://github.com/mapbox/mercantile](mercantile) but besides of supporting spherical mercator tile pyramids, it also supports geodetic (WGS84) tile pyramids.
+
 # Installation
 ```shell
 pip install numpy
