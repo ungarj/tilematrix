@@ -45,6 +45,47 @@ class Tile(object):
         self.srid = tile_pyramid.srid
 
 
+    def get_parent(self):
+        """
+        Returns tile from previous zoomlevel.
+        """
+        if self.zoom == 0:
+            return None
+        else:
+            return self.tile_pyramid.tile(
+                self.zoom-1,
+                int(self.row/2),
+                int(self.col/2),
+                )
+
+    def get_children(self):
+        """
+        Returns tiles from next zoomlevel.
+        """
+        return [
+            self.tile_pyramid.tile(
+                self.zoom+1,
+                self.row*2,
+                self.col*2
+                ),
+            self.tile_pyramid.tile(
+                self.zoom+1,
+                self.row*2+1,
+                self.col*2
+                ),
+            self.tile_pyramid.tile(
+                self.zoom+1,
+                self.row*2,
+                self.col*2+1
+                ),
+            self.tile_pyramid.tile(
+                self.zoom+1,
+                self.row*2+1,
+                self.col*2+1
+                )
+            ]
+
+
     def _get_x_size(self):
         """
         Width of tile in SRID units at zoom level.

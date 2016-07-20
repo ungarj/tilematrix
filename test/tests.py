@@ -6,7 +6,7 @@ import argparse
 import fiona
 from shapely.geometry import *
 from shapely.wkt import *
-from shapely.ops import cascaded_union
+from shapely.ops import cascaded_union, unary_union
 import math
 import rasterio
 from rasterio.warp import RESAMPLING
@@ -748,6 +748,17 @@ def main(args):
             print "ERROR: mercator tile coordinates"
             print tile_idx, mercantile_ul, tilematrix_ul
             print tile_idx, mercantile_bbox, tilematrix_bbox
+
+
+    tile_idx = (12, 1024, 512)
+    tile = Tile(tile_pyramid, *tile_idx)
+    for child in tile.get_children():
+        try:
+            assert child.get_parent().id == tile.id
+            print "OK: tile children and parent"
+        except AssertionError:
+            print child.parent.id, tile.id
+            print "ERROR: tile children and parent"
 
 
 if __name__ == "__main__":
