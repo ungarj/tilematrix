@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-import sys
-from shapely.geometry import *
-from shapely.validation import *
+from shapely.geometry import Polygon
+from shapely.validation import explain_validity
 from shapely.prepared import prep
 from itertools import product
 import math
@@ -44,6 +43,47 @@ class Tile(object):
         self.width = tile_pyramid.tile_size
         self.height = tile_pyramid.tile_size
         self.srid = tile_pyramid.srid
+
+
+    def get_parent(self):
+        """
+        Returns tile from previous zoomlevel.
+        """
+        if self.zoom == 0:
+            return None
+        else:
+            return self.tile_pyramid.tile(
+                self.zoom-1,
+                int(self.row/2),
+                int(self.col/2),
+                )
+
+    def get_children(self):
+        """
+        Returns tiles from next zoomlevel.
+        """
+        return [
+            self.tile_pyramid.tile(
+                self.zoom+1,
+                self.row*2,
+                self.col*2
+                ),
+            self.tile_pyramid.tile(
+                self.zoom+1,
+                self.row*2+1,
+                self.col*2
+                ),
+            self.tile_pyramid.tile(
+                self.zoom+1,
+                self.row*2,
+                self.col*2+1
+                ),
+            self.tile_pyramid.tile(
+                self.zoom+1,
+                self.row*2+1,
+                self.col*2+1
+                )
+            ]
 
 
     def _get_x_size(self):
@@ -110,10 +150,10 @@ class Tile(object):
         """
         Returns an Affine object of tile.
         """
-        left, bottom, right, top = self.bounds(pixelbuffer=pixelbuffer)
+        left = self.bounds(pixelbuffer=pixelbuffer)[0]
+        top = self.bounds(pixelbuffer=pixelbuffer)[3]
         px_size = self.pixel_x_size
-        tile_geotransform = (left, px_size, 0.0, top, 0.0, -px_size)
-        tile_affine = Affine.from_gdal(*tile_geotransform)
+        tile_affine = Affine.from_gdal(left, px_size, 0.0, top, 0.0, -px_size)
         return tile_affine
 
     def shape(self, pixelbuffer=0):
@@ -135,7 +175,7 @@ class Tile(object):
             assert self.col >= 0
             assert self.col <= self.tile_pyramid.matrix_width(self.zoom)
             assert self.row <= self.tile_pyramid.matrix_height(self.zoom)
-        except:
+        except AssertionError:
             return False
         else:
             return True
@@ -192,20 +232,32 @@ class TilePyramid(object):
                 )
         self.type = projection
         self.tile_size = tile_size
+        # TODO: make obsolete:
+        self.format = None
         if projection == "geodetic":
             # spatial extent
             self.left = float(-180)
             self.top = float(90)
             self.right = float(180)
             self.bottom = float(-90)
-            # size in degrees
+            # size in map units
             self.x_size = float(round(self.right - self.left, ROUND))
             self.y_size = float(round(self.top - self.bottom, ROUND))
             # SRS
             self.crs = {'init': u'epsg:4326'}
-            # optional output format
-            self.format = None
             self.srid = 4326
+        if projection == "mercator":
+            # spatial extent
+            self.left = float(-20037508.3427892)
+            self.top = float(20037508.3427892)
+            self.right = float(20037508.3427892)
+            self.bottom = float(-20037508.3427892)
+            # size in map units
+            self.x_size = float(round(self.right - self.left, ROUND))
+            self.y_size = float(round(self.top - self.bottom, ROUND))
+            # SRS
+            self.crs = {'init': u'epsg:3857'}
+            self.srid = 3857
 
     def tile(self, zoom, row, col):
         """
@@ -235,8 +287,9 @@ class TilePyramid(object):
         except:
             raise ValueError("Zoom (%s) must be an integer." %(zoom))
         if self.type == "geodetic":
-            width = 2**(zoom+1)
-        return width
+            return 2**(zoom+1)
+        if self.type == "mercator":
+            return 2**(zoom)
 
     def matrix_height(self, zoom):
         """
@@ -247,8 +300,9 @@ class TilePyramid(object):
         except:
             raise ValueError("Zoom (%s) must be an integer." %(zoom))
         if self.type == "geodetic":
-            height = 2**(zoom+1)/2
-        return height
+            return 2**(zoom+1)/2
+        if self.type == "mercator":
+            return 2**(zoom)
 
     def tile_x_size(self, zoom):
         """
@@ -348,11 +402,10 @@ class MetaTilePyramid(TilePyramid):
             assert isinstance(zoom, int)
         except:
             raise ValueError("Zoom (%s) must be an integer." %(zoom))
-        if self.type == "geodetic":
-            width = self.tilepyramid.matrix_width(zoom)
-            width = math.ceil(width / float(self.metatiles))
-            if width < 1:
-                width = 1
+        width = self.tilepyramid.matrix_width(zoom)
+        width = math.ceil(width / float(self.metatiles))
+        if width < 1:
+            width = 1
         return int(width)
 
     def matrix_height(self, zoom):
@@ -363,11 +416,10 @@ class MetaTilePyramid(TilePyramid):
             assert isinstance(zoom, int)
         except:
             raise ValueError("Zoom (%s) must be an integer." %(zoom))
-        if self.type == "geodetic":
-            height = self.tilepyramid.matrix_height(zoom)
-            height = math.ceil(height / float(self.metatiles))
-            if height < 1:
-                height = 1
+        height = self.tilepyramid.matrix_height(zoom)
+        height = math.ceil(height / float(self.metatiles))
+        if height < 1:
+            height = 1
         return int(height)
 
     def metatile_width(self, zoom):
@@ -525,7 +577,7 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
 
     try:
         assert geometry.is_valid
-    except:
+    except AssertionError:
         print "WARNING: geometry seems not to be valid"
         try:
             clean = geometry.buffer(0.0)

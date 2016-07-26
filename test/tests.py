@@ -6,7 +6,7 @@ import argparse
 import fiona
 from shapely.geometry import *
 from shapely.wkt import *
-from shapely.ops import cascaded_union
+from shapely.ops import cascaded_union, unary_union
 import math
 import rasterio
 from rasterio.warp import RESAMPLING
@@ -684,6 +684,81 @@ def main(args):
 
         outname = str(tile.zoom) + str(tile.row) + str(tile.col) + ".tif"
         outfile = os.path.join(outdata_directory, outname)
+
+    # test mercator tile pyramid
+    tile_pyramid = TilePyramid("mercator")
+    assert tile_pyramid.srid == 3857
+    try:
+        for zoom in range(15):
+            assert (
+                (tile_pyramid.matrix_width(zoom), tile_pyramid.matrix_height(zoom)
+                ) == (2**zoom, 2**zoom)
+            )
+        print "OK: mercator tile matrix widths"
+    except:
+        print "ERROR: mercator tile matrix widths"
+
+
+    from shapely.ops import transform
+    from functools import partial
+    import pyproj
+    import mercantile
+
+    example_tiles = [
+        (12, 1024, 512),
+        (6, 32, 16),
+        (0, 0, 0),
+        ]
+
+    for tile_idx in example_tiles:
+        (zoom, row, col) = tile_idx
+        mercantile_ul = Point(
+            mercantile.ul(col, row, zoom).lng,
+            mercantile.ul(col, row, zoom).lat,
+            )
+        m_bounds = mercantile.bounds(col, row, zoom)
+        mercantile_bbox = Polygon([
+            [m_bounds.west, m_bounds.north],
+            [m_bounds.east, m_bounds.north],
+            [m_bounds.east, m_bounds.south],
+            [m_bounds.west, m_bounds.south],
+            ])
+        project = partial(
+            pyproj.transform,
+            pyproj.Proj({"init": "epsg:3857"}),
+            pyproj.Proj({"init": "epsg:4326"})
+        )
+        tilematrix_ul = transform(
+            project,
+            Point(
+                Tile(tile_pyramid, zoom, row, col).left,
+                Tile(tile_pyramid, zoom, row, col).top,
+                )
+            )
+        tilematrix_bbox = transform(
+            project,
+            Tile(tile_pyramid, zoom, row, col).bbox()
+            )
+
+        try:
+            assert mercantile_ul.almost_equals(tilematrix_ul)
+            assert mercantile_bbox.almost_equals(tilematrix_bbox)
+            print "OK: mercator tile coordinates"
+        except AssertionError:
+            print "ERROR: mercator tile coordinates"
+            print tile_idx, mercantile_ul, tilematrix_ul
+            print tile_idx, mercantile_bbox, tilematrix_bbox
+
+
+    tile_idx = (12, 1024, 512)
+    tile = Tile(tile_pyramid, *tile_idx)
+    for child in tile.get_children():
+        try:
+            assert child.get_parent().id == tile.id
+            print "OK: tile children and parent"
+        except AssertionError:
+            print child.parent.id, tile.id
+            print "ERROR: tile children and parent"
 
 
 if __name__ == "__main__":
