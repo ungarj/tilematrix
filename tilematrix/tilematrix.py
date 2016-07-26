@@ -7,8 +7,6 @@ from itertools import product
 import math
 from affine import Affine
 
-from .formats import OutputFormat
-
 ROUND = 20
 
 
@@ -264,19 +262,6 @@ class TilePyramid(object):
         Returns Tile object.
         """
         return Tile(self, zoom, row, col)
-
-    def set_format(
-        self,
-        output_format,
-        dtype=None,
-        db_params=None,
-        ):
-        self.format = OutputFormat(
-            output_format,
-            db_params=db_params
-            )
-        if dtype:
-            self.format.set_dtype(dtype)
 
     def matrix_width(self, zoom):
         """
