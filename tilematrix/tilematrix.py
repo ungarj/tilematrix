@@ -230,8 +230,6 @@ class TilePyramid(object):
                 )
         self.type = projection
         self.tile_size = tile_size
-        # TODO: make obsolete:
-        self.format = None
         if projection == "geodetic":
             # spatial extent
             self.left = float(-180)
