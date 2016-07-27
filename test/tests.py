@@ -31,9 +31,7 @@ def main(args):
     testdata_directory = os.path.join(scriptdir, "testdata")
     outdata_directory = os.path.join(testdata_directory, "out")
     wgs84 = TilePyramid("geodetic")
-    wgs84.set_format("GTiff", dtype="uInt16")
     wgs84_meta = MetaTilePyramid(wgs84, 16)
-    print wgs84_meta.format.profile["dtype"]
 
     # TilePyramid
     #===========
@@ -650,40 +648,6 @@ def main(args):
         print metatile, test_metatile
         raise
         print "ERROR: metatile <-> tile conversion"
-
-    # test io module
-
-    dummy1 = os.path.join(testdata_directory, "dummy1.tif")
-    # dummy1 = os.path.join(testdata_directory, "sentinel2.tif")
-    dummy2 = os.path.join(testdata_directory, "dummy2.tif")
-    zoom = 8
-    tile_pyramid = TilePyramid("geodetic")
-
-    dummy1_bbox = file_bbox(dummy1, tile_pyramid)
-
-    tiles = tile_pyramid.tiles_from_geom(dummy1_bbox, zoom)
-    tile_pyramid.format = OutputFormat("GTiff")
-    resampling = "average"
-    pixelbuffer=5
-    for tile in tiles:
-        for band in read_raster_window(
-            dummy1,
-            tile,
-            resampling=resampling,
-            pixelbuffer=pixelbuffer
-            ):
-            try:
-                assert band.shape == (
-                    tile_pyramid.tile_size + 2 * pixelbuffer,
-                    tile_pyramid.tile_size + 2 * pixelbuffer
-                )
-                print "OK: read data size"
-            except:
-                print "FAILED: read data size"
-
-
-        outname = str(tile.zoom) + str(tile.row) + str(tile.col) + ".tif"
-        outfile = os.path.join(outdata_directory, outname)
 
     # test mercator tile pyramid
     tile_pyramid = TilePyramid("mercator")
