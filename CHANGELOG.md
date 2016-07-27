@@ -15,3 +15,9 @@
 * read_raster_window() is now a generator which returns only a numpy array
 * read_vector_window() is a generator which returns a GeoJSON-like object with a geometry clipped to tile boundaries
 * proper error handling (removed ``sys.exit(0)``)
+
+# 0.1
+* added Spherical Mercator support
+* removed IO module (moved to [mapchete](https://github.com/ungarj/mapchete))
+* removed deprecated ``OutputFormats``
+* introduced ``get_parent()`` and ``get_children()`` functions for ``Tile``
