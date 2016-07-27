@@ -1,7 +1,7 @@
 # tilematrix
 Python module to help handling tile pyramids. The module is designed to easily translate between tile indices (zoom, row, column) and map coordinates (e.g. latitute, longitude).
 
-``tilematrix`` supports metatiling as well and makes heavy use of [Fiona](https://github.com/Toblerity/Fiona), [shapely](https://github.com/Toblerity/shapely) and [rasterio](https://github.com/mapbox/rasterio).
+``tilematrix`` supports metatiling as well and makes heavy use of [shapely](https://github.com/Toblerity/shapely).
 
 It is very similar to [https://github.com/mapbox/mercantile](mercantile) but besides of supporting spherical mercator tile pyramids, it also supports geodetic (WGS84) tile pyramids.
 
