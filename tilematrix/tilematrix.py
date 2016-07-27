@@ -352,10 +352,6 @@ class MetaTilePyramid(TilePyramid):
         assert isinstance(metatiles, int)
         assert metatiles in (1, 2, 4, 8, 16)
         self.tilepyramid = tilepyramid
-        if tilepyramid.format:
-            self.format = tilepyramid.format
-        else:
-            self.format = None
         self.metatiles = metatiles
         self.tile_size = tilepyramid.tile_size * metatiles
         # spatial extent:
