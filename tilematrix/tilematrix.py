@@ -171,8 +171,8 @@ class Tile(object):
             assert self.row >= 0
             assert isinstance(self.col, int)
             assert self.col >= 0
-            assert self.col <= self.tile_pyramid.matrix_width(self.zoom)
-            assert self.row <= self.tile_pyramid.matrix_height(self.zoom)
+            assert self.col < self.tile_pyramid.matrix_width(self.zoom)
+            assert self.row < self.tile_pyramid.matrix_height(self.zoom)
         except AssertionError:
             return False
         else:
