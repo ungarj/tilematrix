@@ -8,8 +8,6 @@ from shapely.geometry import *
 from shapely.wkt import *
 from shapely.ops import cascaded_union, unary_union
 import math
-import rasterio
-from rasterio.warp import RESAMPLING
 import affine
 import numpy as np
 import numpy.ma as ma
@@ -723,6 +721,175 @@ def main(args):
         except AssertionError:
             print child.parent.id, tile.id
             print "ERROR: tile children and parent"
+
+    # get tiles over antimeridian:
+    tile_pyramid = TilePyramid("geodetic")
+    tile = tile_pyramid.tile(5, 0, 63)
+    target_tiles = set(
+        target_tile.id
+        for target_tile in tile_pyramid.tiles_from_bounds(tile.bounds(256), 5)
+    )
+    control_tiles = set(
+        [
+            # tiles west of antimeridian
+            (5, 0, 62),
+            (5, 0, 63),
+            (5, 1, 62),
+            (5, 1, 63),
+            # tiles east of antimeridian
+            (5, 0, 0),
+            (5, 1, 0)
+        ]
+    )
+    try:
+        diff = control_tiles.difference(target_tiles)
+        assert len(diff) == 0
+        print "OK: tiles over antimeridian"
+    except AssertionError:
+        print "ERROR: tiles over antimeridian"
+        print diff
+    tile = tile_pyramid.tile(5, 0, 0)
+    target_tiles = set(
+        target_tile.id
+        for target_tile in tile_pyramid.tiles_from_bounds(tile.bounds(256), 5)
+    )
+    control_tiles = set(
+        [
+            # tiles west of antimeridian
+            (5, 0, 63),
+            (5, 1, 63),
+            # tiles east of antimeridian
+            (5, 0, 0),
+            (5, 1, 0),
+            (5, 0, 1),
+            (5, 1, 1)
+        ]
+    )
+    try:
+        diff = control_tiles.difference(target_tiles)
+        assert len(diff) == 0
+        print "OK: tiles over antimeridian"
+    except AssertionError:
+        print "ERROR: tiles over antimeridian"
+        print diff
+
+    # get tiles over antimeridian:
+    tile_pyramid = TilePyramid("mercator")
+    tile = tile_pyramid.tile(5, 0, 31)
+    target_tiles = set(
+        target_tile.id
+        for target_tile in tile_pyramid.tiles_from_bounds(tile.bounds(256), 5)
+    )
+    control_tiles = set(
+        [
+            # tiles west of antimeridian
+            (5, 0, 30),
+            (5, 0, 31),
+            (5, 1, 30),
+            (5, 1, 31),
+            # tiles east of antimeridian
+            (5, 0, 0),
+            (5, 1, 0)
+        ]
+    )
+    try:
+        diff = control_tiles.difference(target_tiles)
+        assert len(diff) == 0
+        print "OK: tiles over antimeridian"
+    except AssertionError:
+        print "ERROR: tiles over antimeridian"
+        print diff
+    tile = tile_pyramid.tile(5, 0, 0)
+    target_tiles = set(
+        target_tile.id
+        for target_tile in tile_pyramid.tiles_from_bounds(tile.bounds(256), 5)
+    )
+    control_tiles = set(
+        [
+            # tiles west of antimeridian
+            (5, 0, 31),
+            (5, 1, 31),
+            # tiles east of antimeridian
+            (5, 0, 0),
+            (5, 1, 0),
+            (5, 0, 1),
+            (5, 1, 1)
+        ]
+    )
+    try:
+        diff = control_tiles.difference(target_tiles)
+        assert len(diff) == 0
+        print "OK: tiles over antimeridian"
+    except AssertionError:
+        print "ERROR: tiles over antimeridian"
+        print diff
+
+    # geometry over antimeridian
+    tile_pyramid = TilePyramid("geodetic")
+    geometry = loads("POLYGON ((184.375 90, 190 90, 180 84.375, 174.375 84.375, 184.375 90))")
+    target_tiles = set(
+        tile.id
+        for tile in tile_pyramid.tiles_from_geom(geometry, 6)
+        )
+    control_tiles = set(
+        [
+            (6, 0, 127),
+            (6, 1, 126),
+            (6, 1, 127),
+            (6, 0, 0),
+            (6, 0, 1),
+            (6, 0, 2),
+            (6, 0, 3),
+            (6, 1, 0),
+            (6, 1, 1)
+        ]
+        )
+    try:
+        diff = control_tiles.difference(target_tiles)
+        assert len(diff) == 0
+        print "OK: geometry over antimeridian"
+    except AssertionError:
+        print "ERROR: geometry over antimeridian"
+        print diff
+
+    tile_pyramid = TilePyramid("mercator")
+    geometry = loads("POLYGON ((-22037508.3427892 20037508.3427892, -20785164.07136488 20037508.3427892, -18785164.07136488 18785164.07136488, -20037508.3427892 18785164.07136488, -22037508.3427892 20037508.3427892))")
+    target_tiles = set(
+        tile.id
+        for tile in tile_pyramid.tiles_from_geom(geometry, 6)
+        )
+    tile_pyramid_bbox = box(
+        tile_pyramid.left,
+        tile_pyramid.bottom,
+        tile_pyramid.right,
+        tile_pyramid.top
+    )
+    for tile in target_tiles:
+        assert tile_pyramid.tile(*tile).bbox().within(tile_pyramid_bbox)
+    control_tiles = set(
+        [
+            # west of antimeridian
+            (6, 0, 60),
+            (6, 0, 61),
+            (6, 0, 62),
+            (6, 0, 63),
+            (6, 1, 62),
+            (6, 1, 63),
+            # east of antimeridian
+            (6, 0, 0),
+            (6, 1, 0),
+            (6, 1, 1)
+        ]
+        )
+    try:
+        diff = control_tiles.difference(target_tiles)
+        assert len(diff) == 0
+        print "OK: geometry over antimeridian"
+    except AssertionError:
+        print "ERROR: geometry over antimeridian"
+        print target_tiles
+        print diff
+
 
 
 if __name__ == "__main__":
