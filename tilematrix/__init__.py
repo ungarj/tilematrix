@@ -3,5 +3,6 @@
 from .tilematrix import (
     Tile,
     TilePyramid,
-    MetaTilePyramid
+    MetaTilePyramid,
+    clip_geometry_to_srs_bounds
 )

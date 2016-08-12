@@ -4,18 +4,16 @@ import sys
 import os
 import argparse
 import fiona
-from shapely.geometry import *
-from shapely.wkt import *
-from shapely.ops import cascaded_union, unary_union
+from shapely.geometry import Point, Polygon, box, mapping, shape
+from shapely.wkt import loads
+from shapely.ops import cascaded_union
 import math
-import affine
-import numpy as np
-import numpy.ma as ma
 
 
-from tilematrix import *
+from tilematrix import Tile, TilePyramid, MetaTilePyramid
 
 ROUND = 10
+GEOM_EQUALS_ROUND = 6
 
 def main(args):
 
@@ -623,9 +621,7 @@ def main(args):
     metatiling = 1
     wgs84_meta = MetaTilePyramid(wgs84, metatiling)
     tile = wgs84_meta.tile(5, 4, 3)
-    for count in range(0, 9):
-        assert len(tile.get_neighbors(count=count)) == count
-    assert len(tile.get_neighbors(count=9)) == 8
+    assert len(tile.get_neighbors()) == 8
 
     ## test tile <--> metatile conversion
     metatile = [(10, 44, 33)]
@@ -679,12 +675,7 @@ def main(args):
             mercantile.ul(col, row, zoom).lat,
             )
         m_bounds = mercantile.bounds(col, row, zoom)
-        mercantile_bbox = Polygon([
-            [m_bounds.west, m_bounds.north],
-            [m_bounds.east, m_bounds.north],
-            [m_bounds.east, m_bounds.south],
-            [m_bounds.west, m_bounds.south],
-            ])
+        mercantile_bbox = box(*m_bounds)
         project = partial(
             pyproj.transform,
             pyproj.Proj({"init": "epsg:3857"}),
@@ -703,8 +694,14 @@ def main(args):
             )
 
         try:
-            assert mercantile_ul.almost_equals(tilematrix_ul)
-            assert mercantile_bbox.almost_equals(tilematrix_bbox)
+            assert mercantile_ul.almost_equals(
+                tilematrix_ul,
+                decimal=GEOM_EQUALS_ROUND
+                )
+            assert mercantile_bbox.almost_equals(
+                tilematrix_bbox,
+                decimal=GEOM_EQUALS_ROUND
+                )
             print "OK: mercator tile coordinates"
         except AssertionError:
             print "ERROR: mercator tile coordinates"
@@ -889,6 +886,36 @@ def main(args):
         print "ERROR: geometry over antimeridian"
         print target_tiles
         print diff
+
+    # tile shapes
+    tile_pyramid = TilePyramid("mercator")
+    col, row = (0, 0)
+    for zoom in range(10):
+        tile = Tile(tile_pyramid, zoom, col, row)
+        assert tile.shape() == (256, 256)
+    metatile_pyramid = MetaTilePyramid(tile_pyramid, metatiles=8)
+    control_shapes = [
+        (256, 256),
+        (512, 512),
+        (1024, 1024),
+        (2048, 2048),
+        (2048, 2048),
+        (2048, 2048),
+        (2048, 2048),
+        (2048, 2048),
+        (2048, 2048),
+        (2048, 2048)
+        ]
+    for zoom, control_shape in zip(range(9), control_shapes):
+        tile = Tile(metatile_pyramid, zoom, col, row)
+        try:
+            assert tile.shape() == control_shape
+            print "OK: metatile shape at zoom ", zoom
+        except AssertionError:
+            print "ERROR: metatile shape at zoom", zoom
+            print tile.id, tile.shape(), control_shape
+
+
 
 
 

@@ -45,11 +45,11 @@ get_children(self)
 Returns children Tiles.
 
 ```python
-get_neighbors(count=8)
+get_neighbors(connectedness=8)
 ```
-* ``count``: Number of neighbors to be returned (maximum 8).
+* ``connectedness``: ``4`` or ``8``. Direct neighbors (up to 4) or corner neighbors (up to 8).
 
-Returns a maximum of 8 neighbor Tiles.
+Returns a maximum of 8 valid neighbor Tiles.
 
 
 
@@ -84,7 +84,7 @@ shape(pixelbuffer=0)
 ```
 * ``pixelbuffer``: Optional buffer around tile boundaries in pixels.
 
-Returns a tuple with ``(width, height)``.
+Returns a tuple with ``(height, width)``.
 
 
 ```python
@@ -197,5 +197,5 @@ MetaTilePyramid(TilePyramid, metatiles=1)
 * ``metatiles``: Defines the metatile size. A value of 2 for example concatenates 2x2 ``TilePyramid`` tiles into one metatile. It should have one of these values: 2, 4, 8, 16. Note: a ``metatile`` value of 1 means no metatiling, i.e. the MetaTilePyramid is equal to the TilePyramid.
 
 In addition to the basic properties it inherits from the source ``TilePyramid``, it has the following variables:
-* ``tilepyramid``: The ``TilePyramid`` it builds on.
+* ``tile_pyramid``: The ``TilePyramid`` it builds on.
 * ``metatiles``: The ``metatiles`` value it was initialized with.
