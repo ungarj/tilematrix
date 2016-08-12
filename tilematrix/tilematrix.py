@@ -115,9 +115,13 @@ class Tile(object):
         """
         left = self.bounds(pixelbuffer=pixelbuffer)[0]
         top = self.bounds(pixelbuffer=pixelbuffer)[3]
-        px_size = self.pixel_x_size
-        tile_affine = Affine.from_gdal(left, px_size, 0.0, top, 0.0, -px_size)
-        return tile_affine
+        return Affine.translation(
+            left,
+            top
+            ) * Affine.scale(
+            self.pixel_x_size,
+            -self.pixel_y_size
+            )
 
     def shape(self, pixelbuffer=0):
         """
