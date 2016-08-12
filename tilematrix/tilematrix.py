@@ -127,7 +127,15 @@ class Tile(object):
         """
         Returns a tuple of tile height and width.
         """
-        return (self.height + 2 * pixelbuffer, self.width + 2 * pixelbuffer)
+        height = self.height + 2 * pixelbuffer
+        width = self.width + 2 * pixelbuffer
+        if pixelbuffer:
+            matrix_height = self.tile_pyramid.matrix_height(self.zoom)
+            if self.row in [0, matrix_height-1]:
+                height = self.height+pixelbuffer
+            if matrix_height == 1:
+                height = self.height
+        return (height, width)
 
     def is_valid(self):
         """

@@ -915,6 +915,76 @@ def main(args):
             print "ERROR: metatile shape at zoom", zoom
             print tile.id, tile.shape(), control_shape
 
+    # tile shapes with pixelbuffer
+    tile_pyramid = TilePyramid("mercator")
+    test_tiles = [
+        (0, 0, 0),
+        (1, 0, 0), # top left
+        (2, 0, 1), # top middle
+        (2, 0, 3), # top right
+        (2, 3, 3), # bottom right
+        (2, 3, 0), # bottom left
+        (2, 3, 2), # bottom middle
+        (2, 2, 0), # left middle
+        (2, 2, 3), # right middle
+        ]
+    pixelbuffer = 2
+    tile_size = tile_pyramid.tile_size
+    control_shapes = [
+        (tile_size, tile_size+2*pixelbuffer),
+        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer), # top left
+        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer), # top middle
+        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer), # top right
+        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer), # bottom right
+        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer), # bottom left
+        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer), # bottom middle
+        (tile_size+2*pixelbuffer, tile_size+2*pixelbuffer), # left middle
+        (tile_size+2*pixelbuffer, tile_size+2*pixelbuffer), # right middle
+        ]
+    for test_tile, control_shape in zip(test_tiles, control_shapes):
+        tile = Tile(tile_pyramid, *test_tile)
+        try:
+            assert tile.shape(pixelbuffer) == control_shape
+            print "OK: tile pixelbuffer shape for tile ", test_tile
+        except AssertionError:
+            print "ERROR: tile pixelbuffer shape for tile", test_tile
+            print tile.id, tile.shape(pixelbuffer), control_shape
+    # metatile shapes with pixelbuffer
+    pixelbuffer = 2
+    metatiling = 8
+    metatile_pyramid = MetaTilePyramid(tile_pyramid, metatiles=metatiling)
+    tile_size = tile_pyramid.tile_size
+    test_tiles = [
+        (0, 0, 0),
+        (1, 0, 0),
+        (2, 0, 0),
+        (3, 0, 0),
+        (4, 0, 0),
+        (5, 0, 0), # top left
+        (5, 0, 1), # top middle
+        (5, 0, 3), # top right
+        (5, 3, 3), # bottom right
+        (5, 3, 0), # bottom left
+        (5, 3, 2), # bottom middle
+        (5, 2, 0), # left middle
+        (5, 2, 3), # right middle
+        ]
+    for test_tile in test_tiles:
+        tile = Tile(metatile_pyramid, *test_tile)
+        left, bottom, right, top = tile.bounds(pixelbuffer)
+        control_shape = (
+            int(round((top-bottom)/tile.pixel_y_size)),
+            int(round((right-left)/tile.pixel_x_size))
+            )
+        try:
+            assert tile.shape(pixelbuffer) == control_shape
+            print "OK: tile pixelbuffer shape for metatile ", test_tile
+        except AssertionError:
+            print "ERROR: tile pixelbuffer shape for metatile", test_tile
+            print tile.id, tile.shape(pixelbuffer), control_shape
+
+
+
 
 
 
