@@ -617,6 +617,7 @@ def tiles_from_bounds(tilepyramid, bounds, zoom):
         raise ValueError("Zoom (%s) must be an integer." %(zoom))
 
     if tilepyramid.is_global:
+        seen = set()
         if top > tilepyramid.top:
             top = tilepyramid.top
         if bottom < tilepyramid.bottom:
@@ -642,7 +643,10 @@ def tiles_from_bounds(tilepyramid, bounds, zoom):
                     zoom
                 )
             ):
-                yield tile
+                # make output tiles unique
+                if tile.id not in seen:
+                    seen.add(tile.id)
+                    yield tile
             return
         if right > tilepyramid.right:
             for tile in chain(
@@ -665,18 +669,22 @@ def tiles_from_bounds(tilepyramid, bounds, zoom):
                     zoom
                 )
             ):
-                yield tile
+                # make output tiles unique
+                if tile.id not in seen:
+                    seen.add(tile.id)
+                    yield tile
             return
 
-    for tile in _tiles_from_cleaned_bounds(
-        tilepyramid,
-        left,
-        bottom,
-        right,
-        top,
-        zoom
-        ):
-        yield tile
+    else:
+        for tile in _tiles_from_cleaned_bounds(
+            tilepyramid,
+            left,
+            bottom,
+            right,
+            top,
+            zoom
+            ):
+            yield tile
 
 def _tiles_from_cleaned_bounds(tilepyramid, left, bottom, right, top, zoom):
     """
