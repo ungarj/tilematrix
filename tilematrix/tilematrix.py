@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from shapely.geometry import Polygon, MultiPolygon, box
+from shapely.geometry import Polygon, GeometryCollection, box
 from shapely.validation import explain_validity
 from shapely.prepared import prep
 from shapely.affinity import translate
@@ -627,19 +627,13 @@ def tiles_from_bounds(tilepyramid, bounds, zoom):
                 # tiles west of antimeridian
                 _tiles_from_cleaned_bounds(
                     tilepyramid,
-                    left+(2*tilepyramid.left),
-                    bottom,
-                    tilepyramid.right,
-                    top,
+                    (left+(2*tilepyramid.left), bottom, tilepyramid.right, top),
                     zoom
                 ),
                 # tiles east of antimeridian
                 _tiles_from_cleaned_bounds(
                     tilepyramid,
-                    tilepyramid.left,
-                    bottom,
-                    right,
-                    top,
+                    (tilepyramid.left, bottom, right, top),
                     zoom
                 )
             ):
@@ -647,25 +641,23 @@ def tiles_from_bounds(tilepyramid, bounds, zoom):
                 if tile.id not in seen:
                     seen.add(tile.id)
                     yield tile
-            return
-        if right > tilepyramid.right:
+        elif right > tilepyramid.right:
             for tile in chain(
                 # tiles west of antimeridian
                 _tiles_from_cleaned_bounds(
                     tilepyramid,
-                    left,
-                    bottom,
-                    tilepyramid.right,
-                    top,
+                    (left, bottom, tilepyramid.right, top),
                     zoom
                 ),
                 # tiles east of antimeridian
                 _tiles_from_cleaned_bounds(
                     tilepyramid,
-                    tilepyramid.left,
-                    bottom,
-                    right-(2*tilepyramid.right),
-                    top,
+                    (
+                        tilepyramid.left,
+                        bottom,
+                        right-(2*tilepyramid.right),
+                        top
+                    ),
                     zoom
                 )
             ):
@@ -673,24 +665,16 @@ def tiles_from_bounds(tilepyramid, bounds, zoom):
                 if tile.id not in seen:
                     seen.add(tile.id)
                     yield tile
-            return
+    for tile in _tiles_from_cleaned_bounds(tilepyramid, bounds, zoom):
+        yield tile
 
-    else:
-        for tile in _tiles_from_cleaned_bounds(
-            tilepyramid,
-            left,
-            bottom,
-            right,
-            top,
-            zoom
-            ):
-            yield tile
 
-def _tiles_from_cleaned_bounds(tilepyramid, left, bottom, right, top, zoom):
+def _tiles_from_cleaned_bounds(tilepyramid, bounds, zoom):
     """
     All tiles intersecting with given bounds where bounds must not be outside
     of SRS bounds.
     """
+    left, bottom, right, top = bounds
     tile_x_size = tilepyramid.tile_x_size(zoom)
     tile_y_size = tilepyramid.tile_y_size(zoom)
     tilelon = tilepyramid.left
@@ -781,12 +765,13 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
     else:
         raise ValueError("ERROR: no valid geometry")
 
-def clip_geometry_to_srs_bounds(geometry, tilepyramid):
+def clip_geometry_to_srs_bounds(geometry, tilepyramid, multipart=False):
     """
     Clips input geometry to SRS bounds of given TilePyramid. If geometry passes
     the antimeridian, it will be split up in a multipart geometry and shifted
     to within the SRS boundaries.
     Note: geometry SRS must be the TilePyramid SRS!
+    multipart: return list of geometries instead of a GeometryCollection
     """
     try:
         assert geometry.is_valid
@@ -817,6 +802,12 @@ def clip_geometry_to_srs_bounds(geometry, tilepyramid):
             elif geom_right > tilepyramid.right:
                 geom = translate(geom, xoff=-2*tilepyramid.right)
             all_geoms.append(geom)
-        return MultiPolygon(all_geoms)
+        if multipart:
+            return all_geoms
+        else:
+            return GeometryCollection(all_geoms)
     else:
-        return geometry
+        if multipart:
+            return [geometry]
+        else:
+            return geometry
