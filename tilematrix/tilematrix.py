@@ -7,8 +7,143 @@ from shapely.affinity import translate
 from itertools import product, chain
 import math
 from affine import Affine
+from rasterio.crs import CRS
 
 ROUND = 20
+
+
+class TilePyramid(object):
+
+    def __init__(self, projection, tile_size=256):
+        """
+        Initialize TilePyramid.
+        """
+        projections = ("geodetic", "mercator")
+        try:
+            assert projection in projections
+        except:
+            raise ValueError("WMTS tileset '%s' not found. Use one of %s" %(
+                projection,
+                projections)
+                )
+        self.type = projection
+        self.tile_size = tile_size
+        if projection == "geodetic":
+            # spatial extent
+            self.left = float(-180)
+            self.top = float(90)
+            self.right = float(180)
+            self.bottom = float(-90)
+            # SRS
+            self.is_global = True
+            self.srid = 4326
+            self.crs = CRS().from_epsg(self.srid)
+        if projection == "mercator":
+            # spatial extent
+            self.left = float(-20037508.3427892)
+            self.top = float(20037508.3427892)
+            self.right = float(20037508.3427892)
+            self.bottom = float(-20037508.3427892)
+            # SRS
+            self.is_global = True
+            self.srid = 3857
+            self.crs = CRS().from_epsg(self.srid)
+        # size in map units
+        self.x_size = float(round(self.right - self.left, ROUND))
+        self.y_size = float(round(self.top - self.bottom, ROUND))
+
+    def tile(self, zoom, row, col):
+        """
+        Returns Tile object.
+        """
+        return Tile(self, zoom, row, col)
+
+    def matrix_width(self, zoom):
+        """
+        Tile matrix width (number of columns) at zoom level.
+        """
+        try:
+            assert isinstance(zoom, int)
+        except:
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
+        if self.type == "geodetic":
+            return 2**(zoom+1)
+        if self.type == "mercator":
+            return 2**(zoom)
+
+    def matrix_height(self, zoom):
+        """
+        Tile matrix height (number of rows) at zoom level.
+        """
+        try:
+            assert isinstance(zoom, int)
+        except:
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
+        if self.type == "geodetic":
+            return 2**(zoom+1)/2
+        if self.type == "mercator":
+            return 2**(zoom)
+
+    def tile_x_size(self, zoom):
+        """
+        Width of a tile in SRID units at zoom level.
+        """
+        matrix_width = self.matrix_width(zoom)
+        try:
+            assert isinstance(zoom, int)
+        except:
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
+        tile_x_size = float(round(self.x_size/matrix_width, ROUND))
+        return tile_x_size
+
+    def tile_y_size(self, zoom):
+        """
+        Height of a tile in SRID units at zoom level.
+        """
+        matrix_height = self.matrix_height(zoom)
+        try:
+            assert isinstance(zoom, int)
+        except:
+            raise ValueError("Zoom (%s) must be an integer." %(zoom))
+        tile_y_size = float(round(self.y_size/matrix_height, ROUND))
+        return tile_y_size
+
+    def pixel_x_size(self, zoom):
+        """
+        Size of a pixel in SRID units at zoom level.
+        """
+        pixel_x_size = float(round(
+            self.tile_x_size(zoom) / self.tile_size,
+            ROUND))
+        return pixel_x_size
+
+    def pixel_y_size(self, zoom):
+        """
+        Size of a pixel in SRID units at zoom level.
+        """
+        pixel_y_size = float(round(
+            self.tile_y_size(zoom) / self.tile_size,
+            ROUND))
+        return pixel_y_size
+
+    def tiles_from_bounds(self, bounds, zoom):
+        """
+        All metatiles intersecting with given bounds.
+        """
+        return tiles_from_bounds(self, bounds, zoom)
+
+    def tiles_from_bbox(self, geometry, zoom):
+        """
+        All metatiles intersecting with given bounding box.
+        """
+        return tiles_from_bbox(self, geometry, zoom)
+
+    def tiles_from_geom(self, geometry, zoom):
+        """
+        All metatiles intersecting with input geometry.
+        """
+        return tiles_from_geom(self, geometry, zoom)
+
 
 class Tile(object):
 
@@ -288,139 +423,6 @@ class Tile(object):
             return None
 
 
-class TilePyramid(object):
-
-    def __init__(self, projection, tile_size=256):
-        """
-        Initialize TilePyramid.
-        """
-        projections = ("geodetic", "mercator")
-        try:
-            assert projection in projections
-        except:
-            raise ValueError("WMTS tileset '%s' not found. Use one of %s" %(
-                projection,
-                projections)
-                )
-        self.type = projection
-        self.tile_size = tile_size
-        if projection == "geodetic":
-            # spatial extent
-            self.left = float(-180)
-            self.top = float(90)
-            self.right = float(180)
-            self.bottom = float(-90)
-            # SRS
-            self.is_global = True
-            self.crs = {'init': u'epsg:4326'}
-            self.srid = 4326
-        if projection == "mercator":
-            # spatial extent
-            self.left = float(-20037508.3427892)
-            self.top = float(20037508.3427892)
-            self.right = float(20037508.3427892)
-            self.bottom = float(-20037508.3427892)
-            # SRS
-            self.is_global = True
-            self.crs = {'init': u'epsg:3857'}
-            self.srid = 3857
-        # size in map units
-        self.x_size = float(round(self.right - self.left, ROUND))
-        self.y_size = float(round(self.top - self.bottom, ROUND))
-
-    def tile(self, zoom, row, col):
-        """
-        Returns Tile object.
-        """
-        return Tile(self, zoom, row, col)
-
-    def matrix_width(self, zoom):
-        """
-        Tile matrix width (number of columns) at zoom level.
-        """
-        try:
-            assert isinstance(zoom, int)
-        except:
-            raise ValueError("Zoom (%s) must be an integer." %(zoom))
-        if self.type == "geodetic":
-            return 2**(zoom+1)
-        if self.type == "mercator":
-            return 2**(zoom)
-
-    def matrix_height(self, zoom):
-        """
-        Tile matrix height (number of rows) at zoom level.
-        """
-        try:
-            assert isinstance(zoom, int)
-        except:
-            raise ValueError("Zoom (%s) must be an integer." %(zoom))
-        if self.type == "geodetic":
-            return 2**(zoom+1)/2
-        if self.type == "mercator":
-            return 2**(zoom)
-
-    def tile_x_size(self, zoom):
-        """
-        Width of a tile in SRID units at zoom level.
-        """
-        matrix_width = self.matrix_width(zoom)
-        try:
-            assert isinstance(zoom, int)
-        except:
-            raise ValueError("Zoom (%s) must be an integer." %(zoom))
-        tile_x_size = float(round(self.x_size/matrix_width, ROUND))
-        return tile_x_size
-
-    def tile_y_size(self, zoom):
-        """
-        Height of a tile in SRID units at zoom level.
-        """
-        matrix_height = self.matrix_height(zoom)
-        try:
-            assert isinstance(zoom, int)
-        except:
-            raise ValueError("Zoom (%s) must be an integer." %(zoom))
-        tile_y_size = float(round(self.y_size/matrix_height, ROUND))
-        return tile_y_size
-
-    def pixel_x_size(self, zoom):
-        """
-        Size of a pixel in SRID units at zoom level.
-        """
-        pixel_x_size = float(round(
-            self.tile_x_size(zoom) / self.tile_size,
-            ROUND))
-        return pixel_x_size
-
-    def pixel_y_size(self, zoom):
-        """
-        Size of a pixel in SRID units at zoom level.
-        """
-        pixel_y_size = float(round(
-            self.tile_y_size(zoom) / self.tile_size,
-            ROUND))
-        return pixel_y_size
-
-    def tiles_from_bounds(self, bounds, zoom):
-        """
-        All metatiles intersecting with given bounds.
-        """
-        return tiles_from_bounds(self, bounds, zoom)
-
-    def tiles_from_bbox(self, geometry, zoom):
-        """
-        All metatiles intersecting with given bounding box.
-        """
-        return tiles_from_bbox(self, geometry, zoom)
-
-    def tiles_from_geom(self, geometry, zoom):
-        """
-        All metatiles intersecting with input geometry.
-        """
-        return tiles_from_geom(self, geometry, zoom)
-
-
 class MetaTilePyramid(TilePyramid):
 
     def __init__(self, tilepyramid, metatiles=1):
@@ -665,6 +667,9 @@ def tiles_from_bounds(tilepyramid, bounds, zoom):
                 if tile.id not in seen:
                     seen.add(tile.id)
                     yield tile
+        else:
+            for tile in _tiles_from_cleaned_bounds(tilepyramid, bounds, zoom):
+                yield tile
     else:
         for tile in _tiles_from_cleaned_bounds(tilepyramid, bounds, zoom):
             yield tile
@@ -727,14 +732,13 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
             assert clean.is_valid
             assert clean.area > 0
             geometry = clean
-        except:
+        except AssertionError:
             raise IOError(
                 str(
                     "invalid geometry could not be fixed: '%s'" %
                     explain_validity(geometry)
                     )
                 )
-
     if geometry.almost_equals(geometry.envelope, ROUND):
         for tile in tilepyramid.tiles_from_bbox(geometry, zoom):
             yield tile
@@ -754,7 +758,7 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
             row += 1
         yield tilepyramid.tile(zoom, row, col)
     elif geometry.geom_type in ("LineString", "MultiLineString", "Polygon",
-        "MultiPolygon", "MultiPoint"):
+        "MultiPolygon", "MultiPoint", "GeometryCollection"):
         prepared_geometry = prep(
             clip_geometry_to_srs_bounds(geometry, tilepyramid)
             )
@@ -764,7 +768,7 @@ def tiles_from_geom(tilepyramid, geometry, zoom):
     elif geometry.is_empty:
         pass
     else:
-        raise ValueError("ERROR: no valid geometry")
+        raise ValueError("ERROR: no valid geometry: %s" % geometry.type)
 
 def clip_geometry_to_srs_bounds(geometry, tilepyramid, multipart=False):
     """
