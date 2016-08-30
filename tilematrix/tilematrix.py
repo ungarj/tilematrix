@@ -665,8 +665,9 @@ def tiles_from_bounds(tilepyramid, bounds, zoom):
                 if tile.id not in seen:
                     seen.add(tile.id)
                     yield tile
-    for tile in _tiles_from_cleaned_bounds(tilepyramid, bounds, zoom):
-        yield tile
+    else:
+        for tile in _tiles_from_cleaned_bounds(tilepyramid, bounds, zoom):
+            yield tile
 
 
 def _tiles_from_cleaned_bounds(tilepyramid, bounds, zoom):
