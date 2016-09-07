@@ -22,7 +22,7 @@ setup(
         'geoalchemy2'
     ],
     classifiers=[
-        'Development Status :: 3 - Beta',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Topic :: Scientific/Engineering :: GIS',
         'License :: OSI Approved :: MIT License',
