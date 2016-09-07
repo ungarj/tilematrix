@@ -21,3 +21,10 @@
 * removed IO module (moved to [mapchete](https://github.com/ungarj/mapchete))
 * removed deprecated ``OutputFormats``
 * introduced ``get_parent()`` and ``get_children()`` functions for ``Tile``
+
+# 0.2
+* introduced handling of antimeridian:
+    * get_neighbor() also gets tiles from other side
+    * .shape() returns clipped tile shape
+    * added tiles_from_bounds()
+    * added clip_geometry_to_srs_bounds()
