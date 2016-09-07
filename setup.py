@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='tilematrix',
-    version='0.2',
+    version='0.3',
     description='helps handling tile pyramids',
     author='Joachim Ungar',
     author_email='joachim.ungar@gmail.com',
@@ -22,7 +22,7 @@ setup(
         'geoalchemy2'
     ],
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 3 - Beta',
         'Intended Audience :: Developers',
         'Topic :: Scientific/Engineering :: GIS',
         'License :: OSI Approved :: MIT License',

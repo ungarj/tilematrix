@@ -28,3 +28,7 @@
     * .shape() returns clipped tile shape
     * added tiles_from_bounds()
     * added clip_geometry_to_srs_bounds()
+
+# 0.3
+* fixed duplicate tile return in tiles_from_bounds()
+* rasterio's CRS() class replaced CRS dict
