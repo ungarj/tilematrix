@@ -51,6 +51,14 @@ get_neighbors(connectedness=8)
 
 Returns a maximum of 8 valid neighbor Tiles.
 
+```python
+intersecting(tilepyramid)
+```
+Return all tiles from tilepyramid intersecting with tile.
+
+This helps translating between TilePyramids with different metatiling
+settings.
+* ``tilepyramid``: ``TilePyramid`` object.
 
 
 #### Geometry
@@ -171,6 +179,15 @@ Returns the bounding box for given tile as a ``Polygon``.
 
 #### Tiles
 ```python
+intersecting(tile)
+```
+Return all tiles intersecting with tile.
+
+This helps translating between TilePyramids with different metatiling
+settings.
+* ``tile``: ``Tile`` object.
+
+```python
 tiles_from_bbox(geometry, zoom)
 ```
 * ``geometry``: Must be a ``Polygon`` object.
@@ -183,19 +200,3 @@ tiles_from_geom(geometry, zoom):
 * ``geometry``: Must be one out of ``Polygon``, ``MultiPolygon``, ``LineString``, ``MultiLineString``, ``Point``, ``MultiPoint``.
 
 Returns tiles intersecting with the given geometry at given zoom level.
-
-
-## MetaTilePyramid
-
-A ``MetaTilePyramid`` object needs a ``TilePyramid`` object to be initialized with. Basically, it is a tile matrix with bigger tiles. This is particularly useful as in some cases processing bigger tiles increases the performance.
-It shares all its variables and methods with the underlying ``TilePyramid``.
-
-```python
-MetaTilePyramid(TilePyramid, metatiles=1)
-```
-* ``TilePyramid``: The ``TilePyramid`` it builds on.
-* ``metatiles``: Defines the metatile size. A value of 2 for example concatenates 2x2 ``TilePyramid`` tiles into one metatile. It should have one of these values: 2, 4, 8, 16. Note: a ``metatile`` value of 1 means no metatiling, i.e. the MetaTilePyramid is equal to the TilePyramid.
-
-In addition to the basic properties it inherits from the source ``TilePyramid``, it has the following variables:
-* ``tile_pyramid``: The ``TilePyramid`` it builds on.
-* ``metatiles``: The ``metatiles`` value it was initialized with.

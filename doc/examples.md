@@ -57,3 +57,29 @@ POLYGON ((0.70037841796875 1.40899658203125, 1.40899658203125 1.40899658203125, 
 POLYGON ((-0.00274658203125 0.70587158203125, 0.70587158203125 0.70587158203125, 0.70587158203125 -0.00274658203125, -0.00274658203125 -0.00274658203125, -0.00274658203125 0.70587158203125))
 POLYGON ((0.70037841796875 0.70587158203125, 1.40899658203125 0.70587158203125, 1.40899658203125 -0.00274658203125, 0.70037841796875 -0.00274658203125, 0.70037841796875 0.70587158203125))
 ```
+
+## Metatiling
+
+Metatiling is often used to combine smaller ``(256, 256)`` tiles into bigger ones. The metatiling parameter describes how many small tiles are combines into one bigger metatile. For example a metatiling parameter of 2 would combine 2x2 smaller tiles into one metatile.
+
+You can activate metatiling by initializing a ``TilePyramid`` with a metatiling value.
+
+```python
+# initialize TilePyramid
+tile_pyramid = TilePyramid("geodetic", metatiling=2)
+```
+
+As the tiles are now bigger, the code we used above:
+```python
+some_polygon = Polygon([(0, 0), (1, 1), (1, 0)])
+zoom = 8
+
+for tile in tile_pyramid.tiles_from_geom(some_polygon, zoom):
+    print tile.bbox()
+```
+
+now returns just one but bigger metatile:
+output:
+```python
+POLYGON ((1.40625 0, 1.40625 1.40625, 0 1.40625, 0 0, 1.40625 0))
+```
