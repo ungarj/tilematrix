@@ -496,9 +496,9 @@ def main(args):
                 assert metatilepyramid_height == control_height
             except:
                 print "ERROR: metatile number"
-                print metatiling, zoom
-                print metatilepyramid_width, control_width
-                print metatilepyramid_height, control_height
+                print "metatiling, zoom:", metatiling, zoom
+                print "width:", metatilepyramid_width, control_width
+                print "height:", metatilepyramid_height, control_height
                 raise
 
 
@@ -510,9 +510,9 @@ def main(args):
             assert isinstance(wgs84_meta.matrix_height(zoom), int)
 
             # check metatile size
-            metatile_x_size =  round(wgs84_meta.metatile_x_size(zoom), ROUND)
-            metatile_y_size =  round(wgs84_meta.metatile_y_size(zoom), ROUND)
-            ## assert metatile size equals TilePyramid width and height at zoom 0
+            metatile_x_size = round(wgs84_meta.metatile_x_size(zoom), ROUND)
+            metatile_y_size = round(wgs84_meta.metatile_y_size(zoom), ROUND)
+            # assert metatile size equals TilePyramid width and height at zoom 0
             if zoom == 0:
                 try:
                     if metatiling == 1:
@@ -521,21 +521,24 @@ def main(args):
                         assert metatile_x_size == wgs84.x_size
                     assert metatile_y_size == wgs84.y_size
                 except:
-                    print metatiling, zoom
                     print "ERROR: zoom 0 metatile size not correct"
-                    print metatile_x_size, wgs84.x_size
-                    print metatile_y_size, wgs84.y_size
+                    print "metatiling, zoom:", metatiling, zoom
+                    print "metatile_x_size:", wgs84_meta.metatiling, metatile_x_size, wgs84.x_size
+                    print "metatile_y_size:", metatile_y_size, wgs84.y_size
+                    raise
             ## assert metatile size within TilePyramid bounds
             try:
-                assert (metatile_x_size > 0.0) and (metatile_x_size <= wgs84.x_size)
-                assert (metatile_y_size > 0.0) and (metatile_y_size <= wgs84.y_size)
+                assert (metatile_x_size > 0.0) and (
+                    metatile_x_size <= wgs84.x_size)
+                assert (metatile_y_size > 0.0) and (
+                    metatile_y_size <= wgs84.y_size)
             except:
                 print "ERROR: metatile size"
                 print zoom
-                print metatile_x_size, wgs84_meta.x_size
-                print metatile_y_size, wgs84_meta.x_size
+                print "metatile_x_size:", metatile_x_size, wgs84_meta.x_size
+                print "metatile_y_size:", metatile_y_size, wgs84_meta.x_size
+                raise
             ## calculate control size from tiles
-
             tile_x_size = wgs84.tile_x_size(zoom)
             tile_y_size = wgs84.tile_y_size(zoom)
             we_control_size = round(tile_x_size * float(metatiling), ROUND)
@@ -550,19 +553,25 @@ def main(args):
                 assert metatile_y_size == ns_control_size
             except:
                 print "ERROR: metatile size and control sizes"
-                print metatiling, zoom
+                print "zoom, metatiling:", zoom, metatiling
                 print metatile_x_size, we_control_size
                 print metatile_y_size, ns_control_size
+                raise
 
             # check metatile pixelsize (resolution)
+            pixel_x_size = round(wgs84.pixel_x_size(zoom), ROUND)
+            ctr_pixel_x_size = round(wgs84_meta.pixel_x_size(zoom), ROUND)
+            pixel_y_size = round(wgs84.pixel_y_size(zoom), ROUND)
+            ctr_pixel_y_size = round(wgs84_meta.pixel_y_size(zoom), ROUND)
             try:
-                assert round(wgs84.pixel_x_size(zoom), ROUND) == round(wgs84_meta.pixel_x_size(zoom), ROUND)
-                assert round(wgs84.pixel_y_size(zoom), ROUND) == round(wgs84_meta.pixel_y_size(zoom), ROUND)
+                assert pixel_x_size == ctr_pixel_x_size
+                assert pixel_y_size == ctr_pixel_y_size
             except:
                 print "ERROR: metatile pixel size"
                 print "zoom, metatiling:", zoom, metatiling
-                print round(wgs84.pixel_x_size(zoom), ROUND), round(wgs84_meta.pixel_x_size(zoom), ROUND)
-                print round(wgs84.pixel_y_size(zoom), ROUND), round(wgs84_meta.pixel_y_size(zoom), ROUND)
+                print "pixel_x_size:", pixel_x_size, ctr_pixel_x_size
+                print "pixel_y_size:", pixel_y_size, ctr_pixel_y_size
+                raise
 
     if debug:
         fiji_borders = os.path.join(testdata_directory, "fiji.geojson")
@@ -914,6 +923,7 @@ def main(args):
         except AssertionError:
             print "ERROR: metatile shape at zoom", zoom
             print tile.id, tile.shape(), control_shape
+            raise
 
     # tile shapes with pixelbuffer
     tile_pyramid = TilePyramid("mercator")
@@ -932,14 +942,14 @@ def main(args):
     tile_size = tile_pyramid.tile_size
     control_shapes = [
         (tile_size, tile_size+2*pixelbuffer),
-        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer), # top left
-        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer), # top middle
-        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer), # top right
-        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer), # bottom right
-        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer), # bottom left
-        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer), # bottom middle
-        (tile_size+2*pixelbuffer, tile_size+2*pixelbuffer), # left middle
-        (tile_size+2*pixelbuffer, tile_size+2*pixelbuffer), # right middle
+        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer),  # top left
+        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer),  # top middle
+        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer),  # top right
+        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer),  # bottom right
+        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer),  # bottom left
+        (tile_size+1*pixelbuffer, tile_size+2*pixelbuffer),  # bottom middle
+        (tile_size+2*pixelbuffer, tile_size+2*pixelbuffer),  # left middle
+        (tile_size+2*pixelbuffer, tile_size+2*pixelbuffer),  # right middle
         ]
     for test_tile, control_shape in zip(test_tiles, control_shapes):
         tile = Tile(tile_pyramid, *test_tile)
@@ -960,14 +970,14 @@ def main(args):
         (2, 0, 0),
         (3, 0, 0),
         (4, 0, 0),
-        (5, 0, 0), # top left
-        (5, 0, 1), # top middle
-        (5, 0, 3), # top right
-        (5, 3, 3), # bottom right
-        (5, 3, 0), # bottom left
-        (5, 3, 2), # bottom middle
-        (5, 2, 0), # left middle
-        (5, 2, 3), # right middle
+        (5, 0, 0),  # top left
+        (5, 0, 1),  # top middle
+        (5, 0, 3),  # top right
+        (5, 3, 3),  # bottom right
+        (5, 3, 0),  # bottom left
+        (5, 3, 2),  # bottom middle
+        (5, 2, 0),  # left middle
+        (5, 2, 3),  # right middle
         ]
     for test_tile in test_tiles:
         tile = Tile(metatile_pyramid, *test_tile)
@@ -983,11 +993,35 @@ def main(args):
             print "ERROR: tile pixelbuffer shape for metatile", test_tile
             print tile.id, tile.shape(pixelbuffer), control_shape
 
+    # test intersecting function:
+    # equal metatiling:
+    tile = Tile(TilePyramid("geodetic", metatiling=1), 3, 4, 5)
+    pyramid = TilePyramid("geodetic", metatiling=1)
+    assert len(tile.intersecting(pyramid)) == 1
+    assert tile.intersecting(pyramid)[0].id == tile.id
 
-
-
-
-
+    # different metatiling:
+    tile = Tile(TilePyramid("geodetic", metatiling=1), 3, 4, 5)
+    pyramid_metatiling = 2
+    pyramid = TilePyramid("geodetic", metatiling=pyramid_metatiling)
+    assert len(tile.intersecting(pyramid)) == 1
+    intersect = tile.intersecting(pyramid)[0]
+    assert tile.bbox().within(intersect.bbox())
+    tile = Tile(TilePyramid("geodetic", metatiling=8), 13, 4, 5)
+    pyramid_metatiling = 2
+    pyramid = TilePyramid("geodetic", metatiling=pyramid_metatiling)
+    assert len(tile.intersecting(pyramid)) == 16
+    for intersect in tile.intersecting(pyramid):
+        assert intersect.bbox().within(tile.bbox())
+    tile_list = set(
+        tile.id
+        for tile in tile.intersecting(pyramid)
+    )
+    reversed_list = set(
+        tile.id
+        for tile in pyramid.intersecting(tile)
+    )
+    assert not len(tile_list.symmetric_difference(reversed_list))
 
 if __name__ == "__main__":
     main(sys.argv[1:])

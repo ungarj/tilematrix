@@ -1,10 +1,11 @@
+"""Installation recipe for tilematrix."""
 #!/usr/bin/env python
 
 from setuptools import setup
 
 setup(
     name='tilematrix',
-    version='0.3',
+    version='0.4',
     description='helps handling tile pyramids',
     author='Joachim Ungar',
     author_email='joachim.ungar@gmail.com',
@@ -15,11 +16,7 @@ setup(
         'rasterio',
         'shapely',
         'affine',
-        'numpy',
-        'fiona',
-        'pyproj',
-        'six',
-        'geoalchemy2'
+        'six'
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

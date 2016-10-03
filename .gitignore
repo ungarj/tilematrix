@@ -4,3 +4,4 @@ build/
 testenv/
 *.egg-info
 test/testdata/out/*
+venv/

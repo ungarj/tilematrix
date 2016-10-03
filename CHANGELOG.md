@@ -24,11 +24,16 @@
 
 # 0.2
 * introduced handling of antimeridian:
-    * get_neighbor() also gets tiles from other side
-    * .shape() returns clipped tile shape
-    * added tiles_from_bounds()
-    * added clip_geometry_to_srs_bounds()
+    * ``get_neighbor()`` also gets tiles from other side
+    * ``.shape()`` returns clipped tile shape
+    * added ``tiles_from_bounds()``
+    * added ``clip_geometry_to_srs_bounds()``
 
 # 0.3
 * fixed duplicate tile return in tiles_from_bounds()
 * rasterio's CRS() class replaced CRS dict
+
+# 0.4
+* Decision to remove ``MetaTilePyramid`` class (now returns a ``DeprecationWarning``).
+* TilePyramid now has its own ``metatiling`` parameter.
+* ``intersecting()`` function for ``Tile`` and ``TilePyramid`` to relate between ``TilePyramids`` with different ``metatiling`` settings.
