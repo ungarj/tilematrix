@@ -993,35 +993,56 @@ def main(args):
             print "ERROR: tile pixelbuffer shape for metatile", test_tile
             print tile.id, tile.shape(pixelbuffer), control_shape
 
-    # test intersecting function:
-    # equal metatiling:
-    tile = Tile(TilePyramid("geodetic", metatiling=1), 3, 4, 5)
-    pyramid = TilePyramid("geodetic", metatiling=1)
-    assert len(tile.intersecting(pyramid)) == 1
-    assert tile.intersecting(pyramid)[0].id == tile.id
+    """intersecting function"""
+    try:
+        # equal metatiling:
+        tile = Tile(TilePyramid("geodetic", metatiling=1), 3, 4, 5)
+        pyramid = TilePyramid("geodetic", metatiling=1)
+        assert len(tile.intersecting(pyramid)) == 1
+        assert tile.intersecting(pyramid)[0].id == tile.id
 
-    # different metatiling:
-    tile = Tile(TilePyramid("geodetic", metatiling=1), 3, 4, 5)
-    pyramid_metatiling = 2
-    pyramid = TilePyramid("geodetic", metatiling=pyramid_metatiling)
-    assert len(tile.intersecting(pyramid)) == 1
-    intersect = tile.intersecting(pyramid)[0]
-    assert tile.bbox().within(intersect.bbox())
-    tile = Tile(TilePyramid("geodetic", metatiling=8), 13, 4, 5)
-    pyramid_metatiling = 2
-    pyramid = TilePyramid("geodetic", metatiling=pyramid_metatiling)
-    assert len(tile.intersecting(pyramid)) == 16
-    for intersect in tile.intersecting(pyramid):
-        assert intersect.bbox().within(tile.bbox())
-    tile_list = set(
-        tile.id
-        for tile in tile.intersecting(pyramid)
-    )
-    reversed_list = set(
-        tile.id
-        for tile in pyramid.intersecting(tile)
-    )
-    assert not len(tile_list.symmetric_difference(reversed_list))
+        # different metatiling:
+        tile = Tile(TilePyramid("geodetic", metatiling=1), 3, 4, 5)
+        pyramid_metatiling = 2
+        pyramid = TilePyramid("geodetic", metatiling=pyramid_metatiling)
+        assert len(tile.intersecting(pyramid)) == 1
+        intersect = tile.intersecting(pyramid)[0]
+        assert tile.bbox().within(intersect.bbox())
+        tile = Tile(TilePyramid("geodetic", metatiling=8), 13, 4, 5)
+        pyramid_metatiling = 2
+        pyramid = TilePyramid("geodetic", metatiling=pyramid_metatiling)
+        assert len(tile.intersecting(pyramid)) == 16
+        for intersect in tile.intersecting(pyramid):
+            assert intersect.bbox().within(tile.bbox())
+        tile_list = set(
+            tile.id
+            for tile in tile.intersecting(pyramid)
+        )
+        reversed_list = set(
+            tile.id
+            for tile in pyramid.intersecting(tile)
+        )
+        assert not len(tile_list.symmetric_difference(reversed_list))
+        print "OK: intersecting function"
+    except:
+        print "ERROR: intersecting function"
+        raise
+
+    """affine objects"""
+    try:
+        for metatiling in [1, 2, 4, 8, 16]:
+            pyramid = TilePyramid("geodetic", metatiling=metatiling)
+            for zoom in range(22):
+                tile = pyramid.tile(zoom, 0, 0)
+                assert tile.pixel_x_size == tile.pixel_y_size
+                assert tile.affine()[0] == -tile.affine()[4]
+                assert tile.affine(pixelbuffer=10)[0] == \
+                    -tile.affine(pixelbuffer=10)[4]
+        print "OK: Affine objects"
+    except:
+        print "ERROR: Affine objects"
+        raise
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
