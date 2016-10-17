@@ -632,21 +632,27 @@ def _tile_intersecting_tilepyramid(tile, tilepyramid):
     if tile_metatiling == pyramid_metatiling:
         return [tilepyramid.tile(*tile.id)]
     elif tile_metatiling > pyramid_metatiling:
-        return [
-            tilepyramid.tile(
-                zoom,
-                int(multiplier*row+row_offset),
-                int(multiplier*col+col_offset)
-            )
-            for row_offset, col_offset in product(
-                range(int(multiplier)), range(int(multiplier)))
-        ]
+        out_tiles = []
+        for row_offset, col_offset in product(
+            range(int(multiplier)), range(int(multiplier))
+        ):
+            try:
+                out_tiles.append(
+                    tilepyramid.tile(
+                        zoom, int(multiplier*row+row_offset),
+                        int(multiplier*col+col_offset))
+                )
+            except:
+                pass
+        return out_tiles
     elif tile_metatiling < pyramid_metatiling:
-        return [tilepyramid.tile(
-            zoom,
-            int(multiplier*row),
-            int(multiplier*col)
-        )]
+        try:
+            return [
+                tilepyramid.tile(zoom, int(multiplier*row), int(multiplier*col))
+            ]
+        except:
+            return []
+
 
 def _tiles_from_cleaned_bounds(tilepyramid, bounds, zoom):
     """Return all tiles intersecting with bounds."""
