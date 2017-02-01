@@ -1,11 +1,11 @@
-"""Installation recipe for tilematrix."""
 #!/usr/bin/env python
+"""Installation recipe for tilematrix."""
 
 from setuptools import setup
 
 setup(
     name='tilematrix',
-    version='0.4',
+    version='0.5',
     description='helps handling tile pyramids',
     author='Joachim Ungar',
     author_email='joachim.ungar@gmail.com',

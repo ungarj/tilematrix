@@ -37,3 +37,7 @@
 * Decision to remove ``MetaTilePyramid`` class (now returns a ``DeprecationWarning``).
 * TilePyramid now has its own ``metatiling`` parameter.
 * ``intersecting()`` function for ``Tile`` and ``TilePyramid`` to relate between ``TilePyramids`` with different ``metatiling`` settings.
+
+# 0.5
+* ``intersection()`` doesn't return invalid tiles.
+* Moved copyright to EOX IT Services
