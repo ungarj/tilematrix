@@ -2,7 +2,7 @@
 
 from shapely.geometry import Polygon, GeometryCollection, box
 from shapely.affinity import translate
-from itertools import product
+from itertools import product, chain
 
 
 def clip_geometry_to_srs_bounds(geometry, pyramid, multipart=False):
@@ -74,10 +74,58 @@ def _tile_intersecting_tilepyramid(tile, tilepyramid):
         ]
     elif tile_metatiling < pyramid_metatiling:
         return [
-            tilepyramid.tile(
-                zoom, int(multiplier*row), int(multiplier*col)
-            )
+            tilepyramid.tile(zoom, int(multiplier*row), int(multiplier*col))
         ]
+
+
+def _global_tiles_from_bounds(tp, bounds, zoom):
+    """Return also Tiles if bounds cross the antimeridian."""
+    left, bottom, right, top = bounds
+    seen = set()
+    # clip to tilepyramid top and bottom bounds
+    top = tp.top if top > tp.top else top
+    bottom = tp.bottom if bottom < tp.bottom else bottom
+
+    if left >= tp.left and right <= tp.right:
+        for tile in _tiles_from_cleaned_bounds(
+            tp, bounds, zoom
+        ):
+            yield tile
+
+    # bounds overlap on the Western side with antimeridian
+    if left < tp.left:
+        for tile in chain(
+            # tiles west of antimeridian
+            _tiles_from_cleaned_bounds(
+                tp,
+                (left + (tp.right - tp.left), bottom, tp.right, top),
+                zoom
+            ),
+            # tiles east of antimeridian
+            _tiles_from_cleaned_bounds(
+                tp, (tp.left, bottom, right, top), zoom)
+        ):
+            # make output tiles unique
+            if tile.id not in seen:
+                seen.add(tile.id)
+                yield tile
+
+    # bounds overlap on the Eastern side with antimeridian
+    if right > tp.right:
+        for tile in chain(
+            # tiles west of antimeridian
+            _tiles_from_cleaned_bounds(
+                tp, (left, bottom, tp.right, top), zoom),
+            # tiles east of antimeridian
+            _tiles_from_cleaned_bounds(
+                tp,
+                (tp.left, bottom, right - (tp.right - tp.left), top),
+                zoom)
+        ):
+            # make output tiles unique
+            if tile.id not in seen:
+                seen.add(tile.id)
+                yield tile
 
 
 def _tiles_from_cleaned_bounds(tilepyramid, bounds, zoom):

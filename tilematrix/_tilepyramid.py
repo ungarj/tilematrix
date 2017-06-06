@@ -1,10 +1,8 @@
 """Handling tile pyramids."""
 
 from shapely.prepared import prep
-from itertools import chain
 import math
 from rasterio.crs import CRS
-import warnings
 
 from . import _conf, _funcs
 from _tile import Tile
@@ -159,59 +157,9 @@ class TilePyramid(object):
             raise ValueError(
                 "bounds must be a tuple of left, bottom, right, top values"
             )
-        left, bottom, right, top = bounds
-
         if self.is_global:
-            seen = set()
-            # clip to tilepyramid top and bottom bounds
-            top = self.top if top > self.top else top
-            bottom = self.bottom if bottom < self.bottom else bottom
-            if left < self.left:
-                for tile in chain(
-                    # tiles west of antimeridian
-                    _funcs._tiles_from_cleaned_bounds(
-                        self,
-                        (
-                            left + (self.right - self.left),
-                            bottom,
-                            self.right,
-                            top
-                        ),
-                        zoom
-                    ),
-                    # tiles east of antimeridian
-                    _funcs._tiles_from_cleaned_bounds(
-                        self, (self.left, bottom, right, top), zoom)
-                ):
-                    # make output tiles unique
-                    if tile.id not in seen:
-                        seen.add(tile.id)
-                        yield tile
-            elif right > self.right:
-                for tile in chain(
-                    # tiles west of antimeridian
-                    _funcs._tiles_from_cleaned_bounds(
-                        self, (left, bottom, self.right, top), zoom),
-                    # tiles east of antimeridian
-                    _funcs._tiles_from_cleaned_bounds(
-                        self,
-                        (
-                            self.left,
-                            bottom,
-                            right - (self.right - self.left),
-                            top
-                        ),
-                        zoom)
-                ):
-                    # make output tiles unique
-                    if tile.id not in seen:
-                        seen.add(tile.id)
-                        yield tile
-            else:
-                for tile in _funcs._tiles_from_cleaned_bounds(
-                    self, bounds, zoom
-                ):
-                    yield tile
+            for tile in _funcs._global_tiles_from_bounds(self, bounds, zoom):
+                yield tile
         else:
             for tile in _funcs._tiles_from_cleaned_bounds(self, bounds, zoom):
                 yield tile
