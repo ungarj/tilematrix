@@ -67,11 +67,24 @@ def test_tiles_from_bounds():
         raise Exception()
     except ValueError:
         pass
-    # crossing the antimeridian
+    # cross the antimeridian on the western side
     bounds = (-183.125, 67.5, -177.5, 73.125)
     control_tiles = {(5, 3, 0), (5, 3, 63)}
     test_tiles = {tile.id for tile in tp.tiles_from_bounds(bounds, 5)}
-    print len(test_tiles)
+    assert control_tiles == test_tiles
+    # cross the antimeridian on the eastern side
+    bounds = (177.5, 67.5, 183.125, 73.125)
+    control_tiles = {(5, 3, 0), (5, 3, 63)}
+    test_tiles = {tile.id for tile in tp.tiles_from_bounds(bounds, 5)}
+    assert control_tiles == test_tiles
+    # cross the antimeridian on both sudes
+    bounds = (-183, 67.5, 183.125, 73.125)
+    control_tiles = {
+        (3, 0, 0), (3, 0, 1), (3, 0, 2), (3, 0, 3), (3, 0, 4), (3, 0, 5),
+        (3, 0, 6), (3, 0, 7), (3, 0, 8), (3, 0, 9), (3, 0, 10), (3, 0, 11),
+        (3, 0, 12), (3, 0, 13), (3, 0, 14), (3, 0, 15)
+    }
+    test_tiles = {tile.id for tile in tp.tiles_from_bounds(bounds, 3)}
     assert control_tiles == test_tiles
 
 
@@ -98,11 +111,15 @@ def test_tiles_from_bbox():
     }
     tp = TilePyramid("geodetic")
     bbox_tiles = {tile.id for tile in tp.tiles_from_bbox(test_bbox, 5)}
-    assert len(test_tiles) == len(bbox_tiles)
-    for tile in test_tiles:
-        assert tile in bbox_tiles
-    for tile in bbox_tiles:
-        assert tile in test_tiles
+    assert test_tiles == bbox_tiles
+
+
+def test_tiles_from_empty_geom():
+    """Get tiles from empty geometry."""
+    test_geom = Polygon()
+    tp = TilePyramid("geodetic")
+    empty_tiles = {tile.id for tile in tp.tiles_from_geom(test_geom, 6)}
+    assert empty_tiles == set([])
 
 
 def test_tiles_from_point():
@@ -110,9 +127,9 @@ def test_tiles_from_point():
     test_point = shape({
         'type': 'Point', 'coordinates': (16.364693096743736, 48.20196113681686)
     })
-    test_tile = [(6, 14, 69)]
+    test_tile = {(6, 14, 69)}
     tp = TilePyramid("geodetic")
-    point_tile = [tile.id for tile in tp.tiles_from_geom(test_point, 6)]
+    point_tile = {tile.id for tile in tp.tiles_from_geom(test_point, 6)}
     assert point_tile == test_tile
 
 

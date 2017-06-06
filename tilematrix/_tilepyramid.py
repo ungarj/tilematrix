@@ -1,32 +1,14 @@
 """Handling tile pyramids."""
 
-from shapely.geometry import Polygon, GeometryCollection, box
-from shapely.validation import explain_validity
+from shapely.geometry import box
 from shapely.prepared import prep
-from shapely.affinity import translate
-from itertools import product, chain
+from itertools import chain
 import math
 from affine import Affine
 from rasterio.crs import CRS
 import warnings
 
-ROUND = 20
-PYRAMID_PARAMS = {
-    "geodetic": {
-        "shape": (2, 1),  # tile columns and rows at zoom level 0
-        "bounds": (-180., 90., 180., -90.),  # pyramid bounds
-        "is_global": True,  # if false, no antimeridian handling
-        "epsg": 4326  # EPSG code
-        },
-    "mercator": {
-        "shape": (1, 1),
-        "bounds": (
-            -20037508.3427892, 20037508.3427892, 20037508.3427892,
-            -20037508.3427892),
-        "is_global": True,
-        "epsg": 3857
-        }
-    }
+from . import _conf, _funcs
 
 
 class TilePyramid(object):
@@ -46,10 +28,10 @@ class TilePyramid(object):
 
     def __init__(self, projection, tile_size=256, metatiling=1):
         """Initialize TilePyramid."""
-        if projection not in PYRAMID_PARAMS:
+        if projection not in _conf.PYRAMID_PARAMS:
             raise ValueError(
                 "WMTS tileset '%s' not found. Use one of %s" % (
-                    projection, PYRAMID_PARAMS.keys()
+                    projection, _conf.PYRAMID_PARAMS.keys()
                 )
             )
         try:
@@ -60,15 +42,15 @@ class TilePyramid(object):
         self.tile_size = tile_size
         self.metatile_size = tile_size*metatiling
         self.type = projection
-        self._shape = PYRAMID_PARAMS[projection]["shape"]
-        self.left, self.top, self.right, self.bottom = PYRAMID_PARAMS[
+        self._shape = _conf.PYRAMID_PARAMS[projection]["shape"]
+        self.left, self.top, self.right, self.bottom = _conf.PYRAMID_PARAMS[
             projection]["bounds"]
-        self.is_global = PYRAMID_PARAMS[projection]["is_global"]
-        self.srid = PYRAMID_PARAMS[projection]["epsg"]
+        self.is_global = _conf.PYRAMID_PARAMS[projection]["is_global"]
+        self.srid = _conf.PYRAMID_PARAMS[projection]["epsg"]
         self.crs = CRS().from_epsg(self.srid)
         # size in map units
-        self.x_size = float(round(self.right - self.left, ROUND))
-        self.y_size = float(round(self.top - self.bottom, ROUND))
+        self.x_size = float(round(self.right - self.left, _conf.ROUND))
+        self.y_size = float(round(self.top - self.bottom, _conf.ROUND))
 
     def tile(self, zoom, row, col):
         """
@@ -104,7 +86,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        return round(self.x_size/self.matrix_width(zoom), ROUND)
+        return round(self.x_size/self.matrix_width(zoom), _conf.ROUND)
 
     def tile_y_size(self, zoom):
         """
@@ -112,7 +94,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        return round(self.y_size/self.matrix_height(zoom), ROUND)
+        return round(self.y_size/self.matrix_height(zoom), _conf.ROUND)
 
     def tile_width(self, zoom):
         """
@@ -141,7 +123,7 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         return float(
-            round(self.tile_x_size(zoom)/self.tile_width(zoom), ROUND))
+            round(self.tile_x_size(zoom)/self.tile_width(zoom), _conf.ROUND))
 
     def pixel_y_size(self, zoom):
         """
@@ -150,7 +132,7 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         return float(
-            round(self.tile_y_size(zoom)/self.tile_height(zoom), ROUND))
+            round(self.tile_y_size(zoom)/self.tile_height(zoom), _conf.ROUND))
 
     def intersecting(self, tile):
         """
@@ -161,7 +143,7 @@ class TilePyramid(object):
 
         - tile: a Tile object
         """
-        return _tile_intersecting_tilepyramid(tile, self)
+        return _funcs._tile_intersecting_tilepyramid(tile, self)
 
     def tiles_from_bounds(self, bounds, zoom):
         """
@@ -182,17 +164,24 @@ class TilePyramid(object):
 
         if self.is_global:
             seen = set()
+            # clip to tilepyramid top and bottom bounds
             top = self.top if top > self.top else top
             bottom = self.bottom if bottom < self.bottom else bottom
             if left < self.left:
                 for tile in chain(
                     # tiles west of antimeridian
-                    _tiles_from_cleaned_bounds(
-                        self, (left+(2*self.left), bottom, self.right, top),
+                    _funcs._tiles_from_cleaned_bounds(
+                        self,
+                        (
+                            left + (self.right - self.left),
+                            bottom,
+                            self.right,
+                            top
+                        ),
                         zoom
                     ),
                     # tiles east of antimeridian
-                    _tiles_from_cleaned_bounds(
+                    _funcs._tiles_from_cleaned_bounds(
                         self, (self.left, bottom, right, top), zoom)
                 ):
                     # make output tiles unique
@@ -202,11 +191,17 @@ class TilePyramid(object):
             elif right > self.right:
                 for tile in chain(
                     # tiles west of antimeridian
-                    _tiles_from_cleaned_bounds(
+                    _funcs._tiles_from_cleaned_bounds(
                         self, (left, bottom, self.right, top), zoom),
                     # tiles east of antimeridian
-                    _tiles_from_cleaned_bounds(
-                        self, (self.left, bottom, right-(2*self.right), top),
+                    _funcs._tiles_from_cleaned_bounds(
+                        self,
+                        (
+                            self.left,
+                            bottom,
+                            right - (self.right - self.left),
+                            top
+                        ),
                         zoom)
                 ):
                     # make output tiles unique
@@ -214,10 +209,12 @@ class TilePyramid(object):
                         seen.add(tile.id)
                         yield tile
             else:
-                for tile in _tiles_from_cleaned_bounds(self, bounds, zoom):
+                for tile in _funcs._tiles_from_cleaned_bounds(
+                    self, bounds, zoom
+                ):
                     yield tile
         else:
-            for tile in _tiles_from_cleaned_bounds(self, bounds, zoom):
+            for tile in _funcs._tiles_from_cleaned_bounds(self, bounds, zoom):
                 yield tile
 
     def tiles_from_bbox(self, geometry, zoom):
@@ -236,23 +233,9 @@ class TilePyramid(object):
         - geometry: shapely geometry
         - zoom: zoom level
         """
-        if not geometry.is_valid:
-            try:
-                clean = geometry.buffer(0.0)
-                assert clean.is_valid
-                assert clean.area > 0
-                geometry = clean
-            except AssertionError:
-                raise IOError(
-                    str(
-                        "invalid geometry could not be fixed: '%s'" %
-                        explain_validity(geometry)
-                        )
-                    )
-        if geometry.almost_equals(geometry.envelope, ROUND):
-            for tile in self.tiles_from_bbox(geometry, zoom):
-                yield tile
-        elif geometry.geom_type == "Point":
+        if geometry.is_empty:
+            raise StopIteration()
+        if geometry.geom_type == "Point":
             lon, lat = list(geometry.coords)[0]
             tilelon = self.left
             tilelat = self.top
@@ -272,15 +255,13 @@ class TilePyramid(object):
             "MultiPoint", "GeometryCollection"
         ):
             prepared_geometry = prep(
-                clip_geometry_to_srs_bounds(geometry, self)
-                )
+                _funcs.clip_geometry_to_srs_bounds(geometry, self)
+            )
             for tile in self.tiles_from_bbox(geometry, zoom):
                 if prepared_geometry.intersects(tile.bbox()):
                     yield tile
-        elif geometry.is_empty:
-            pass
         else:
-            raise ValueError("ERROR: no valid geometry: %s" % geometry.type)
+            raise ValueError("no valid geometry: %s" % geometry.type)
 
 
 class Tile(object):
@@ -312,10 +293,10 @@ class Tile(object):
         self.pixel_y_size = self.tile_pyramid.pixel_y_size(self.zoom)
         self.left = float(round(
             self.tile_pyramid.left+((self.col)*self.x_size),
-            ROUND))
+            _conf.ROUND))
         self.top = float(round(
             self.tile_pyramid.top-((self.row)*self.y_size),
-            ROUND))
+            _conf.ROUND))
         self.right = self.left + self.x_size
         self.bottom = self.top - self.y_size
         self.srid = tile_pyramid.srid
@@ -488,7 +469,7 @@ class Tile(object):
 
         - tilepyramid: a TilePyramid object
         """
-        return _tile_intersecting_tilepyramid(self, tilepyramid)
+        return _funcs._tile_intersecting_tilepyramid(self, tilepyramid)
 
     def _clean_tile(self, tile):
         """
@@ -537,128 +518,3 @@ class MetaTilePyramid(TilePyramid):
         self.metatiling = metatiles
         self.metatile_x_size = self.tile_x_size
         self.metatile_y_size = self.tile_y_size
-
-
-"""Helper functions."""
-
-
-def clip_geometry_to_srs_bounds(geometry, pyramid, multipart=False):
-    """
-    Clip input geometry to SRS bounds of given TilePyramid.
-
-    If geometry passes the antimeridian, it will be split up in a multipart
-    geometry and shifted to within the SRS boundaries.
-    Note: geometry SRS must be the TilePyramid SRS!
-
-    - geometry: any shapely geometry
-    - pyramid: a TilePyramid object
-    - multipart: return list of geometries instead of a GeometryCollection
-    """
-    try:
-        assert geometry.is_valid
-    except AssertionError:
-        raise ValueError("invalid geometry given")
-    try:
-        assert isinstance(pyramid, TilePyramid or MetaTilePyramid)
-    except AssertionError:
-        raise ValueError("not a TilePyramid object")
-    pyramid_bbox = box(
-        pyramid.left, pyramid.bottom, pyramid.right, pyramid.top)
-
-    # Special case for global tile pyramids if geometry extends over tile
-    # pyramid boundaries (such as the antimeridian).
-    if pyramid.is_global and not geometry.within(pyramid_bbox):
-        inside_geom = geometry.intersection(pyramid_bbox)
-        outside_geom = geometry.difference(pyramid_bbox)
-        # shift outside geometry so it lies within SRS bounds
-        if isinstance(outside_geom, Polygon):
-            outside_geom = [outside_geom]
-        all_geoms = [inside_geom]
-        for geom in outside_geom:
-            geom_left = geom.bounds[0]
-            geom_right = geom.bounds[2]
-            if geom_left < pyramid.left:
-                geom = translate(geom, xoff=2*pyramid.right)
-            elif geom_right > pyramid.right:
-                geom = translate(geom, xoff=-2*pyramid.right)
-            all_geoms.append(geom)
-        if multipart:
-            return all_geoms
-        else:
-            return GeometryCollection(all_geoms)
-
-    else:
-        if multipart:
-            return [geometry]
-        else:
-            return geometry
-
-
-def _tile_intersecting_tilepyramid(tile, tilepyramid):
-    """Return all tiles from tilepyramid intersecting with tile."""
-    assert isinstance(tile, Tile)
-    assert isinstance(tilepyramid, TilePyramid)
-    assert tile.crs == tilepyramid.crs
-    tile_metatiling = tile.tile_pyramid.metatiling
-    pyramid_metatiling = tilepyramid.metatiling
-    zoom, row, col = tile.id
-    multiplier = float(tile_metatiling)/float(pyramid_metatiling)
-    if tile_metatiling == pyramid_metatiling:
-        return [tilepyramid.tile(*tile.id)]
-    elif tile_metatiling > pyramid_metatiling:
-        out_tiles = []
-        for row_offset, col_offset in product(
-            range(int(multiplier)), range(int(multiplier))
-        ):
-            try:
-                out_tiles.append(
-                    tilepyramid.tile(
-                        zoom, int(multiplier*row+row_offset),
-                        int(multiplier*col+col_offset))
-                )
-            except Exception:
-                pass
-        return out_tiles
-    elif tile_metatiling < pyramid_metatiling:
-        try:
-            return [
-                tilepyramid.tile(
-                    zoom, int(multiplier*row), int(multiplier*col)
-                )
-            ]
-        except Exception:
-            return []
-
-
-def _tiles_from_cleaned_bounds(tilepyramid, bounds, zoom):
-    """Return all tiles intersecting with bounds."""
-    left, bottom, right, top = bounds
-    tile_x_size = tilepyramid.tile_x_size(zoom)
-    tile_y_size = tilepyramid.tile_y_size(zoom)
-    tilelon = tilepyramid.left
-    tilelat = tilepyramid.top
-    cols = []
-    rows = []
-    col = -1
-    row = -1
-    while tilelon <= left:
-        tilelon += tile_x_size
-        col += 1
-    cols.append(col)
-    while tilelon < right:
-        tilelon += tile_x_size
-        col += 1
-        cols.append(col)
-    while tilelat >= top:
-        tilelat -= tile_y_size
-        row += 1
-    rows.append(row)
-    while tilelat > bottom:
-        tilelat -= tile_y_size
-        row += 1
-        rows.append(row)
-    for tile_id in product([zoom], rows, cols):
-        try:
-            yield tilepyramid.tile(*tile_id)
-        except ValueError:
-            pass
