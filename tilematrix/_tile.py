@@ -20,6 +20,7 @@ class Tile(object):
     def __init__(self, tile_pyramid, zoom, row, col):
         """Initialize Tile."""
         self.tile_pyramid = tile_pyramid
+        self.tp = tile_pyramid
         self.crs = tile_pyramid.crs
         self.zoom = zoom
         self.row = row
@@ -117,10 +118,10 @@ class Tile(object):
         width = self.width + 2 * pixelbuffer
         if pixelbuffer:
             matrix_height = self.tile_pyramid.matrix_height(self.zoom)
-            if self.row in [0, matrix_height-1]:
-                height = self.height+pixelbuffer
             if matrix_height == 1:
                 height = self.height
+            elif self.row in [0, matrix_height-1]:
+                height = self.height + pixelbuffer
         return (height, width)
 
     def is_valid(self):
@@ -180,7 +181,7 @@ class Tile(object):
             )
         zoom, row, col = self.zoom, self.row, self.col
         neighbors = []
-        # 4-connected neighbors
+        # 4-connected neighborsfor pyramid
         for candidate in [
             self.tile_pyramid.tile(zoom, row-1, col),
             self.tile_pyramid.tile(zoom, row, col+1),

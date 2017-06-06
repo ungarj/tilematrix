@@ -39,7 +39,7 @@ class TilePyramid(object):
             raise ValueError("metatling must be one of 1, 2, 4, 8, 16")
         self.metatiling = metatiling
         self.tile_size = tile_size
-        self.metatile_size = tile_size*metatiling
+        self.metatile_size = tile_size * metatiling
         self.type = projection
         self._shape = _conf.PYRAMID_PARAMS[projection]["shape"]
         self.left, self.top, self.right, self.bottom = _conf.PYRAMID_PARAMS[
@@ -67,7 +67,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        width = int(math.ceil(self._shape[0]*2**(zoom)/self.metatiling))
+        width = int(math.ceil(self._shape[0] * 2**(zoom) / self.metatiling))
         return 1 if width < 1 else width
 
     def matrix_height(self, zoom):
@@ -76,7 +76,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        height = int(math.ceil(self._shape[1]*2**(zoom)/self.metatiling))
+        height = int(math.ceil(self._shape[1] * 2**(zoom) / self.metatiling))
         return 1 if height < 1 else height
 
     def tile_x_size(self, zoom):
@@ -85,7 +85,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        return round(self.x_size/self.matrix_width(zoom), _conf.ROUND)
+        return round(self.x_size / self.matrix_width(zoom), _conf.ROUND)
 
     def tile_y_size(self, zoom):
         """
@@ -93,7 +93,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        return round(self.y_size/self.matrix_height(zoom), _conf.ROUND)
+        return round(self.y_size / self.matrix_height(zoom), _conf.ROUND)
 
     def tile_width(self, zoom):
         """
@@ -101,8 +101,8 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        matrix_pixel = 2**(zoom)*self.tile_size*self._shape[0]
-        tile_pixel = self.tile_size*self.metatiling
+        matrix_pixel = 2**(zoom) * self.tile_size * self._shape[0]
+        tile_pixel = self.tile_size * self.metatiling
         return matrix_pixel if tile_pixel > matrix_pixel else tile_pixel
 
     def tile_height(self, zoom):
@@ -111,8 +111,8 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        matrix_pixel = 2**(zoom)*self.tile_size*self._shape[1]
-        tile_pixel = self.tile_size*self.metatiling
+        matrix_pixel = 2**(zoom) * self.tile_size * self._shape[1]
+        tile_pixel = self.tile_size * self.metatiling
         return matrix_pixel if tile_pixel > matrix_pixel else tile_pixel
 
     def pixel_x_size(self, zoom):

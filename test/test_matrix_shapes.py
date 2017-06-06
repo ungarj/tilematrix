@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Test tile and tile matrix shapes."""
+"""Test tile matrix shapes."""
 
 from tilematrix import TilePyramid
 
