@@ -103,10 +103,9 @@ class Tile(object):
 
         - pixelbuffer: tile buffer in pixels
         """
-        left = self.bounds(pixelbuffer=pixelbuffer)[0]
+        left = self.bounds(pixelbuffer)[0]
         top = self.bounds(pixelbuffer=pixelbuffer)[3]
-        return Affine.translation(left, top) * Affine.scale(
-            self.pixel_x_size, -self.pixel_y_size)
+        return Affine(self.pixel_x_size, 0, left, 0, -self.pixel_y_size, top)
 
     def shape(self, pixelbuffer=0):
         """
@@ -157,7 +156,7 @@ class Tile(object):
             self.tile_pyramid.tile(self.zoom+1, self.row*2+1, self.col*2+1)
         ]
 
-    def get_neighbors(self, connectedness=8, count=None):
+    def get_neighbors(self, connectedness=8):
         """
         Return tile neighbors.
 
@@ -171,39 +170,45 @@ class Tile(object):
 
         - connectedness: [4 or 8] return four direct neighbors or all eight.
         """
-        try:
-            assert connectedness in [4, 8]
-        except AssertionError:
+        if connectedness not in [4, 8]:
             raise ValueError("only connectedness values 8 or 4 are allowed")
-        if count:
-            raise DeprecationWarning(
-                "'count' parameter was replaced by 'connectedness'"
-            )
-        zoom, row, col = self.zoom, self.row, self.col
-        neighbors = []
-        # 4-connected neighborsfor pyramid
-        for candidate in [
-            self.tile_pyramid.tile(zoom, row-1, col),
-            self.tile_pyramid.tile(zoom, row, col+1),
-            self.tile_pyramid.tile(zoom, row+1, col),
-            self.tile_pyramid.tile(zoom, row, col-1),
-        ]:
-            neighbor = self._clean_tile(candidate)
-            if neighbor:
-                neighbors.append(neighbor)
-        # 8-connected neighbors
-        if connectedness == 8:
-            for candidate in [
-                self.tile_pyramid.tile(zoom, row-1, col+1),
-                self.tile_pyramid.tile(zoom, row+1, col+1),
-                self.tile_pyramid.tile(zoom, row+1, col-1),
-                self.tile_pyramid.tile(zoom, row-1, col-1)
-            ]:
-                neighbor = self._clean_tile(candidate)
-                if neighbor:
-                    neighbors.append(neighbor)
 
-        return neighbors
+        unique_neighbors = {}
+        # 4-connected neighborsfor pyramid
+        matrix_offsets = [
+            (-1, 0),  # above
+            (0, 1),   # right
+            (1, 0),   # below
+            (0, -1)   # left
+        ]
+        if connectedness == 8:
+            matrix_offsets.extend([
+                (-1, 1),  # above right
+                (1, 1),   # below right
+                (1, -1),  # below left
+                (-1, -1)  # above left
+            ])
+
+        for row_offset, col_offset in matrix_offsets:
+            new_row = self.row + row_offset
+            new_col = self.col + col_offset
+            # omit if row is outside of tile matrix
+            if new_row < 0 or new_row >= self.tp.matrix_height(self.zoom):
+                continue
+            # wrap around antimeridian if new column is outside of tile matrix
+            if new_col < 0:
+                new_col = self.tp.matrix_width(self.zoom) + new_col
+            elif new_col >= self.tp.matrix_width(self.zoom):
+                new_col -= self.tp.matrix_width(self.zoom)
+            # omit if new tile is current tile
+            if new_row == self.row and new_col == self.col:
+                continue
+            # create new tile
+            unique_neighbors[(new_row, new_col)] = self.tp.tile(
+                self.zoom, new_row, new_col
+            )
+
+        return unique_neighbors.values()
 
     def intersecting(self, tilepyramid):
         """
@@ -215,28 +220,3 @@ class Tile(object):
         - tilepyramid: a TilePyramid object
         """
         return _funcs._tile_intersecting_tilepyramid(self, tilepyramid)
-
-    def _clean_tile(self, tile):
-        """
-        Return valid neighbor over tile matrix bounds.
-
-        By wrapping around the antimeridian if necessary or None if tile could
-        not be cleaned.
-        """
-        zoom, row, col = tile.id
-        # return None if tile is above or below tile matrix
-        if row >= 0 and row < self.tile_pyramid.matrix_height(zoom):
-            # fix if on eastern side of antimeridian
-            if col < 0:
-                col += self.tile_pyramid.matrix_width(zoom)
-            # fix if on western side of antimeridian
-            if col >= self.tile_pyramid.matrix_width(zoom):
-                col -= self.tile_pyramid.matrix_width(zoom)
-            out_tile = self.tile_pyramid.tile(zoom, row, col)
-            # final validity check
-            if out_tile.is_valid():
-                return out_tile
-            else:
-                return None
-        else:
-            return None

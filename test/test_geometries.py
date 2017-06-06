@@ -26,6 +26,7 @@ def test_tile_bbox():
 
 def test_tile_bbox_buffer():
     """Tile bounding box with buffer."""
+    # default
     tp = TilePyramid("geodetic")
     tile = tp.tile(5, 3, 3)
     testpolygon = Polygon([
@@ -34,6 +35,45 @@ def test_tile_bbox_buffer():
         [-163.14697265625, 73.14697265625]
     ])
     assert tile.bbox(1).equals(testpolygon)
+
+    # first row of tilematrix
+    tile = tp.tile(5, 0, 0)
+    testpolygon = shape({
+        'type': 'Polygon', 'coordinates': ((
+            (-174.35302734375, 84.35302734375),
+            (-174.35302734375, 90.0),
+            (-180.02197265625, 90.0),
+            (-180.02197265625, 84.35302734375),
+            (-174.35302734375, 84.35302734375)),
+        )
+    })
+    assert tile.bbox(1) == testpolygon
+
+    # last row of tilematrix
+    tile = tp.tile(5, 31, 0)
+    testpolygon = shape({
+        'type': 'Polygon', 'coordinates': ((
+            (-174.35302734375, -90.0),
+            (-174.35302734375, -84.35302734375),
+            (-180.02197265625, -84.35302734375),
+            (-180.02197265625, -90.0),
+            (-174.35302734375, -90.0)),
+        )
+    })
+    assert tile.bbox(1) == testpolygon
+
+    # overflowing all tilepyramid bounds
+    tile = tp.tile(0, 0, 0)
+    testpolygon = shape({
+        'type': 'Polygon', 'coordinates': ((
+            (0.703125, -90.0),
+            (0.703125, 90.0),
+            (-180.703125, 90.0),
+            (-180.703125, -90.0),
+            (0.703125, -90.0)),
+        )
+    })
+    assert tile.bbox(1) == testpolygon
 
 
 def test_tile_bounds():
@@ -46,10 +86,30 @@ def test_tile_bounds():
 def test_tile_bounds_buffer():
     """Tile bounds with buffer."""
     tp = TilePyramid("geodetic")
+    # default
     tile = tp.tile(5, 3, 3)
     testbounds = (
         -163.14697265625, 67.47802734375, -157.47802734375, 73.14697265625
     )
+    assert tile.bounds(1) == testbounds
+
+    # first row of tilematrix
+    tile = tp.tile(5, 0, 0)
+    testbounds = (
+        -180.02197265625, 84.35302734375, -174.35302734375, 90.0
+    )
+    assert tile.bounds(1) == testbounds
+
+    # last row of tilematrix
+    tile = tp.tile(5, 31, 0)
+    testbounds = (
+        -180.02197265625, -90.0, -174.35302734375, -84.35302734375
+    )
+    assert tile.bounds(1) == testbounds
+
+    # overflowing all tilepyramid bounds
+    tile = tp.tile(0, 0, 0)
+    testbounds = (-180.703125, -90.0, 0.703125, 90.0)
     assert tile.bounds(1) == testbounds
 
 
