@@ -1,0 +1,4 @@
+shapely
+affine
+rasterio
+six

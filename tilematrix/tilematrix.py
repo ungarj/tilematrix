@@ -46,12 +46,12 @@ class TilePyramid(object):
 
     def __init__(self, projection, tile_size=256, metatiling=1):
         """Initialize TilePyramid."""
-        projections = ("geodetic", "mercator")
-        try:
-            assert projection in projections
-        except AssertionError:
-            raise ValueError("WMTS tileset '%s' not found. Use one of %s" % (
-                projection, projections))
+        if projection not in PYRAMID_PARAMS:
+            raise ValueError(
+                "WMTS tileset '%s' not found. Use one of %s" % (
+                    projection, PYRAMID_PARAMS.keys()
+                )
+            )
         try:
             assert metatiling in (1, 2, 4, 8, 16)
         except AssertionError:
@@ -86,7 +86,6 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        self._check_zoom(zoom)
         width = int(math.ceil(self._shape[0]*2**(zoom)/self.metatiling))
         return 1 if width < 1 else width
 
@@ -96,7 +95,6 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        self._check_zoom(zoom)
         height = int(math.ceil(self._shape[1]*2**(zoom)/self.metatiling))
         return 1 if height < 1 else height
 
@@ -106,7 +104,6 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        self._check_zoom(zoom)
         return round(self.x_size/self.matrix_width(zoom), ROUND)
 
     def tile_y_size(self, zoom):
@@ -115,7 +112,6 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        self._check_zoom(zoom)
         return round(self.y_size/self.matrix_height(zoom), ROUND)
 
     def tile_width(self, zoom):
@@ -124,7 +120,6 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        self._check_zoom(zoom)
         matrix_pixel = 2**(zoom)*self.tile_size*self._shape[0]
         tile_pixel = self.tile_size*self.metatiling
         return matrix_pixel if tile_pixel > matrix_pixel else tile_pixel
@@ -135,7 +130,6 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        self._check_zoom(zoom)
         matrix_pixel = 2**(zoom)*self.tile_size*self._shape[1]
         tile_pixel = self.tile_size*self.metatiling
         return matrix_pixel if tile_pixel > matrix_pixel else tile_pixel
@@ -180,21 +174,16 @@ class TilePyramid(object):
             pyramid CRS
         - zoom: zoom level
         """
-        try:
-            assert isinstance(bounds, tuple)
-            left, bottom, right, top = bounds
-        except:
+        if not isinstance(bounds, tuple) or len(bounds) != 4:
             raise ValueError(
                 "bounds must be a tuple of left, bottom, right, top values"
             )
-        self._check_zoom(zoom)
+        left, bottom, right, top = bounds
 
         if self.is_global:
             seen = set()
-            if top > self.top:
-                top = self.top
-            if bottom < self.bottom:
-                bottom = self.bottom
+            top = self.top if top > self.top else top
+            bottom = self.bottom if bottom < self.bottom else bottom
             if left < self.left:
                 for tile in chain(
                     # tiles west of antimeridian
@@ -238,7 +227,6 @@ class TilePyramid(object):
         - geometry: shapely geometry
         - zoom: zoom level
         """
-        self._check_zoom(zoom)
         return self.tiles_from_bounds(geometry.bounds, zoom)
 
     def tiles_from_geom(self, geometry, zoom):
@@ -248,9 +236,7 @@ class TilePyramid(object):
         - geometry: shapely geometry
         - zoom: zoom level
         """
-        try:
-            assert geometry.is_valid
-        except AssertionError:
+        if not geometry.is_valid:
             try:
                 clean = geometry.buffer(0.0)
                 assert clean.is_valid
@@ -296,12 +282,6 @@ class TilePyramid(object):
         else:
             raise ValueError("ERROR: no valid geometry: %s" % geometry.type)
 
-    def _check_zoom(self, zoom):
-        try:
-            assert isinstance(zoom, int)
-        except:
-            raise ValueError("Zoom (%s) must be an integer." % (zoom))
-
 
 class Tile(object):
     """
@@ -316,12 +296,6 @@ class Tile(object):
 
     def __init__(self, tile_pyramid, zoom, row, col):
         """Initialize Tile."""
-        try:
-            for p in (zoom, row, col):
-                assert isinstance(p, int)
-        except:
-            raise ValueError("Tile index (%s %s %s) must be integers." % (
-                zoom, row, col))
         self.tile_pyramid = tile_pyramid
         self.crs = tile_pyramid.crs
         self.zoom = zoom
@@ -642,15 +616,17 @@ def _tile_intersecting_tilepyramid(tile, tilepyramid):
                         zoom, int(multiplier*row+row_offset),
                         int(multiplier*col+col_offset))
                 )
-            except:
+            except Exception:
                 pass
         return out_tiles
     elif tile_metatiling < pyramid_metatiling:
         try:
             return [
-                tilepyramid.tile(zoom, int(multiplier*row), int(multiplier*col))
+                tilepyramid.tile(
+                    zoom, int(multiplier*row), int(multiplier*col)
+                )
             ]
-        except:
+        except Exception:
             return []
 
 
