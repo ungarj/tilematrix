@@ -1,4 +1,4 @@
-"""Handling tile pyramids."""
+"""Tile class."""
 
 from shapely.geometry import box
 from affine import Affine

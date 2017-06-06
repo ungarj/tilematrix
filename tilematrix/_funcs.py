@@ -4,8 +4,6 @@ from shapely.geometry import Polygon, GeometryCollection, box
 from shapely.affinity import translate
 from itertools import product
 
-from tilematrix import TilePyramid, MetaTilePyramid, Tile
-
 
 def clip_geometry_to_srs_bounds(geometry, pyramid, multipart=False):
     """
@@ -19,9 +17,7 @@ def clip_geometry_to_srs_bounds(geometry, pyramid, multipart=False):
     - pyramid: a TilePyramid object
     - multipart: return list of geometries instead of a GeometryCollection
     """
-    try:
-        assert geometry.is_valid
-    except AssertionError:
+    if not geometry.is_valid:
         raise ValueError("invalid geometry given")
     pyramid_bbox = box(
         pyramid.left, pyramid.bottom, pyramid.right, pyramid.top)
@@ -61,33 +57,27 @@ def _tile_intersecting_tilepyramid(tile, tilepyramid):
         raise ValueError("Tile and TilePyramid CRSes must be the same.")
     tile_metatiling = tile.tile_pyramid.metatiling
     pyramid_metatiling = tilepyramid.metatiling
-    zoom, row, col = tile.id
-    multiplier = float(tile_metatiling)/float(pyramid_metatiling)
     if tile_metatiling == pyramid_metatiling:
         return [tilepyramid.tile(*tile.id)]
-    elif tile_metatiling > pyramid_metatiling:
-        out_tiles = []
-        for row_offset, col_offset in product(
-            range(int(multiplier)), range(int(multiplier))
-        ):
-            try:
-                out_tiles.append(
-                    tilepyramid.tile(
-                        zoom, int(multiplier*row+row_offset),
-                        int(multiplier*col+col_offset))
-                )
-            except Exception:
-                pass
-        return out_tiles
+    zoom, row, col = tile.id
+    multiplier = float(tile_metatiling)/float(pyramid_metatiling)
+    if tile_metatiling > pyramid_metatiling:
+        return [
+            tilepyramid.tile(
+                zoom,
+                int(multiplier * row + row_offset),
+                int(multiplier * col + col_offset)
+            )
+            for row_offset, col_offset in product(
+                range(int(multiplier)), range(int(multiplier))
+            )
+        ]
     elif tile_metatiling < pyramid_metatiling:
-        try:
-            return [
-                tilepyramid.tile(
-                    zoom, int(multiplier*row), int(multiplier*col)
-                )
-            ]
-        except Exception:
-            return []
+        return [
+            tilepyramid.tile(
+                zoom, int(multiplier*row), int(multiplier*col)
+            )
+        ]
 
 
 def _tiles_from_cleaned_bounds(tilepyramid, bounds, zoom):
