@@ -149,12 +149,27 @@ class Tile(object):
 
     def get_children(self):
         """Return tiles from next zoom level."""
-        return [
-            self.tile_pyramid.tile(self.zoom+1, self.row*2, self.col*2),
-            self.tile_pyramid.tile(self.zoom+1, self.row*2+1, self.col*2),
-            self.tile_pyramid.tile(self.zoom+1, self.row*2, self.col*2+1),
-            self.tile_pyramid.tile(self.zoom+1, self.row*2+1, self.col*2+1)
+        matrix_offsets = [
+            (0, 0),  # top left
+            (0, 1),  # top right
+            (1, 1),  # bottom right
+            (1, 0),  # bottom left
         ]
+        new_zoom = self.zoom + 1
+        children = []
+        for row_offset, col_offset in matrix_offsets:
+            new_row = self.row * 2 + row_offset
+            new_col = self.col * 2 + col_offset
+            if (
+                new_row >= self.tp.matrix_height(new_zoom)
+                ) or (
+                new_col >= self.tp.matrix_width(new_zoom)
+            ):
+                continue
+            children.append(
+                self.tile_pyramid.tile(new_zoom, new_row, new_col)
+            )
+        return children
 
     def get_neighbors(self, connectedness=8):
         """

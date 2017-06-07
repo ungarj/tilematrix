@@ -1,4 +1,4 @@
 shapely
 affine
-rasterio
+rasterio>=1.0a3
 six

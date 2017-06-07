@@ -49,11 +49,26 @@ def test_get_parent():
 
 def test_get_children():
     """Get Tile children."""
+    # no metatiling
     tp = TilePyramid("geodetic")
     tile = tp.tile(8, 100, 100)
     test_children = {
         (9, 200, 200), (9, 201, 200), (9, 200, 201), (9, 201, 201)
     }
+    children = {t.id for t in tile.get_children()}
+    assert test_children == children
+
+    # 2 metatiling
+    tp = TilePyramid("geodetic", metatiling=2)
+    tile = tp.tile(0, 0, 0)
+    test_children = {(1, 0, 0), (1, 0, 1)}
+    children = {t.id for t in tile.get_children()}
+    assert test_children == children
+
+    # 4 metatiling
+    tp = TilePyramid("geodetic", metatiling=4)
+    tile = tp.tile(0, 0, 0)
+    test_children = {(1, 0, 0)}
     children = {t.id for t in tile.get_children()}
     assert test_children == children
 
