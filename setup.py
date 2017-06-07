@@ -13,7 +13,7 @@ setup(
     license='MIT',
     packages=['tilematrix'],
     install_requires=[
-        'rasterio',
+        'rasterio>=1.0a2',
         'shapely',
         'affine',
         'six'
