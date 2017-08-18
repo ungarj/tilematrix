@@ -3,6 +3,11 @@ Changelog
 #########
 
 ---
+0.7
+---
+* converted tuples for bounds and shape attributes to namedtuples
+
+---
 0.6
 ---
 * added ``pytest`` and test cases

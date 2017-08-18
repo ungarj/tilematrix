@@ -9,9 +9,7 @@ from tilematrix import TilePyramid
 def test_affine():
     """Affine output."""
     tp = TilePyramid("geodetic")
-    test_tiles = [
-        (0, 0, 0), (1, 1, 1), (2, 2, 2)
-    ]
+    test_tiles = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
     for tile_id in test_tiles:
         tile = tp.tile(*tile_id)
         test_affine = Affine(
@@ -20,18 +18,16 @@ def test_affine():
         assert tile.affine() == test_affine
     # include pixelbuffer
     pixelbuffer = 10
-    test_tiles = [
-        (1, 1, 1), (2, 2, 2), (3, 3, 3)
-    ]
+    test_tiles = [(1, 1, 1), (2, 2, 2), (3, 3, 3)]
     for tile_id in test_tiles:
         tile = tp.tile(*tile_id)
         test_affine = Affine(
             tile.pixel_x_size,
             0,
-            tile.bounds(pixelbuffer)[0],
+            tile.bounds(pixelbuffer).left,
             0,
             -tile.pixel_y_size,
-            tile.bounds(pixelbuffer)[3]
+            tile.bounds(pixelbuffer).top
         )
         assert tile.affine(10) == test_affine
 

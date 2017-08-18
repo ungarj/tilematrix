@@ -3,6 +3,11 @@
 from shapely.geometry import Polygon, GeometryCollection, box
 from shapely.affinity import translate
 from itertools import product, chain
+from collections import namedtuple
+
+
+Bounds = namedtuple("Bounds", "left bottom right top")
+Shape = namedtuple("Shape", "width height")
 
 
 def clip_geometry_to_srs_bounds(geometry, pyramid, multipart=False):
@@ -19,8 +24,7 @@ def clip_geometry_to_srs_bounds(geometry, pyramid, multipart=False):
     """
     if not geometry.is_valid:
         raise ValueError("invalid geometry given")
-    pyramid_bbox = box(
-        pyramid.left, pyramid.bottom, pyramid.right, pyramid.top)
+    pyramid_bbox = box(*pyramid.bounds)
 
     # Special case for global tile pyramids if geometry extends over tile
     # pyramid boundaries (such as the antimeridian).
@@ -32,11 +36,10 @@ def clip_geometry_to_srs_bounds(geometry, pyramid, multipart=False):
             outside_geom = [outside_geom]
         all_geoms = [inside_geom]
         for geom in outside_geom:
-            geom_left = geom.bounds[0]
-            geom_right = geom.bounds[2]
-            if geom_left < pyramid.left:
+            geom_bounds = Bounds(*geom.bounds)
+            if geom_bounds.left < pyramid.left:
                 geom = translate(geom, xoff=2*pyramid.right)
-            elif geom_right > pyramid.right:
+            elif geom_bounds.right > pyramid.right:
                 geom = translate(geom, xoff=-2*pyramid.right)
             all_geoms.append(geom)
         if multipart:
@@ -51,45 +54,41 @@ def clip_geometry_to_srs_bounds(geometry, pyramid, multipart=False):
             return geometry
 
 
-def _tile_intersecting_tilepyramid(tile, tilepyramid):
+def _tile_intersecting_tilepyramid(tile, tp):
     """Return all tiles from tilepyramid intersecting with tile."""
-    if tile.crs != tilepyramid.crs:
+    if tile.crs != tp.crs:
         raise ValueError("Tile and TilePyramid CRSes must be the same.")
     tile_metatiling = tile.tile_pyramid.metatiling
-    pyramid_metatiling = tilepyramid.metatiling
-    if tile_metatiling == pyramid_metatiling:
-        return [tilepyramid.tile(*tile.id)]
-    zoom, row, col = tile.id
-    multiplier = float(tile_metatiling)/float(pyramid_metatiling)
+    pyramid_metatiling = tp.metatiling
+    multiplier = int(float(tile_metatiling)/float(pyramid_metatiling))
     if tile_metatiling > pyramid_metatiling:
         return [
-            tilepyramid.tile(
-                zoom,
-                int(multiplier * row + row_offset),
-                int(multiplier * col + col_offset)
+            tp.tile(
+                tile.zoom,
+                multiplier * tile.row + row_offset,
+                multiplier * tile.col + col_offset
             )
             for row_offset, col_offset in product(
-                range(int(multiplier)), range(int(multiplier))
+                range(multiplier), range(multiplier)
             )
         ]
     elif tile_metatiling < pyramid_metatiling:
-        return [
-            tilepyramid.tile(zoom, int(multiplier*row), int(multiplier*col))
-        ]
+        return [tp.tile(tile.zoom, multiplier*tile.row, multiplier*tile.col)]
+    else:
+        return [tp.tile(*tile.id)]
 
 
 def _global_tiles_from_bounds(tp, bounds, zoom):
     """Return also Tiles if bounds cross the antimeridian."""
-    left, bottom, right, top = bounds
     seen = set()
+
     # clip to tilepyramid top and bottom bounds
-    top = tp.top if top > tp.top else top
-    bottom = tp.bottom if bottom < tp.bottom else bottom
+    left, right = bounds.left, bounds.right
+    top = tp.top if bounds.top > tp.top else bounds.top
+    bottom = tp.bottom if bounds.bottom < tp.bottom else bounds.bottom
 
     if left >= tp.left and right <= tp.right:
-        for tile in _tiles_from_cleaned_bounds(
-            tp, bounds, zoom
-        ):
+        for tile in _tiles_from_cleaned_bounds(tp, bounds, zoom):
             yield tile
 
     # bounds overlap on the Western side with antimeridian
@@ -98,12 +97,13 @@ def _global_tiles_from_bounds(tp, bounds, zoom):
             # tiles west of antimeridian
             _tiles_from_cleaned_bounds(
                 tp,
-                (left + (tp.right - tp.left), bottom, tp.right, top),
+                Bounds(left + (tp.right - tp.left), bottom, tp.right, top),
                 zoom
             ),
             # tiles east of antimeridian
             _tiles_from_cleaned_bounds(
-                tp, (tp.left, bottom, right, top), zoom)
+                tp, Bounds(tp.left, bottom, right, top), zoom
+            )
         ):
             # make output tiles unique
             if tile.id not in seen:
@@ -115,12 +115,14 @@ def _global_tiles_from_bounds(tp, bounds, zoom):
         for tile in chain(
             # tiles west of antimeridian
             _tiles_from_cleaned_bounds(
-                tp, (left, bottom, tp.right, top), zoom),
+                tp, Bounds(left, bottom, tp.right, top), zoom
+            ),
             # tiles east of antimeridian
             _tiles_from_cleaned_bounds(
                 tp,
-                (tp.left, bottom, right - (tp.right - tp.left), top),
-                zoom)
+                Bounds(tp.left, bottom, right - (tp.right - tp.left), top),
+                zoom
+            )
         ):
             # make output tiles unique
             if tile.id not in seen:
@@ -130,29 +132,28 @@ def _global_tiles_from_bounds(tp, bounds, zoom):
 
 def _tiles_from_cleaned_bounds(tilepyramid, bounds, zoom):
     """Return all tiles intersecting with bounds."""
-    left, bottom, right, top = bounds
     tile_x_size = tilepyramid.tile_x_size(zoom)
     tile_y_size = tilepyramid.tile_y_size(zoom)
-    tilelon = tilepyramid.left
-    tilelat = tilepyramid.top
+    tile_left = tilepyramid.left
+    tile_top = tilepyramid.top
     cols = []
     rows = []
     col = -1
     row = -1
-    while tilelon <= left:
-        tilelon += tile_x_size
+    while tile_left <= bounds.left:
+        tile_left += tile_x_size
         col += 1
     cols.append(col)
-    while tilelon < right:
-        tilelon += tile_x_size
+    while tile_left < bounds.right:
+        tile_left += tile_x_size
         col += 1
         cols.append(col)
-    while tilelat >= top:
-        tilelat -= tile_y_size
+    while tile_top >= bounds.top:
+        tile_top -= tile_y_size
         row += 1
     rows.append(row)
-    while tilelat > bottom:
-        tilelat -= tile_y_size
+    while tile_top > bounds.bottom:
+        tile_top -= tile_y_size
         row += 1
         rows.append(row)
     for tile_id in product([zoom], rows, cols):

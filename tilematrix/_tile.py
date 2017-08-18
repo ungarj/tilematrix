@@ -25,22 +25,19 @@ class Tile(object):
         self.zoom = zoom
         self.row = row
         self.col = col
-        try:
-            assert self.is_valid()
-        except AssertionError:
-            raise ValueError("invalid tile index given: %s %s %s" % (
-                zoom, row, col))
+        if not self.is_valid():
+            raise ValueError(
+                "invalid tile index given: %s %s %s" % (zoom, row, col)
+            )
         self.index = (zoom, row, col)
         self.id = (zoom, row, col)
         self.pixel_x_size = self.tile_pyramid.pixel_x_size(self.zoom)
         self.pixel_y_size = self.tile_pyramid.pixel_y_size(self.zoom)
         self.left = float(round(
-            self.tile_pyramid.left+((self.col)*self.x_size),
-            _conf.ROUND)
+            self.tile_pyramid.left+((self.col)*self.x_size), _conf.ROUND)
         )
         self.top = float(round(
-            self.tile_pyramid.top-((self.row)*self.y_size),
-            _conf.ROUND)
+            self.tile_pyramid.top-((self.row)*self.y_size), _conf.ROUND)
         )
         self.right = self.left + self.x_size
         self.bottom = self.top - self.y_size
@@ -77,7 +74,6 @@ class Tile(object):
         right = self.left + self.x_size
         top = self.top
         if pixelbuffer > 0:
-            assert isinstance(pixelbuffer, int)
             offset = self.pixel_x_size * float(pixelbuffer)
             left -= offset
             bottom -= offset
@@ -87,7 +83,7 @@ class Tile(object):
             top = self.tile_pyramid.top
         if bottom < self.tile_pyramid.bottom:
             bottom = self.tile_pyramid.bottom
-        return (left, bottom, right, top)
+        return _funcs.Bounds(left, bottom, right, top)
 
     def bbox(self, pixelbuffer=0):
         """
@@ -103,9 +99,14 @@ class Tile(object):
 
         - pixelbuffer: tile buffer in pixels
         """
-        left = self.bounds(pixelbuffer)[0]
-        top = self.bounds(pixelbuffer=pixelbuffer)[3]
-        return Affine(self.pixel_x_size, 0, left, 0, -self.pixel_y_size, top)
+        return Affine(
+            self.pixel_x_size,
+            0,
+            self.bounds(pixelbuffer).left,
+            0,
+            -self.pixel_y_size,
+            self.bounds(pixelbuffer).top
+        )
 
     def shape(self, pixelbuffer=0):
         """
@@ -121,23 +122,23 @@ class Tile(object):
                 height = self.height
             elif self.row in [0, matrix_height-1]:
                 height = self.height + pixelbuffer
-        return (height, width)
+        return _funcs.Shape(height, width)
 
     def is_valid(self):
         """Return True if tile is available in tile pyramid."""
-        try:
-            assert isinstance(self.zoom, int)
-            assert self.zoom >= 0
-            assert isinstance(self.row, int)
-            assert self.row >= 0
-            assert isinstance(self.col, int)
-            assert self.col >= 0
-            assert self.col < self.tile_pyramid.matrix_width(self.zoom)
-            assert self.row < self.tile_pyramid.matrix_height(self.zoom)
-        except AssertionError:
-            return False
-        else:
+        if all([
+            isinstance(self.zoom, int),
+            self.zoom >= 0,
+            isinstance(self.row, int),
+            self.row >= 0,
+            isinstance(self.col, int),
+            self.col >= 0,
+            self.col < self.tile_pyramid.matrix_width(self.zoom),
+            self.row < self.tile_pyramid.matrix_height(self.zoom)
+        ]):
             return True
+        else:
+            return False
 
     def get_parent(self):
         """Return tile from previous zoom level."""
@@ -145,7 +146,8 @@ class Tile(object):
             return None
         else:
             return self.tile_pyramid.tile(
-                self.zoom-1, int(self.row/2), int(self.col/2))
+                self.zoom-1, int(self.row/2), int(self.col/2)
+            )
 
     def get_children(self):
         """Return tiles from next zoom level."""

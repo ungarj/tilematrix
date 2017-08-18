@@ -4,7 +4,8 @@ from shapely.prepared import prep
 import math
 from rasterio.crs import CRS
 
-from . import _conf, _funcs
+from . import _funcs
+from _conf import PYRAMID_PARAMS, ROUND
 from _tile import Tile
 
 
@@ -25,29 +26,27 @@ class TilePyramid(object):
 
     def __init__(self, projection, tile_size=256, metatiling=1):
         """Initialize TilePyramid."""
-        if projection not in _conf.PYRAMID_PARAMS:
+        if projection not in PYRAMID_PARAMS:
             raise ValueError(
                 "WMTS tileset '%s' not found. Use one of %s" % (
-                    projection, _conf.PYRAMID_PARAMS.keys()
+                    projection, PYRAMID_PARAMS.keys()
                 )
             )
-        try:
-            assert metatiling in (1, 2, 4, 8, 16)
-        except AssertionError:
+        if metatiling not in (1, 2, 4, 8, 16):
             raise ValueError("metatling must be one of 1, 2, 4, 8, 16")
         self.metatiling = metatiling
         self.tile_size = tile_size
         self.metatile_size = tile_size * metatiling
         self.type = projection
-        self._shape = _conf.PYRAMID_PARAMS[projection]["shape"]
-        self.left, self.top, self.right, self.bottom = _conf.PYRAMID_PARAMS[
-            projection]["bounds"]
-        self.is_global = _conf.PYRAMID_PARAMS[projection]["is_global"]
-        self.srid = _conf.PYRAMID_PARAMS[projection]["epsg"]
+        self._shape = _funcs.Shape(*PYRAMID_PARAMS[projection]["shape"])
+        self.bounds = _funcs.Bounds(*PYRAMID_PARAMS[projection]["bounds"])
+        self.left, self.top, self.right, self.bottom = self.bounds
+        self.is_global = PYRAMID_PARAMS[projection]["is_global"]
+        self.srid = PYRAMID_PARAMS[projection]["epsg"]
         self.crs = CRS().from_epsg(self.srid)
         # size in map units
-        self.x_size = float(round(self.right - self.left, _conf.ROUND))
-        self.y_size = float(round(self.top - self.bottom, _conf.ROUND))
+        self.x_size = float(round(self.right - self.left, ROUND))
+        self.y_size = float(round(self.top - self.bottom, ROUND))
 
     def tile(self, zoom, row, col):
         """
@@ -65,7 +64,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        width = int(math.ceil(self._shape[0] * 2**(zoom) / self.metatiling))
+        width = int(math.ceil(self._shape.width * 2**(zoom) / self.metatiling))
         return 1 if width < 1 else width
 
     def matrix_height(self, zoom):
@@ -74,7 +73,9 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        height = int(math.ceil(self._shape[1] * 2**(zoom) / self.metatiling))
+        height = int(
+            math.ceil(self._shape.height * 2**(zoom) / self.metatiling)
+        )
         return 1 if height < 1 else height
 
     def tile_x_size(self, zoom):
@@ -83,7 +84,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        return round(self.x_size / self.matrix_width(zoom), _conf.ROUND)
+        return round(self.x_size / self.matrix_width(zoom), ROUND)
 
     def tile_y_size(self, zoom):
         """
@@ -91,7 +92,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        return round(self.y_size / self.matrix_height(zoom), _conf.ROUND)
+        return round(self.y_size / self.matrix_height(zoom), ROUND)
 
     def tile_width(self, zoom):
         """
@@ -99,7 +100,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        matrix_pixel = 2**(zoom) * self.tile_size * self._shape[0]
+        matrix_pixel = 2**(zoom) * self.tile_size * self._shape.width
         tile_pixel = self.tile_size * self.metatiling
         return matrix_pixel if tile_pixel > matrix_pixel else tile_pixel
 
@@ -109,7 +110,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
-        matrix_pixel = 2**(zoom) * self.tile_size * self._shape[1]
+        matrix_pixel = 2**(zoom) * self.tile_size * self._shape.height
         tile_pixel = self.tile_size * self.metatiling
         return matrix_pixel if tile_pixel > matrix_pixel else tile_pixel
 
@@ -120,7 +121,8 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         return float(
-            round(self.tile_x_size(zoom)/self.tile_width(zoom), _conf.ROUND))
+            round(self.tile_x_size(zoom)/self.tile_width(zoom), ROUND)
+        )
 
     def pixel_y_size(self, zoom):
         """
@@ -129,7 +131,8 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         return float(
-            round(self.tile_y_size(zoom)/self.tile_height(zoom), _conf.ROUND))
+            round(self.tile_y_size(zoom)/self.tile_height(zoom), ROUND)
+        )
 
     def intersecting(self, tile):
         """
@@ -157,6 +160,8 @@ class TilePyramid(object):
             raise ValueError(
                 "bounds must be a tuple of left, bottom, right, top values"
             )
+        if not isinstance(bounds, _funcs.Bounds):
+            bounds = _funcs.Bounds(*bounds)
         if self.is_global:
             for tile in _funcs._global_tiles_from_bounds(self, bounds, zoom):
                 yield tile
@@ -183,18 +188,13 @@ class TilePyramid(object):
         if geometry.is_empty:
             raise StopIteration()
         if geometry.geom_type == "Point":
-            lon, lat = list(geometry.coords)[0]
-            tilelon = self.left
-            tilelat = self.top
-            tile_x_size = self.tile_x_size(zoom)
-            tile_y_size = self.tile_y_size(zoom)
             col = -1
             row = -1
-            while tilelon < lon:
-                tilelon += tile_x_size
+            while self.left < geometry.x:
+                self.left += self.tile_x_size(zoom)
                 col += 1
-            while tilelat > lat:
-                tilelat -= tile_y_size
+            while self.top > geometry.y:
+                self.top -= self.tile_y_size(zoom)
                 row += 1
             yield self.tile(zoom, row, col)
         elif geometry.geom_type in (
