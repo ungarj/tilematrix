@@ -3,6 +3,11 @@ Changelog
 #########
 
 ---
+0.8
+---
+* ``intersecting`` function fixed
+
+---
 0.7
 ---
 * converted tuples for bounds and shape attributes to namedtuples
