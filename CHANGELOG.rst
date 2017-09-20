@@ -5,7 +5,7 @@ Changelog
 ---
 0.8
 ---
-* ``intersecting`` function fixed
+* ``intersecting`` function fixed (rounding error caused return of wrong tiles)
 
 ---
 0.7
