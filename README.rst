@@ -32,27 +32,19 @@ tile pyramids, it also supports geodetic (WGS84) tile pyramids.
 Installation
 ------------
 
+Use ``pip`` to install the latest stable version:
+
 .. code-block:: shell
 
     pip install tilematrix
 
-In case there are problems installing GDAL/OGR for ``virtualenv``, try the
-following (from here_); works on Ubuntu 16.04):
-
-.. _here: https://gist.github.com/cspanring/5680334
+Manually install the latest development version
 
 .. code-block:: shell
 
-    sudo apt-add-repository ppa:ubuntugis/ubuntugis-unstable
-    sudo apt-get update
-    sudo apt-get install libgdal-dev
+    pip install -r requirements.txt
+    python setup.py install
 
-and run ``pip`` while also providing your GDAL version installed and the
-locations of the headers:
-
-.. code-block:: shell
-
-    pip install gdal==2.1.0 --global-option=build_ext --global-option="-I/usr/include/gdal/"
 
 -------------
 Documentation

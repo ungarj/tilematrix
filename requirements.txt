@@ -2,4 +2,3 @@ shapely
 affine
 rasterio>=1.0a3
 six
-gdal
