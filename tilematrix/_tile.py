@@ -29,8 +29,8 @@ class Tile(object):
             raise ValueError(
                 "invalid tile index given: %s %s %s" % (zoom, row, col)
             )
-        self.index = (zoom, row, col)
-        self.id = (zoom, row, col)
+        self.index = _funcs.TileIndex(zoom, row, col)
+        self.id = _funcs.TileIndex(zoom, row, col)
         self.pixel_x_size = self.tile_pyramid.pixel_x_size(self.zoom)
         self.pixel_y_size = self.tile_pyramid.pixel_y_size(self.zoom)
         self.left = float(round(
