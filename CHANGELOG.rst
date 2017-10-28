@@ -3,6 +3,11 @@ Changelog
 #########
 
 ---
+0.9
+---
+* added Python 3 support
+
+---
 0.8
 ---
 * ``intersecting`` function fixed (rounding error caused return of wrong tiles)

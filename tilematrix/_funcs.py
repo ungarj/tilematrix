@@ -8,6 +8,7 @@ from collections import namedtuple
 
 Bounds = namedtuple("Bounds", "left bottom right top")
 Shape = namedtuple("Shape", "width height")
+TileIndex = namedtuple("TileIndex", "zoom row col")
 
 
 def clip_geometry_to_srs_bounds(geometry, pyramid, multipart=False):

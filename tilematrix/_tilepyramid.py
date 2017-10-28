@@ -5,8 +5,8 @@ import math
 from rasterio.crs import CRS
 
 from . import _funcs
-from _conf import PYRAMID_PARAMS, ROUND
-from _tile import Tile
+from ._conf import PYRAMID_PARAMS, ROUND
+from ._tile import Tile
 
 
 class TilePyramid(object):

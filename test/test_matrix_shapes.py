@@ -17,7 +17,7 @@ def test_geodetic_matrix_shapes():
         6: (128, 64)
     }
     tp = TilePyramid("geodetic")
-    for zoom, shape in matrix_shapes.iteritems():
+    for zoom, shape in matrix_shapes.items():
         assert (tp.matrix_width(zoom), tp.matrix_height(zoom)) == shape
 
     # 2 metatiling
@@ -31,7 +31,7 @@ def test_geodetic_matrix_shapes():
         6: (64, 32),
     }
     tp = TilePyramid("geodetic", metatiling=2)
-    for zoom, shape in matrix_shapes.iteritems():
+    for zoom, shape in matrix_shapes.items():
         assert (tp.matrix_width(zoom), tp.matrix_height(zoom)) == shape
 
     # 4 metatiling
@@ -45,7 +45,7 @@ def test_geodetic_matrix_shapes():
         6: (32, 16),
     }
     tp = TilePyramid("geodetic", metatiling=4)
-    for zoom, shape in matrix_shapes.iteritems():
+    for zoom, shape in matrix_shapes.items():
         assert (tp.matrix_width(zoom), tp.matrix_height(zoom)) == shape
 
     # 8 metatiling
@@ -59,7 +59,7 @@ def test_geodetic_matrix_shapes():
         6: (16, 8),
     }
     tp = TilePyramid("geodetic", metatiling=8)
-    for zoom, shape in matrix_shapes.iteritems():
+    for zoom, shape in matrix_shapes.items():
         assert (tp.matrix_width(zoom), tp.matrix_height(zoom)) == shape
 
     # 16 metatiling
@@ -73,7 +73,7 @@ def test_geodetic_matrix_shapes():
         6: (8, 4),
     }
     tp = TilePyramid("geodetic", metatiling=16)
-    for zoom, shape in matrix_shapes.iteritems():
+    for zoom, shape in matrix_shapes.items():
         assert (tp.matrix_width(zoom), tp.matrix_height(zoom)) == shape
 
 
@@ -90,7 +90,7 @@ def test_mercator_matrix_shapes():
         6: (64, 64)
     }
     tp = TilePyramid("mercator")
-    for zoom, shape in matrix_shapes.iteritems():
+    for zoom, shape in matrix_shapes.items():
         assert (tp.matrix_width(zoom), tp.matrix_height(zoom)) == shape
 
     # 2 metatiling
@@ -104,7 +104,7 @@ def test_mercator_matrix_shapes():
         6: (32, 32),
     }
     tp = TilePyramid("mercator", metatiling=2)
-    for zoom, shape in matrix_shapes.iteritems():
+    for zoom, shape in matrix_shapes.items():
         assert (tp.matrix_width(zoom), tp.matrix_height(zoom)) == shape
 
     # 4 metatiling
@@ -118,7 +118,7 @@ def test_mercator_matrix_shapes():
         6: (16, 16),
     }
     tp = TilePyramid("mercator", metatiling=4)
-    for zoom, shape in matrix_shapes.iteritems():
+    for zoom, shape in matrix_shapes.items():
         assert (tp.matrix_width(zoom), tp.matrix_height(zoom)) == shape
 
     # 8 metatiling
@@ -132,7 +132,7 @@ def test_mercator_matrix_shapes():
         6: (8, 8),
     }
     tp = TilePyramid("mercator", metatiling=8)
-    for zoom, shape in matrix_shapes.iteritems():
+    for zoom, shape in matrix_shapes.items():
         assert (tp.matrix_width(zoom), tp.matrix_height(zoom)) == shape
 
     # 16 metatiling
@@ -146,5 +146,5 @@ def test_mercator_matrix_shapes():
         6: (4, 4),
     }
     tp = TilePyramid("mercator", metatiling=16)
-    for zoom, shape in matrix_shapes.iteritems():
+    for zoom, shape in matrix_shapes.items():
         assert (tp.matrix_width(zoom), tp.matrix_height(zoom)) == shape
