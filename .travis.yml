@@ -3,16 +3,13 @@ sudo: required
 language: python
 python:
 - '2.7'
-- '3.3'
-- '3.4'
-- '3.5'
 - '3.6'
 virtualenv:
   system_site_packages: true
 before_install:
 - sudo apt-add-repository -y ppa:ubuntugis/ubuntugis-unstable
 - sudo apt-get -y update
-- sudo apt-get install -y libgdal-dev build-essential
+- sudo apt-get install -y libgdal-dev build-essential gdal-bin
 install:
 - pip install -r requirements.txt
 - pip install pytest coveralls
