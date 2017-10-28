@@ -6,6 +6,7 @@ Changelog
 0.9
 ---
 * added Python 3 support
+* use NamedTuple for Tile index
 
 ---
 0.8

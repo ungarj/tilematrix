@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name='tilematrix',
-    version='0.8',
+    version='0.9',
     description='helps handling tile pyramids',
     author='Joachim Ungar',
     author_email='joachim.ungar@gmail.com',
@@ -24,6 +24,10 @@ setup(
         'Topic :: Scientific/Engineering :: GIS',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest']
