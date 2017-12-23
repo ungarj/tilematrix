@@ -8,6 +8,7 @@ before_install:
 - sudo apt-add-repository -y ppa:ubuntugis/ubuntugis-unstable
 - sudo apt-get -y update
 - sudo apt-get install -y libgdal-dev build-essential libproj-dev
+- "pip install --no-binary :all: rasterio==1.0a12"
 install:
 - pip install -r requirements.txt
 - pip install pytest coveralls
