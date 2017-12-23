@@ -13,6 +13,8 @@ Tilematrix handles geographic web tiles and tile pyramids.
 .. image:: https://coveralls.io/repos/github/ungarj/tilematrix/badge.svg?branch=master
     :target: https://coveralls.io/github/ungarj/tilematrix?branch=master
 
+.. image:: https://img.shields.io/pypi/pyversions/mapchete.svg
+
 
 The module is designed to translate between tile indices (zoom, row, column) and
 map coordinates (e.g. latitute, longitude).
