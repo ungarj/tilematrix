@@ -3,6 +3,11 @@ Changelog
 #########
 
 ---
+0.10
+---
+* new tag for last version to fix Python 3 build
+
+---
 0.9
 ---
 * added Python 3 support
