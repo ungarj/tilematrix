@@ -40,7 +40,7 @@ class TilePyramid(object):
         self.type = projection
         self._shape = _funcs.Shape(*PYRAMID_PARAMS[projection]["shape"])
         self.bounds = _funcs.Bounds(*PYRAMID_PARAMS[projection]["bounds"])
-        self.left, self.top, self.right, self.bottom = self.bounds
+        self.left, self.bottom, self.right, self.top = self.bounds
         self.is_global = PYRAMID_PARAMS[projection]["is_global"]
         self.srid = PYRAMID_PARAMS[projection]["epsg"]
         self.crs = CRS().from_epsg(self.srid)
