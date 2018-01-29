@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name='tilematrix',
-    version='0.10',
+    version='0.11',
     description='helps handling tile pyramids',
     author='Joachim Ungar',
     author_email='joachim.ungar@gmail.com',
@@ -13,7 +13,7 @@ setup(
     license='MIT',
     packages=['tilematrix'],
     install_requires=[
-        'rasterio>=1.0a2',
+        'rasterio>=1.0a3',
         'shapely',
         'affine',
         'six'

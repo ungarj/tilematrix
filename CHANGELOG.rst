@@ -2,6 +2,11 @@
 Changelog
 #########
 
+----
+0.11
+----
+* custom grid defnitions enabled
+
 ---
 0.10
 ---
