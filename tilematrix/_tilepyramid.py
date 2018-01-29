@@ -5,7 +5,7 @@ import math
 from rasterio.crs import CRS
 
 from . import _funcs
-from ._conf import PYRAMID_PARAMS, ROUND
+from ._conf import PYRAMID_PARAMS, ROUND, DELTA
 from ._tile import Tile
 
 
@@ -24,26 +24,49 @@ class TilePyramid(object):
         16.
     """
 
-    def __init__(self, projection, tile_size=256, metatiling=1):
+    def __init__(self, grid_definition, tile_size=256, metatiling=1):
         """Initialize TilePyramid."""
-        if projection not in PYRAMID_PARAMS:
-            raise ValueError(
-                "WMTS tileset '%s' not found. Use one of %s" % (
-                    projection, PYRAMID_PARAMS.keys()
-                )
-            )
-        if metatiling not in (1, 2, 4, 8, 16):
-            raise ValueError("metatling must be one of 1, 2, 4, 8, 16")
+        if isinstance(grid_definition, dict):
+            self.type = "custom"
+            if "shape" not in grid_definition:
+                raise AttributeError
+            self._shape = _funcs.Shape(*grid_definition["shape"])
+            self.bounds = _funcs.Bounds(*grid_definition["bounds"])
+            # verify that shape aspect ratio fits bounds apsect ratio
+            _verify_shape_bounds(shape=self._shape, bounds=self.bounds)
+            self.left, self.bottom, self.right, self.top = self.bounds
+            self.is_global = grid_definition.get("is_global", False)
+            if all([i in grid_definition for i in ["proj", "epsg"]]):
+                raise ValueError("either 'epsg' or 'proj' are allowed.")
+            if "epsg" in grid_definition:
+                self.crs = CRS().from_epsg(grid_definition["epsg"])
+                self.srid = grid_definition["epsg"]
+            elif "proj" in grid_definition:
+                self.crs = CRS().from_string(grid_definition["proj"])
+                self.srid = None
+            else:
+                raise AttributeError("either 'epsg' or 'proj' is required")
+        else:
+            if grid_definition not in PYRAMID_PARAMS:
+                raise ValueError(
+                    "WMTS tileset '%s' not found. Use one of %s" % (
+                        grid_definition, PYRAMID_PARAMS.keys()))
+            if metatiling not in (1, 2, 4, 8, 16):
+                raise ValueError("metatling must be one of 1, 2, 4, 8, 16")
+            self.type = grid_definition
+            self._shape = _funcs.Shape(
+                *PYRAMID_PARAMS[grid_definition]["shape"])
+            self.bounds = _funcs.Bounds(
+                *PYRAMID_PARAMS[grid_definition]["bounds"])
+            self.left, self.bottom, self.right, self.top = self.bounds
+            self.is_global = PYRAMID_PARAMS[grid_definition]["is_global"]
+            self.srid = PYRAMID_PARAMS[grid_definition]["epsg"]
+            self.crs = CRS().from_epsg(self.srid)
+
         self.metatiling = metatiling
+        # size in pixels
         self.tile_size = tile_size
         self.metatile_size = tile_size * metatiling
-        self.type = projection
-        self._shape = _funcs.Shape(*PYRAMID_PARAMS[projection]["shape"])
-        self.bounds = _funcs.Bounds(*PYRAMID_PARAMS[projection]["bounds"])
-        self.left, self.bottom, self.right, self.top = self.bounds
-        self.is_global = PYRAMID_PARAMS[projection]["is_global"]
-        self.srid = PYRAMID_PARAMS[projection]["epsg"]
-        self.crs = CRS().from_epsg(self.srid)
         # size in map units
         self.x_size = float(round(self.right - self.left, ROUND))
         self.y_size = float(round(self.top - self.bottom, ROUND))
@@ -74,8 +97,7 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         height = int(
-            math.ceil(self._shape.height * 2**(zoom) / self.metatiling)
-        )
+            math.ceil(self._shape.height * 2**(zoom) / self.metatiling))
         return 1 if height < 1 else height
 
     def tile_x_size(self, zoom):
@@ -121,8 +143,7 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         return float(
-            round(self.tile_x_size(zoom)/self.tile_width(zoom), ROUND)
-        )
+            round(self.tile_x_size(zoom)/self.tile_width(zoom), ROUND))
 
     def pixel_y_size(self, zoom):
         """
@@ -131,8 +152,7 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         return float(
-            round(self.tile_y_size(zoom)/self.tile_height(zoom), ROUND)
-        )
+            round(self.tile_y_size(zoom)/self.tile_height(zoom), ROUND))
 
     def intersecting(self, tile):
         """
@@ -158,8 +178,7 @@ class TilePyramid(object):
         """
         if not isinstance(bounds, tuple) or len(bounds) != 4:
             raise ValueError(
-                "bounds must be a tuple of left, bottom, right, top values"
-            )
+                "bounds must be a tuple of left, bottom, right, top values")
         if not isinstance(bounds, _funcs.Bounds):
             bounds = _funcs.Bounds(*bounds)
         if self.is_global:
@@ -209,3 +228,24 @@ class TilePyramid(object):
                     yield tile
         else:
             raise ValueError("no valid geometry: %s" % geometry.type)
+
+
+def _verify_shape_bounds(shape, bounds):
+    """Verify that shape corresponds to bounds apect ratio."""
+    shape = _funcs.Shape(*map(float, shape))
+    bounds = _funcs.Bounds(*map(float, bounds))
+    shape_ratio = shape.width / shape.height
+    bounds_ratio = (bounds.right - bounds.left) / (bounds.top - bounds.bottom)
+    if abs(shape_ratio - bounds_ratio) > DELTA:
+        min_length = min([
+            (bounds.right - bounds.left) / shape.width,
+            (bounds.top - bounds.bottom) / shape.height
+        ])
+        proposed_bounds = _funcs.Bounds(
+            bounds.left,
+            bounds.bottom,
+            bounds.left + shape.width * min_length,
+            bounds.bottom + shape.height * min_length)
+        raise ValueError(
+            "shape ratio (%s) must equal bounds ratio (%s); try %s" % (
+                shape_ratio, bounds_ratio, proposed_bounds))

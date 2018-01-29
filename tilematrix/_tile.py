@@ -27,18 +27,15 @@ class Tile(object):
         self.col = col
         if not self.is_valid():
             raise ValueError(
-                "invalid tile index given: %s %s %s" % (zoom, row, col)
-            )
+                "invalid tile index given: %s %s %s" % (zoom, row, col))
         self.index = _funcs.TileIndex(zoom, row, col)
         self.id = _funcs.TileIndex(zoom, row, col)
         self.pixel_x_size = self.tile_pyramid.pixel_x_size(self.zoom)
         self.pixel_y_size = self.tile_pyramid.pixel_y_size(self.zoom)
         self.left = float(round(
-            self.tile_pyramid.left+((self.col)*self.x_size), _conf.ROUND)
-        )
+            self.tile_pyramid.left+((self.col)*self.x_size), _conf.ROUND))
         self.top = float(round(
-            self.tile_pyramid.top-((self.row)*self.y_size), _conf.ROUND)
-        )
+            self.tile_pyramid.top-((self.row)*self.y_size), _conf.ROUND))
         self.right = self.left + self.x_size
         self.bottom = self.top - self.y_size
         self.srid = tile_pyramid.srid
@@ -105,8 +102,7 @@ class Tile(object):
             self.bounds(pixelbuffer).left,
             0,
             -self.pixel_y_size,
-            self.bounds(pixelbuffer).top
-        )
+            self.bounds(pixelbuffer).top)
 
     def shape(self, pixelbuffer=0):
         """
@@ -126,7 +122,7 @@ class Tile(object):
 
     def is_valid(self):
         """Return True if tile is available in tile pyramid."""
-        if all([
+        return all([
             isinstance(self.zoom, int),
             self.zoom >= 0,
             isinstance(self.row, int),
@@ -134,44 +130,31 @@ class Tile(object):
             isinstance(self.col, int),
             self.col >= 0,
             self.col < self.tile_pyramid.matrix_width(self.zoom),
-            self.row < self.tile_pyramid.matrix_height(self.zoom)
-        ]):
-            return True
-        else:
-            return False
+            self.row < self.tile_pyramid.matrix_height(self.zoom)])
 
     def get_parent(self):
         """Return tile from previous zoom level."""
-        if self.zoom == 0:
-            return None
-        else:
-            return self.tile_pyramid.tile(
-                self.zoom-1, int(self.row/2), int(self.col/2)
-            )
+        return None if self.zoom == 0 else self.tile_pyramid.tile(
+            self.zoom-1, int(self.row/2), int(self.col/2))
 
     def get_children(self):
         """Return tiles from next zoom level."""
-        matrix_offsets = [
-            (0, 0),  # top left
-            (0, 1),  # top right
-            (1, 1),  # bottom right
-            (1, 0),  # bottom left
+        next_zoom = self.zoom + 1
+        return [
+            self.tile_pyramid.tile(
+                next_zoom,
+                self.row * 2 + row_offset,
+                self.col * 2 + col_offset)
+            for row_offset, col_offset in [
+                (0, 0),  # top left
+                (0, 1),  # top right
+                (1, 1),  # bottom right
+                (1, 0),  # bottom left
+            ]
+            if all([
+                self.row * 2 + row_offset < self.tp.matrix_height(next_zoom),
+                self.col * 2 + col_offset < self.tp.matrix_width(next_zoom)])
         ]
-        new_zoom = self.zoom + 1
-        children = []
-        for row_offset, col_offset in matrix_offsets:
-            new_row = self.row * 2 + row_offset
-            new_col = self.col * 2 + col_offset
-            if (
-                new_row >= self.tp.matrix_height(new_zoom)
-                ) or (
-                new_col >= self.tp.matrix_width(new_zoom)
-            ):
-                continue
-            children.append(
-                self.tile_pyramid.tile(new_zoom, new_row, new_col)
-            )
-        return children
 
     def get_neighbors(self, connectedness=8):
         """

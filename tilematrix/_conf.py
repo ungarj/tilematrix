@@ -3,6 +3,9 @@
 # round coordinates
 ROUND = 20
 
+# bounds ratio vs shape ratio uncertainty
+DELTA = 1e-6
+
 # supported pyramid types
 PYRAMID_PARAMS = {
     "geodetic": {
