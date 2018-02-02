@@ -1,9 +1,13 @@
 """Helper functions."""
 
+from collections import namedtuple
+from itertools import product, chain
+from rasterio.crs import CRS
 from shapely.geometry import Polygon, GeometryCollection, box
 from shapely.affinity import translate
-from itertools import product, chain
-from collections import namedtuple
+import six
+
+from ._conf import DELTA, PYRAMID_PARAMS
 
 
 Bounds = namedtuple("Bounds", "left bottom right top")
@@ -55,10 +59,87 @@ def clip_geometry_to_srs_bounds(geometry, pyramid, multipart=False):
             return geometry
 
 
+class GridDefinition(object):
+    """Object representing the tile pyramid source grid."""
+
+    def __init__(self, grid_definition, tile_size=256, metatiling=1):
+        if metatiling not in (1, 2, 4, 8, 16):
+            raise ValueError("metatling must be one of 1, 2, 4, 8, 16")
+        if isinstance(grid_definition, dict):
+            self.init_definition = dict(**grid_definition)
+            self.type = "custom"
+            if "shape" not in grid_definition:
+                raise AttributeError("grid shape not provided")
+            self.shape = Shape(*grid_definition["shape"])
+            self.bounds = Bounds(*grid_definition["bounds"])
+            # verify that shape aspect ratio fits bounds apsect ratio
+            _verify_shape_bounds(shape=self.shape, bounds=self.bounds)
+            self.left, self.bottom, self.right, self.top = self.bounds
+            self.is_global = grid_definition.get("is_global", False)
+            if all([i in grid_definition for i in ["proj", "epsg"]]):
+                raise ValueError("either 'epsg' or 'proj' are allowed.")
+            if "epsg" in grid_definition:
+                self.crs = CRS().from_epsg(grid_definition["epsg"])
+                self.srid = grid_definition["epsg"]
+            elif "proj" in grid_definition:
+                self.crs = CRS().from_string(grid_definition["proj"])
+                self.srid = None
+            else:
+                raise AttributeError("either 'epsg' or 'proj' is required")
+        elif isinstance(grid_definition, six.string_types):
+            if grid_definition not in PYRAMID_PARAMS:
+                raise ValueError(
+                    "WMTS tileset '%s' not found. Use one of %s" % (
+                        grid_definition, PYRAMID_PARAMS.keys()))
+            self.init_definition = grid_definition
+            self.type = grid_definition
+            self.shape = Shape(
+                *PYRAMID_PARAMS[grid_definition]["shape"])
+            self.bounds = Bounds(
+                *PYRAMID_PARAMS[grid_definition]["bounds"])
+            self.left, self.bottom, self.right, self.top = self.bounds
+            self.is_global = PYRAMID_PARAMS[grid_definition]["is_global"]
+            self.srid = PYRAMID_PARAMS[grid_definition]["epsg"]
+            self.crs = CRS().from_epsg(self.srid)
+        else:
+            raise TypeError(
+                "invalid grid definition type: %s" % type(grid_definition))
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.init_definition == other.init_definition
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+def _verify_shape_bounds(shape, bounds):
+    """Verify that shape corresponds to bounds apect ratio."""
+    shape = Shape(*map(float, shape))
+    bounds = Bounds(*map(float, bounds))
+    shape_ratio = shape.width / shape.height
+    bounds_ratio = (bounds.right - bounds.left) / (bounds.top - bounds.bottom)
+    if abs(shape_ratio - bounds_ratio) > DELTA:
+        min_length = min([
+            (bounds.right - bounds.left) / shape.width,
+            (bounds.top - bounds.bottom) / shape.height
+        ])
+        proposed_bounds = Bounds(
+            bounds.left,
+            bounds.bottom,
+            bounds.left + shape.width * min_length,
+            bounds.bottom + shape.height * min_length)
+        raise ValueError(
+            "shape ratio (%s) must equal bounds ratio (%s); try %s" % (
+                shape_ratio, bounds_ratio, proposed_bounds))
+
+
 def _tile_intersecting_tilepyramid(tile, tp):
     """Return all tiles from tilepyramid intersecting with tile."""
-    if tile.crs != tp.crs:
-        raise ValueError("Tile and TilePyramid CRSes must be the same.")
+    if tile.tp.grid != tp.grid:
+        raise ValueError("Tile and TilePyramid source grids must be the same.")
     tile_metatiling = tile.tile_pyramid.metatiling
     pyramid_metatiling = tp.metatiling
     multiplier = float(tile_metatiling)/float(pyramid_metatiling)

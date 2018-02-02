@@ -229,3 +229,6 @@ class Tile(object):
         - tilepyramid: a TilePyramid object
         """
         return _funcs._tile_intersecting_tilepyramid(self, tilepyramid)
+
+    def __repr__(self):
+        return 'Tile(%s, %s)' % (self.id, self.tp)

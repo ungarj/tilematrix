@@ -64,3 +64,57 @@ def test_intersect():
         raise Exception()
     except ValueError:
         pass
+
+
+def test_tilepyramid_compare(grid_definition_proj, grid_definition_epsg):
+    """Comparison operators."""
+    gproj, gepsg = grid_definition_proj, grid_definition_epsg
+    # predefined
+    assert TilePyramid("geodetic") == TilePyramid("geodetic")
+    assert TilePyramid("geodetic") != TilePyramid("geodetic", metatiling=2)
+    assert TilePyramid("geodetic") != TilePyramid("geodetic", tile_size=512)
+    assert TilePyramid("mercator") == TilePyramid("mercator")
+    assert TilePyramid("mercator") != TilePyramid("mercator", metatiling=2)
+    assert TilePyramid("mercator") != TilePyramid("mercator", tile_size=512)
+    # epsg based
+    assert TilePyramid(gepsg) == TilePyramid(gepsg)
+    assert TilePyramid(gepsg) != TilePyramid(gepsg, metatiling=2)
+    assert TilePyramid(gepsg) != TilePyramid(gepsg, tile_size=512)
+    # proj based
+    assert TilePyramid(gproj) == TilePyramid(gproj)
+    assert TilePyramid(gproj) != TilePyramid(gproj, metatiling=2)
+    assert TilePyramid(gproj) != TilePyramid(gproj, tile_size=512)
+    # altered bounds
+    abounds = dict(**gproj)
+    abounds.update(bounds=(-5000000., -5000000., 5000000., 5000000.))
+    assert TilePyramid(abounds) == TilePyramid(abounds)
+    assert TilePyramid(gproj) != TilePyramid(abounds)
+
+
+def test_grid_compare(grid_definition_proj, grid_definition_epsg):
+    """Comparison operators."""
+    gproj, gepsg = grid_definition_proj, grid_definition_epsg
+    # predefined
+    assert TilePyramid("geodetic").grid == TilePyramid("geodetic").grid
+    assert TilePyramid("geodetic").grid == TilePyramid(
+        "geodetic", metatiling=2).grid
+    assert TilePyramid("geodetic").grid == TilePyramid(
+        "geodetic", tile_size=512).grid
+    assert TilePyramid("mercator").grid == TilePyramid("mercator").grid
+    assert TilePyramid("mercator").grid == TilePyramid(
+        "mercator", metatiling=2).grid
+    assert TilePyramid("mercator").grid == TilePyramid(
+        "mercator", tile_size=512).grid
+    # epsg based
+    assert TilePyramid(gepsg).grid == TilePyramid(gepsg).grid
+    assert TilePyramid(gepsg).grid == TilePyramid(gepsg, metatiling=2).grid
+    assert TilePyramid(gepsg).grid == TilePyramid(gepsg, tile_size=512).grid
+    # proj based
+    assert TilePyramid(gproj).grid == TilePyramid(gproj).grid
+    assert TilePyramid(gproj).grid == TilePyramid(gproj, metatiling=2).grid
+    assert TilePyramid(gproj).grid == TilePyramid(gproj, tile_size=512).grid
+    # altered bounds
+    abounds = dict(**gproj)
+    abounds.update(bounds=(-5000000., -5000000., 5000000., 5000000.))
+    assert TilePyramid(abounds).grid == TilePyramid(abounds).grid
+    assert TilePyramid(gproj).grid != TilePyramid(abounds).grid

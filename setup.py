@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name='tilematrix',
-    version='0.11',
+    version='0.12',
     description='helps handling tile pyramids',
     author='Joachim Ungar',
     author_email='joachim.ungar@gmail.com',

@@ -3,6 +3,14 @@ Changelog
 #########
 
 ----
+0.12
+----
+* added better string representations for ``Tile`` and ``TilePyramid``
+* added ``GridDefinition`` to better handle custom grid parameters
+* ``TilePyramid`` instances are now comparable by ``==`` and ``!=``
+
+
+----
 0.11
 ----
 * custom grid defnitions enabled
