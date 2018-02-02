@@ -17,11 +17,3 @@ script:
 - coverage run --source=tilematrix setup.py test
 after_success:
 - coveralls
-deploy:
-  provider: pypi
-  user: ungarj
-  password:
-    secure: 4MgX5bkj9lb751MXcXJBMLvNpHj2NVcCAFrB8kTu1DMr4YO0/sa2yHqcPaLXSJ82t+6UiJV+gE/r1Kikx2OVzmHma///26jAsLIE8Dfv2xh4BgOIqlZ/F5AmgeqXKvLS6Kadv/EiQbh9ufKFSshqTvF1lqPQDxtw9Mjq7nXra/DZxwTAw1VI9xPd7phzidFLwExD3MW/NSOz6Yy9TCHSVh4uvuG1DUDDJUFvterrX3hFLpRr3p5v9qzvUz3fmYxV+NR1+cWkx44fkFaSa90kpJBtfYgqKuPni1p1eOGjFSJJQ9hWzeo7dUXc3DNWogZfjIdsoZ53bRm2SWFyJFSsgzswuaW4YlNcBPtoq7vG91OXcu9W5trdsAhD74YuDCbN56SdQTZafQAd7WHbHMq/+xaIZpQ+71oKtE7egvHWLNmNYa5fZCN7xyDMLgjKTQfKnxfaB1lhMnDtiGEIs/DAbZJnIOHUFZ2WYG2YokTfMbxRB8YMDY+5Po54gGK11P5AXfwIebDuqhnBI5i/NcXaCXV7W1MSLGsESdTcVG8bVoQSwvstnw9Y9qVfjD1y6o34MdKGXl8UE3qFvLrJLQR80f0d16fTvfRbqcNXp652ZwxqYKSjJyov5noqvmPdcJTzy7jKJ1R58CyHKb4F/doyyGW5mATAwzgsduDbJrinUbo=
-  on:
-    tags: true
-    branch: master
