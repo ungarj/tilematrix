@@ -3,12 +3,17 @@ Changelog
 #########
 
 ----
+0.13
+----
+* fixed ``tiles_from_geom()`` bug when passing on a Point (#19)
+* add ``tile_from_xy()`` function
+
+----
 0.12
 ----
 * added better string representations for ``Tile`` and ``TilePyramid``
 * added ``GridDefinition`` to better handle custom grid parameters
 * ``TilePyramid`` instances are now comparable by ``==`` and ``!=``
-
 
 ----
 0.11

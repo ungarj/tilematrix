@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """Tile geometries and tiles from geometries."""
 
-from shapely.geometry import Polygon, shape
+import pytest
+from shapely.geometry import Point, Polygon, shape
 
 from tilematrix import TilePyramid
 
@@ -184,13 +185,14 @@ def test_tiles_from_empty_geom():
 
 def test_tiles_from_point():
     """Get tile from point."""
-    test_point = shape({
-        'type': 'Point', 'coordinates': (16.364693096743736, 48.20196113681686)
-    })
-    test_tile = {(6, 14, 69)}
+    test_point = Point(16.36, 48.20)
+    for metatiling in [1, 2, 4, 8, 16]:
+        tp = TilePyramid("geodetic", metatiling=metatiling)
+        tile_bbox = next(tp.tiles_from_geom(test_point, 6)).bbox()
+        assert test_point.within(tile_bbox)
     tp = TilePyramid("geodetic")
-    point_tile = {tile.id for tile in tp.tiles_from_geom(test_point, 6)}
-    assert point_tile == test_tile
+    with pytest.raises(ValueError):
+        next(tp.tiles_from_geom(Point(-300, 100), 6))
 
 
 def test_tiles_from_multipoint():

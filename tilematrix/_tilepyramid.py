@@ -179,18 +179,13 @@ class TilePyramid(object):
         if geometry.is_empty:
             raise StopIteration()
         if geometry.geom_type == "Point":
-            col = -1
-            row = -1
-            while self.left < geometry.x:
-                self.left += self.tile_x_size(zoom)
-                col += 1
-            while self.top > geometry.y:
-                self.top -= self.tile_y_size(zoom)
-                row += 1
-            yield self.tile(zoom, row, col)
+            yield self.tile_from_xy(geometry.x, geometry.y, zoom)
+        elif geometry.geom_type == "MultiPoint":
+            for point in geometry:
+                yield self.tile_from_xy(point.x, point.y, zoom)
         elif geometry.geom_type in (
             "LineString", "MultiLineString", "Polygon", "MultiPolygon",
-            "MultiPoint", "GeometryCollection"
+            "GeometryCollection"
         ):
             prepared_geometry = prep(
                 _funcs.clip_geometry_to_srs_bounds(geometry, self))
@@ -199,6 +194,26 @@ class TilePyramid(object):
                     yield tile
         else:
             raise ValueError("no valid geometry: %s" % geometry.type)
+
+    def tile_from_xy(self, x, y, zoom):
+        """
+        Return tile covering a point defined by x and y values.
+
+        - x: x coordinate
+        - y: y coordinate
+        - zoom: zoom level
+        """
+        if x < self.left or y > self.top:
+            raise ValueError("x or y are outside of grid bounds")
+        col, row = -1, -1
+        left, top = self.left, self.top
+        while x > left:
+            left += self.tile_x_size(zoom)
+            col += 1
+        while y < top:
+            top -= self.tile_y_size(zoom)
+            row += 1
+        return self.tile(zoom, row, col)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
