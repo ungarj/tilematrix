@@ -64,8 +64,8 @@ def bbox(ctx, tile):
 
 
 @tmx.command(short_help='Tile from point.')
-@click.argument('POINT', nargs=2, type=click.FLOAT, required=True)
 @click.argument('ZOOM', nargs=1, type=click.INT, required=True)
+@click.argument('POINT', nargs=2, type=click.FLOAT, required=True)
 @click.pass_context
 def tile(ctx, point, zoom):
     """Print Tile containing POINT.."""
@@ -85,7 +85,6 @@ def tile(ctx, point, zoom):
                     geojson.Feature(
                         geometry=tile.bbox(pixelbuffer=ctx.obj['pixelbuffer']),
                         properties=dict(
-                            tile_id=tile.id,
                             zoom=tile.zoom,
                             row=tile.row,
                             col=tile.col
@@ -97,8 +96,8 @@ def tile(ctx, point, zoom):
 
 
 @tmx.command(short_help='Tiles from bounds.')
-@click.argument('BOUNDS', nargs=4, type=click.FLOAT, required=True)
 @click.argument('ZOOM', nargs=1, type=click.INT, required=True)
+@click.argument('BOUNDS', nargs=4, type=click.FLOAT, required=True)
 @click.pass_context
 def tiles(ctx, bounds, zoom):
     """Print Tiles from bounds."""
@@ -115,17 +114,31 @@ def tiles(ctx, bounds, zoom):
             click.echo(tile.bbox(pixelbuffer=ctx.obj['pixelbuffer']))
     elif ctx.obj['output_format'] == 'GeoJSON':
         click.echo(
-            geojson.dumps(
-                geojson.FeatureCollection([
-                    geojson.Feature(
-                        geometry=tile.bbox(pixelbuffer=ctx.obj['pixelbuffer']),
-                        properties=dict(
-                            zoom=tile.zoom,
-                            row=tile.row,
-                            col=tile.col
-                        )
+            '{\n'
+            '  "type": "FeatureCollection",\n'
+            '  "features": ['
+        )
+        # print tiles as they come and only add comma if there is a next tile
+        try:
+            tile = next(tiles)
+            while True:
+                gj = '    %s' % geojson.Feature(
+                    geometry=tile.bbox(pixelbuffer=ctx.obj['pixelbuffer']),
+                    properties=dict(
+                        zoom=tile.zoom,
+                        row=tile.row,
+                        col=tile.col
                     )
-                    for tile in tiles
-                ])
-            )
+                )
+                try:
+                    tile = next(tiles)
+                    click.echo(gj + ',')
+                except StopIteration:
+                    click.echo(gj)
+                    raise
+        except StopIteration:
+            pass
+        click.echo(
+            '  ]\n'
+            '}'
         )
