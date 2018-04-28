@@ -6,7 +6,7 @@ import math
 from . import _funcs
 from ._conf import ROUND
 from ._tile import Tile
-from _funcs import validate_zoom
+from ._funcs import validate_zoom
 
 
 class TilePyramid(object):
