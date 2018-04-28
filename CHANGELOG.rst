@@ -3,6 +3,15 @@ Changelog
 #########
 
 ----
+0.14
+----
+* add ``tmx`` CLI with subcommands:
+  * `bounds`: Print bounds of given Tile.
+  * `bbox`: Print bounding box geometry of given Tile.
+  * `tile`: Print Tile covering given point.
+  * `tiles`: Print Tiles covering given bounds.
+
+----
 0.13
 ----
 * fixed ``tiles_from_geom()`` bug when passing on a Point (#19)
