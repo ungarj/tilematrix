@@ -15,6 +15,13 @@ Shape = namedtuple("Shape", "width height")
 TileIndex = namedtuple("TileIndex", "zoom row col")
 
 
+def validate_zoom(zoom):
+    if not isinstance(zoom, int):
+        raise TypeError("zoom must be an integer")
+    if zoom < 0:
+        raise ValueError("zoom must be greater or equal 0")
+
+
 def clip_geometry_to_srs_bounds(geometry, pyramid, multipart=False):
     """
     Clip input geometry to SRS bounds of given TilePyramid.

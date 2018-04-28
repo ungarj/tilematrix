@@ -6,6 +6,7 @@ import math
 from . import _funcs
 from ._conf import ROUND
 from ._tile import Tile
+from _funcs import validate_zoom
 
 
 class TilePyramid(object):
@@ -58,6 +59,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
+        validate_zoom(zoom)
         width = int(math.ceil(
             self.grid.shape.width * 2**(zoom) / self.metatiling))
         return 1 if width < 1 else width
@@ -68,6 +70,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
+        validate_zoom(zoom)
         height = int(
             math.ceil(self.grid.shape.height * 2**(zoom) / self.metatiling))
         return 1 if height < 1 else height
@@ -78,6 +81,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
+        validate_zoom(zoom)
         return round(self.x_size / self.matrix_width(zoom), ROUND)
 
     def tile_y_size(self, zoom):
@@ -86,6 +90,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
+        validate_zoom(zoom)
         return round(self.y_size / self.matrix_height(zoom), ROUND)
 
     def tile_width(self, zoom):
@@ -94,6 +99,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
+        validate_zoom(zoom)
         matrix_pixel = 2**(zoom) * self.tile_size * self.grid.shape.width
         tile_pixel = self.tile_size * self.metatiling
         return matrix_pixel if tile_pixel > matrix_pixel else tile_pixel
@@ -104,6 +110,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
+        validate_zoom(zoom)
         matrix_pixel = 2**(zoom) * self.tile_size * self.grid.shape.height
         tile_pixel = self.tile_size * self.metatiling
         return matrix_pixel if tile_pixel > matrix_pixel else tile_pixel
@@ -114,6 +121,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
+        validate_zoom(zoom)
         return float(
             round(self.tile_x_size(zoom)/self.tile_width(zoom), ROUND))
 
@@ -123,6 +131,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
+        validate_zoom(zoom)
         return float(
             round(self.tile_y_size(zoom)/self.tile_height(zoom), ROUND))
 
@@ -148,6 +157,7 @@ class TilePyramid(object):
             pyramid CRS
         - zoom: zoom level
         """
+        validate_zoom(zoom)
         if not isinstance(bounds, tuple) or len(bounds) != 4:
             raise ValueError(
                 "bounds must be a tuple of left, bottom, right, top values")
@@ -167,6 +177,7 @@ class TilePyramid(object):
         - geometry: shapely geometry
         - zoom: zoom level
         """
+        validate_zoom(zoom)
         return self.tiles_from_bounds(geometry.bounds, zoom)
 
     def tiles_from_geom(self, geometry, zoom):
@@ -176,6 +187,7 @@ class TilePyramid(object):
         - geometry: shapely geometry
         - zoom: zoom level
         """
+        validate_zoom(zoom)
         if geometry.is_empty:
             raise StopIteration()
         if geometry.geom_type == "Point":
@@ -203,6 +215,7 @@ class TilePyramid(object):
         - y: y coordinate
         - zoom: zoom level
         """
+        validate_zoom(zoom)
         if x < self.left or y > self.top:
             raise ValueError("x or y are outside of grid bounds")
         col, row = -1, -1
