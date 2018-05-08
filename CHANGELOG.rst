@@ -3,7 +3,7 @@ Changelog
 #########
 
 ------
-0.14.1
+0.14.2
 ------
 * attempt to fix ``tmx`` command when installing tilematrix via pip
 
