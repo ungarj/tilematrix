@@ -20,7 +20,7 @@ setup(
     author_email='joachim.ungar@gmail.com',
     url='https://github.com/ungarj/tilematrix',
     license='MIT',
-    packages=['tilematrix'],
+    packages=['tilematrix', 'tilematrix.tmx'],
     entry_points={
         'console_scripts': ['tmx=tilematrix.tmx.main:tmx']
     },
