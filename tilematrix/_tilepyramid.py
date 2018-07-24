@@ -214,6 +214,11 @@ class TilePyramid(object):
         - x: x coordinate
         - y: y coordinate
         - zoom: zoom level
+        - on_edge_use: determine which Tile to pick if Point hits a grid edge
+            - rb: right bottom (default)
+            - rt: right top
+            - lt: left top
+            - lb: left bottom
         """
         validate_zoom(zoom)
         if x < self.left or x > self.right or y < self.bottom or y > self.top:
