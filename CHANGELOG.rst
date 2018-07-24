@@ -2,6 +2,14 @@
 Changelog
 #########
 
+0.15
+----
+* add ``snap_bounds()`` function
+* add ``snap_bounds`` command to ``tmx``
+* add ``snap_bbox`` command to ``tmx``
+* in ``tile_from_xy()`` add ``on_edge_use`` option specify behavior when point hits grid edges
+* cleaned up ``_tiles_from_cleaned_bounds()`` and ``tile_from_xy()`` functions
+
 ------
 0.14.2
 ------

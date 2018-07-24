@@ -207,7 +207,7 @@ class TilePyramid(object):
         else:
             raise ValueError("no valid geometry: %s" % geometry.type)
 
-    def tile_from_xy(self, x, y, zoom):
+    def tile_from_xy(self, x, y, zoom, on_edge_use="rb"):
         """
         Return tile covering a point defined by x and y values.
 
@@ -216,17 +216,11 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         validate_zoom(zoom)
-        if x < self.left or y > self.top:
+        if x < self.left or x > self.right or y < self.bottom or y > self.top:
             raise ValueError("x or y are outside of grid bounds")
-        col, row = -1, -1
-        left, top = self.left, self.top
-        while x > left:
-            left += self.tile_x_size(zoom)
-            col += 1
-        while y < top:
-            top -= self.tile_y_size(zoom)
-            row += 1
-        return self.tile(zoom, row, col)
+        if on_edge_use not in ["lb", "rb", "rt", "lt"]:
+            raise ValueError("on_edge_use must be one of lb, rb, rt or lt")
+        return _funcs._tile_from_xy(self, x, y, zoom, on_edge_use=on_edge_use)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):

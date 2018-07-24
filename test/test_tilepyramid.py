@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 """TilePyramid creation."""
 
-from tilematrix import TilePyramid
+import pytest
+from shapely.geometry import Point
+from shapely.ops import unary_union
+from tilematrix import TilePyramid, snap_bounds
 
 
 def test_init():
@@ -118,3 +121,74 @@ def test_grid_compare(grid_definition_proj, grid_definition_epsg):
     abounds.update(bounds=(-5000000., -5000000., 5000000., 5000000.))
     assert TilePyramid(abounds).grid == TilePyramid(abounds).grid
     assert TilePyramid(gproj).grid != TilePyramid(abounds).grid
+
+
+def test_tile_from_xy():
+    tp = TilePyramid("geodetic")
+    zoom = 5
+
+    # point inside tile
+    p_in = (0.5, 0.5, zoom)
+    control_in = [
+        ((5, 15, 32), "rb"),
+        ((5, 15, 32), "lb"),
+        ((5, 15, 32), "rt"),
+        ((5, 15, 32), "lt"),
+    ]
+    for tile_id, on_edge_use in control_in:
+        tile = tp.tile_from_xy(*p_in, on_edge_use=on_edge_use)
+        assert tile.id == tile_id
+        assert Point(p_in[0], p_in[1]).within(tile.bbox())
+
+    # point is on tile edge
+    p_edge = (0, 0, zoom)
+    control_edge = [
+        ((5, 16, 32), "rb"),
+        ((5, 16, 31), "lb"),
+        ((5, 15, 32), "rt"),
+        ((5, 15, 31), "lt"),
+    ]
+    for tile_id, on_edge_use in control_edge:
+        tile = tp.tile_from_xy(*p_edge, on_edge_use=on_edge_use)
+        assert tile.id == tile_id
+        assert Point(p_edge[0], p_edge[1]).touches(tile.bbox())
+
+    with pytest.raises(ValueError):
+        tp.tile_from_xy(180, -90, zoom, on_edge_use="rb")
+    with pytest.raises(ValueError):
+        tp.tile_from_xy(180, -90, zoom, on_edge_use="lb")
+
+    tile = tp.tile_from_xy(180, -90, zoom, on_edge_use="rt")
+    assert tile.id == (5, 31, 0)
+    tile = tp.tile_from_xy(180, -90, zoom, on_edge_use="lt")
+    assert tile.id == (5, 31, 63)
+
+    with pytest.raises(ValueError):
+        tp.tile_from_xy(-180, 90, zoom, on_edge_use="lt")
+    with pytest.raises(ValueError):
+        tp.tile_from_xy(-180, 90, zoom, on_edge_use="rt")
+
+    tile = tp.tile_from_xy(-180, 90, zoom, on_edge_use="rb")
+    assert tile.id == (5, 0, 0)
+    tile = tp.tile_from_xy(-180, 90, zoom, on_edge_use="lb")
+    assert tile.id == (5, 0, 63)
+
+
+def test_tiles_from_bounds():
+    tp = TilePyramid("geodetic")
+    parent = tp.tile(8, 5, 5)
+    from_bounds = set([t.id for t in tp.tiles_from_bounds(parent.bounds(), 9)])
+    children = set([t.id for t in parent.get_children()])
+    assert from_bounds == children
+
+
+def test_snap_bounds():
+    bounds = (0, 1, 2, 3)
+    tp = TilePyramid("geodetic")
+    zoom = 8
+
+    snapped = snap_bounds(bounds=bounds, tile_pyramid=tp, zoom=zoom)
+    control = unary_union([
+        tile.bbox() for tile in tp.tiles_from_bounds(bounds, zoom)
+    ]).bounds
+    assert snapped == control

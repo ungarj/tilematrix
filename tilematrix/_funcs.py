@@ -66,6 +66,24 @@ def clip_geometry_to_srs_bounds(geometry, pyramid, multipart=False):
             return geometry
 
 
+def snap_bounds(bounds=None, tile_pyramid=None, zoom=None, pixelbuffer=0):
+    """
+    Extend bounds to be aligned with union of tile bboxes.
+
+    - bounds: (left, bottom, right, top)
+    - tile_pyramid: a TilePyramid object
+    - zoom: target zoom level
+    - pixelbuffer: apply pixelbuffer
+    """
+    bounds = Bounds(*bounds)
+    validate_zoom(zoom)
+    lb = _tile_from_xy(tile_pyramid, bounds.left, bounds.bottom, zoom, on_edge_use="rt")
+    rt = _tile_from_xy(tile_pyramid, bounds.right, bounds.top, zoom, on_edge_use="lb")
+    left, bottom, _, _ = lb.bounds(pixelbuffer)
+    _, _, right, top = rt.bounds(pixelbuffer)
+    return Bounds(left, bottom, right, top)
+
+
 class GridDefinition(object):
     """Object representing the tile pyramid source grid."""
 
@@ -225,34 +243,39 @@ def _global_tiles_from_bounds(tp, bounds, zoom):
                 yield tile
 
 
-def _tiles_from_cleaned_bounds(tilepyramid, bounds, zoom):
+def _tiles_from_cleaned_bounds(tp, bounds, zoom):
     """Return all tiles intersecting with bounds."""
-    tile_x_size = tilepyramid.tile_x_size(zoom)
-    tile_y_size = tilepyramid.tile_y_size(zoom)
-    tile_left = tilepyramid.left
-    tile_top = tilepyramid.top
-    cols = []
-    rows = []
-    col = -1
-    row = -1
-    while tile_left <= bounds.left:
-        tile_left += tile_x_size
-        col += 1
-    cols.append(col)
-    while tile_left < bounds.right:
-        tile_left += tile_x_size
-        col += 1
-        cols.append(col)
-    while tile_top >= bounds.top:
-        tile_top -= tile_y_size
-        row += 1
-    rows.append(row)
-    while tile_top > bounds.bottom:
-        tile_top -= tile_y_size
-        row += 1
-        rows.append(row)
-    for tile_id in product([zoom], rows, cols):
+    lb = _tile_from_xy(tp, bounds.left, bounds.bottom, zoom, on_edge_use="rt")
+    rt = _tile_from_xy(tp, bounds.right, bounds.top, zoom, on_edge_use="lb")
+    for tile_id in product([zoom], range(rt.row, lb.row + 1), range(lb.col, rt.col + 1)):
         try:
-            yield tilepyramid.tile(*tile_id)
+            yield tp.tile(*tile_id)
         except ValueError:
             pass
+
+
+def _tile_from_xy(tp, x, y, zoom, on_edge_use="rb"):
+    # determine row
+    row = int((tp.top - y) / tp.tile_y_size(zoom))
+    if on_edge_use in ["rt", "lt"] and (tp.top - y) % tp.tile_y_size(zoom) == 0.:
+        row -= 1
+
+    # determine column
+    col = int((x - tp.left) / tp.tile_x_size(zoom))
+    if on_edge_use in ["lb", "lt"] and (x - tp.left) % tp.tile_x_size(zoom) == 0.:
+        col -= 1
+    # handle Antimeridian wrapping
+    if tp.is_global:
+        # left side
+        if col == -1:
+            col = tp.matrix_width(zoom) - 1
+        # right side
+        elif col >= tp.matrix_width(zoom):
+            col = col % tp.matrix_width(zoom)
+
+    try:
+        return tp.tile(zoom, row, col)
+    except ValueError as e:
+        raise ValueError(
+                "on_edge_use '%s' results in an invalid tile here: %s" % (on_edge_use, e)
+            )

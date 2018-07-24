@@ -1,5 +1,6 @@
 import click
 import geojson
+from shapely.geometry import box
 
 import tilematrix
 from tilematrix import TilePyramid
@@ -142,3 +143,39 @@ def tiles(ctx, bounds, zoom):
             '  ]\n'
             '}'
         )
+
+
+@tmx.command(short_help='Snap bounds to tile grid.')
+@click.argument('ZOOM', nargs=1, type=click.INT, required=True)
+@click.argument('BOUNDS', nargs=4, type=click.FLOAT, required=True)
+@click.pass_context
+def snap_bounds(ctx, bounds, zoom):
+    """Print Tiles from bounds."""
+    click.echo('%s %s %s %s' % tilematrix.snap_bounds(
+        bounds=bounds,
+        tile_pyramid=TilePyramid(
+            ctx.obj['grid'],
+            tile_size=ctx.obj['tile_size'],
+            metatiling=ctx.obj['metatiling']
+        ),
+        zoom=zoom,
+        pixelbuffer=ctx.obj['pixelbuffer']
+    ))
+
+
+@tmx.command(short_help='Snap bbox to tile grid.')
+@click.argument('ZOOM', nargs=1, type=click.INT, required=True)
+@click.argument('BOUNDS', nargs=4, type=click.FLOAT, required=True)
+@click.pass_context
+def snap_bbox(ctx, bounds, zoom):
+    """Print Tiles from bounds."""
+    click.echo(box(*tilematrix.snap_bounds(
+        bounds=bounds,
+        tile_pyramid=TilePyramid(
+            ctx.obj['grid'],
+            tile_size=ctx.obj['tile_size'],
+            metatiling=ctx.obj['metatiling']
+        ),
+        zoom=zoom,
+        pixelbuffer=ctx.obj['pixelbuffer']
+    )))
