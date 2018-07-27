@@ -2,6 +2,10 @@
 Changelog
 #########
 
+0.16
+----
+* make ``Tile()`` objects hashable & comparable
+
 0.15
 ----
 * add ``snap_bounds()`` function

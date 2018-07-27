@@ -133,3 +133,15 @@ def test_intersecting():
     test_tiles = {(5, 4, 4), (5, 5, 4), (5, 4, 5), (5, 5, 5)}
     intersecting_tiles = {t.id for t in tile.intersecting(tp_target)}
     assert test_tiles == intersecting_tiles
+
+
+def test_tile_compare():
+    tp = TilePyramid("geodetic")
+    a = tp.tile(5, 5, 5)
+    b = tp.tile(5, 5, 5)
+    c = tp.tile(5, 5, 6)
+    assert a == b
+    assert a != c
+    assert b != c
+    assert a != "invalid type"
+    assert len(set([a, b, c])) == 2

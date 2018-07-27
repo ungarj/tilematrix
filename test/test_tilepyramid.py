@@ -92,6 +92,8 @@ def test_tilepyramid_compare(grid_definition_proj, grid_definition_epsg):
     abounds.update(bounds=(-5000000., -5000000., 5000000., 5000000.))
     assert TilePyramid(abounds) == TilePyramid(abounds)
     assert TilePyramid(gproj) != TilePyramid(abounds)
+    # other type
+    assert TilePyramid("geodetic") != "string"
 
 
 def test_grid_compare(grid_definition_proj, grid_definition_epsg):
@@ -190,5 +192,14 @@ def test_snap_bounds():
     snapped = snap_bounds(bounds=bounds, tile_pyramid=tp, zoom=zoom)
     control = unary_union([
         tile.bbox() for tile in tp.tiles_from_bounds(bounds, zoom)
+    ]).bounds
+    assert snapped == control
+
+    pixelbuffer = 10
+    snapped = snap_bounds(
+        bounds=bounds, tile_pyramid=tp, zoom=zoom, pixelbuffer=pixelbuffer
+    )
+    control = unary_union([
+        tile.bbox(pixelbuffer) for tile in tp.tiles_from_bounds(bounds, zoom)
     ]).bounds
     assert snapped == control

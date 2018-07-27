@@ -28,7 +28,8 @@ class TilePyramid(object):
         """Initialize TilePyramid."""
         # get source grid parameters
         self.grid = _funcs.GridDefinition(
-            grid_definition, tile_size=tile_size, metatiling=metatiling)
+            grid_definition, tile_size=tile_size, metatiling=metatiling
+        )
         self.type = self.grid.type
         self.bounds = self.grid.bounds
         self.left, self.bottom, self.right, self.top = self.bounds
@@ -228,17 +229,20 @@ class TilePyramid(object):
         return _funcs._tile_from_xy(self, x, y, zoom, on_edge_use=on_edge_use)
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return all([
-                self.grid == other.grid,
-                self.tile_size == other.tile_size,
-                self.metatiling == other.metatiling])
-        else:
-            return False
+        return (
+            isinstance(other, self.__class__) and
+            self.grid == other.grid and
+            self.tile_size == other.tile_size and
+            self.metatiling == other.metatiling
+        )
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __repr__(self):
         return 'TilePyramid(%s, tile_size=%s, metatiling=%s)' % (
-            self.type, self.tile_size, self.metatiling)
+            self.type, self.tile_size, self.metatiling
+        )
+
+    def __hash__(self):
+        return hash(repr(self) + repr(self.grid))

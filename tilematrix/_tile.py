@@ -230,5 +230,18 @@ class Tile(object):
         """
         return _funcs._tile_intersecting_tilepyramid(self, tilepyramid)
 
+    def __eq__(self, other):
+        return (
+            isinstance(other, self.__class__) and
+            self.tp == other.tp and
+            self.id == other.id
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __repr__(self):
         return 'Tile(%s, %s)' % (self.id, self.tp)
+
+    def __hash__(self):
+        return hash(repr(self))

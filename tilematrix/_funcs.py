@@ -116,12 +116,12 @@ class GridDefinition(object):
             if self.init_definition not in PYRAMID_PARAMS:
                 raise ValueError(
                     "WMTS tileset '%s' not found. Use one of %s" % (
-                        self.init_definition, PYRAMID_PARAMS.keys()))
+                        self.init_definition, PYRAMID_PARAMS.keys()
+                    )
+                )
             self.type = self.init_definition
-            self.shape = Shape(
-                *PYRAMID_PARAMS[self.init_definition]["shape"])
-            self.bounds = Bounds(
-                *PYRAMID_PARAMS[self.init_definition]["bounds"])
+            self.shape = Shape(*PYRAMID_PARAMS[self.init_definition]["shape"])
+            self.bounds = Bounds(*PYRAMID_PARAMS[self.init_definition]["bounds"])
             self.left, self.bottom, self.right, self.top = self.bounds
             self.is_global = PYRAMID_PARAMS[self.init_definition]["is_global"]
             self.srid = PYRAMID_PARAMS[self.init_definition]["epsg"]
@@ -129,19 +129,26 @@ class GridDefinition(object):
         elif isinstance(grid_definition, GridDefinition):
             self.__init__(
                 grid_definition.init_definition, tile_size=tile_size,
-                metatiling=metatiling)
+                metatiling=metatiling
+            )
         else:
             raise TypeError(
                 "invalid grid definition type: %s" % type(grid_definition))
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.init_definition == other.init_definition
-        else:
-            return False
+        return (
+            isinstance(other, self.__class__) and
+            self.init_definition == other.init_definition
+        )
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __repr__(self):
+        return 'GridDefinition(init_definition=%s)' % self.init_definition
+
+    def __hash__(self):
+        return hash(repr(self))
 
 
 def _verify_shape_bounds(shape, bounds):
