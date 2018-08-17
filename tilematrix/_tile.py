@@ -245,3 +245,8 @@ class Tile(object):
 
     def __hash__(self):
         return hash(repr(self))
+
+    def __iter__(self):
+        yield self.zoom
+        yield self.row
+        yield self.col

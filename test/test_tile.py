@@ -145,3 +145,9 @@ def test_tile_compare():
     assert b != c
     assert a != "invalid type"
     assert len(set([a, b, c])) == 2
+
+
+def test_tile_tuple():
+    tp = TilePyramid("geodetic")
+    a = tp.tile(5, 5, 5)
+    assert tuple(a) == (5, 5, 5, )

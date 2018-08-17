@@ -2,6 +2,10 @@
 Changelog
 #########
 
+0.17
+----
+* make ``Tile()`` iterable to enable ``tuple(Tile)`` return the tile index as tuple
+
 0.16
 ----
 * make ``Tile()`` objects hashable & comparable
