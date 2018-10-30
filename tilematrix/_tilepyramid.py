@@ -190,7 +190,7 @@ class TilePyramid(object):
         """
         validate_zoom(zoom)
         if geometry.is_empty:
-            raise StopIteration()
+            return
         if geometry.geom_type == "Point":
             yield self.tile_from_xy(geometry.x, geometry.y, zoom)
         elif geometry.geom_type == "MultiPoint":
