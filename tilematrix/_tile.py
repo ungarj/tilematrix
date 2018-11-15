@@ -43,12 +43,12 @@ class Tile(object):
     @property
     def width(self):
         """Calculate Tile width in pixels."""
-        return self.tile_pyramid.tile_width(self.zoom)
+        return self.shape().width
 
     @property
     def height(self):
         """Calculate Tile height in pixels."""
-        return self.tile_pyramid.tile_height(self.zoom)
+        return self.shape().height
 
     @property
     def x_size(self):
@@ -102,7 +102,8 @@ class Tile(object):
             self.bounds(pixelbuffer).left,
             0,
             -self.pixel_y_size,
-            self.bounds(pixelbuffer).top)
+            self.bounds(pixelbuffer).top
+        )
 
     def shape(self, pixelbuffer=0):
         """
@@ -110,15 +111,16 @@ class Tile(object):
 
         - pixelbuffer: tile buffer in pixels
         """
-        height = self.height + 2 * pixelbuffer
-        width = self.width + 2 * pixelbuffer
+        base_height = self.tile_pyramid.tile_height(self.zoom)
+        height = base_height + 2 * pixelbuffer
         if pixelbuffer:
             matrix_height = self.tile_pyramid.matrix_height(self.zoom)
             if matrix_height == 1:
-                height = self.height
+                height = base_height
             elif self.row in [0, matrix_height-1]:
-                height = self.height + pixelbuffer
-        return _funcs.Shape(height, width)
+                height = base_height + pixelbuffer
+        width = self.tile_pyramid.tile_width(self.zoom) + 2 * pixelbuffer
+        return _funcs.Shape(height=height, width=width)
 
     def is_valid(self):
         """Return True if tile is available in tile pyramid."""

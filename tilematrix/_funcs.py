@@ -11,7 +11,7 @@ from ._conf import DELTA, PYRAMID_PARAMS
 
 
 Bounds = namedtuple("Bounds", "left bottom right top")
-Shape = namedtuple("Shape", "width height")
+Shape = namedtuple("Shape", "height width")
 TileIndex = namedtuple("TileIndex", "zoom row col")
 
 
@@ -95,7 +95,10 @@ class GridDefinition(object):
             self.type = "custom"
             if "shape" not in self.init_definition:
                 raise AttributeError("grid shape not provided")
-            self.shape = Shape(*self.init_definition["shape"])
+            self.shape = Shape(
+                width=self.init_definition["shape"][0],
+                height=self.init_definition["shape"][1],
+            )
             self.bounds = Bounds(*self.init_definition["bounds"])
             # verify that shape aspect ratio fits bounds apsect ratio
             _verify_shape_bounds(shape=self.shape, bounds=self.bounds)
@@ -120,7 +123,10 @@ class GridDefinition(object):
                     )
                 )
             self.type = self.init_definition
-            self.shape = Shape(*PYRAMID_PARAMS[self.init_definition]["shape"])
+            self.shape = Shape(
+                width=PYRAMID_PARAMS[self.init_definition]["shape"][0],
+                height=PYRAMID_PARAMS[self.init_definition]["shape"][1]
+            )
             self.bounds = Bounds(*PYRAMID_PARAMS[self.init_definition]["bounds"])
             self.left, self.bottom, self.right, self.top = self.bounds
             self.is_global = PYRAMID_PARAMS[self.init_definition]["is_global"]
@@ -153,8 +159,6 @@ class GridDefinition(object):
 
 def _verify_shape_bounds(shape, bounds):
     """Verify that shape corresponds to bounds apect ratio."""
-    shape = Shape(*map(float, shape))
-    bounds = Bounds(*map(float, bounds))
     shape_ratio = shape.width / shape.height
     bounds_ratio = (bounds.right - bounds.left) / (bounds.top - bounds.bottom)
     if abs(shape_ratio - bounds_ratio) > DELTA:

@@ -160,8 +160,7 @@ class TilePyramid(object):
         """
         validate_zoom(zoom)
         if not isinstance(bounds, tuple) or len(bounds) != 4:
-            raise ValueError(
-                "bounds must be a tuple of left, bottom, right, top values")
+            raise ValueError("bounds must be a tuple of left, bottom, right, top values")
         if not isinstance(bounds, _funcs.Bounds):
             bounds = _funcs.Bounds(*bounds)
         if self.is_global:

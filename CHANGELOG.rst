@@ -2,13 +2,17 @@
 Changelog
 #########
 
+0.18
+----
+* order of ``Tile.shape`` swapped to ``(height, width)`` in order to match rasterio array interpretation
+
 0.17
 ----
-* make ``Tile()`` iterable to enable ``tuple(Tile)`` return the tile index as tuple
+* make ``Tile`` iterable to enable ``tuple(Tile)`` return the tile index as tuple
 
 0.16
 ----
-* make ``Tile()`` objects hashable & comparable
+* make ``Tile`` objects hashable & comparable
 
 0.15
 ----
