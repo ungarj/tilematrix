@@ -95,10 +95,7 @@ class GridDefinition(object):
             self.type = "custom"
             if "shape" not in self.init_definition:
                 raise AttributeError("grid shape not provided")
-            self.shape = Shape(
-                width=self.init_definition["shape"][0],
-                height=self.init_definition["shape"][1],
-            )
+            self.shape = Shape(*self.init_definition["shape"])
             self.bounds = Bounds(*self.init_definition["bounds"])
             # verify that shape aspect ratio fits bounds apsect ratio
             _verify_shape_bounds(shape=self.shape, bounds=self.bounds)
@@ -123,10 +120,7 @@ class GridDefinition(object):
                     )
                 )
             self.type = self.init_definition
-            self.shape = Shape(
-                width=PYRAMID_PARAMS[self.init_definition]["shape"][0],
-                height=PYRAMID_PARAMS[self.init_definition]["shape"][1]
-            )
+            self.shape = Shape(*PYRAMID_PARAMS[self.init_definition]["shape"])
             self.bounds = Bounds(*PYRAMID_PARAMS[self.init_definition]["bounds"])
             self.left, self.bottom, self.right, self.top = self.bounds
             self.is_global = PYRAMID_PARAMS[self.init_definition]["is_global"]
