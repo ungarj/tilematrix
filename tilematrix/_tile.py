@@ -3,7 +3,9 @@
 from shapely.geometry import box
 from affine import Affine
 
-from . import _conf, _funcs
+from ._conf import ROUND
+from ._funcs import _tile_intersecting_tilepyramid
+from ._types import TileIndex, Shape, Bounds
 
 
 class Tile(object):
@@ -28,14 +30,14 @@ class Tile(object):
         if not self.is_valid():
             raise ValueError(
                 "invalid tile index given: %s %s %s" % (zoom, row, col))
-        self.index = _funcs.TileIndex(zoom, row, col)
-        self.id = _funcs.TileIndex(zoom, row, col)
+        self.index = TileIndex(zoom, row, col)
+        self.id = TileIndex(zoom, row, col)
         self.pixel_x_size = self.tile_pyramid.pixel_x_size(self.zoom)
         self.pixel_y_size = self.tile_pyramid.pixel_y_size(self.zoom)
         self.left = float(round(
-            self.tile_pyramid.left+((self.col)*self.x_size), _conf.ROUND))
+            self.tile_pyramid.left+((self.col)*self.x_size), ROUND))
         self.top = float(round(
-            self.tile_pyramid.top-((self.row)*self.y_size), _conf.ROUND))
+            self.tile_pyramid.top-((self.row)*self.y_size), ROUND))
         self.right = self.left + self.x_size
         self.bottom = self.top - self.y_size
         self.srid = tile_pyramid.srid
@@ -80,7 +82,7 @@ class Tile(object):
             top = self.tile_pyramid.top
         if bottom < self.tile_pyramid.bottom:
             bottom = self.tile_pyramid.bottom
-        return _funcs.Bounds(left, bottom, right, top)
+        return Bounds(left, bottom, right, top)
 
     def bbox(self, pixelbuffer=0):
         """
@@ -120,7 +122,7 @@ class Tile(object):
             elif self.row in [0, matrix_height-1]:
                 height = base_height + pixelbuffer
         width = self.tile_pyramid.tile_width(self.zoom) + 2 * pixelbuffer
-        return _funcs.Shape(height=height, width=width)
+        return Shape(height=height, width=width)
 
     def is_valid(self):
         """Return True if tile is available in tile pyramid."""
@@ -230,7 +232,7 @@ class Tile(object):
 
         - tilepyramid: a TilePyramid object
         """
-        return _funcs._tile_intersecting_tilepyramid(self, tilepyramid)
+        return _tile_intersecting_tilepyramid(self, tilepyramid)
 
     def __eq__(self, other):
         return (

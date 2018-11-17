@@ -3,10 +3,14 @@
 from shapely.prepared import prep
 import math
 
-from . import _funcs
 from ._conf import ROUND
+from ._grid import GridDefinition
 from ._tile import Tile
-from ._funcs import validate_zoom
+from ._funcs import (
+    validate_zoom, clip_geometry_to_srs_bounds, _tile_intersecting_tilepyramid,
+    _global_tiles_from_bounds, _tiles_from_cleaned_bounds, _tile_from_xy
+)
+from ._types import Bounds
 
 
 class TilePyramid(object):
@@ -27,7 +31,7 @@ class TilePyramid(object):
     def __init__(self, grid_definition, tile_size=256, metatiling=1):
         """Initialize TilePyramid."""
         # get source grid parameters
-        self.grid = _funcs.GridDefinition(
+        self.grid = GridDefinition(
             grid_definition, tile_size=tile_size, metatiling=metatiling
         )
         self.type = self.grid.type
@@ -145,7 +149,7 @@ class TilePyramid(object):
 
         - tile: a Tile object
         """
-        return _funcs._tile_intersecting_tilepyramid(tile, self)
+        return _tile_intersecting_tilepyramid(tile, self)
 
     def tiles_from_bounds(self, bounds, zoom):
         """
@@ -161,13 +165,13 @@ class TilePyramid(object):
         validate_zoom(zoom)
         if not isinstance(bounds, tuple) or len(bounds) != 4:
             raise ValueError("bounds must be a tuple of left, bottom, right, top values")
-        if not isinstance(bounds, _funcs.Bounds):
-            bounds = _funcs.Bounds(*bounds)
+        if not isinstance(bounds, Bounds):
+            bounds = Bounds(*bounds)
         if self.is_global:
-            for tile in _funcs._global_tiles_from_bounds(self, bounds, zoom):
+            for tile in _global_tiles_from_bounds(self, bounds, zoom):
                 yield tile
         else:
-            for tile in _funcs._tiles_from_cleaned_bounds(self, bounds, zoom):
+            for tile in _tiles_from_cleaned_bounds(self, bounds, zoom):
                 yield tile
 
     def tiles_from_bbox(self, geometry, zoom):
@@ -200,7 +204,7 @@ class TilePyramid(object):
             "GeometryCollection"
         ):
             prepared_geometry = prep(
-                _funcs.clip_geometry_to_srs_bounds(geometry, self))
+                clip_geometry_to_srs_bounds(geometry, self))
             for tile in self.tiles_from_bbox(geometry, zoom):
                 if prepared_geometry.intersects(tile.bbox()):
                     yield tile
@@ -225,7 +229,7 @@ class TilePyramid(object):
             raise ValueError("x or y are outside of grid bounds")
         if on_edge_use not in ["lb", "rb", "rt", "lt"]:
             raise ValueError("on_edge_use must be one of lb, rb, rt or lt")
-        return _funcs._tile_from_xy(self, x, y, zoom, on_edge_use=on_edge_use)
+        return _tile_from_xy(self, x, y, zoom, on_edge_use=on_edge_use)
 
     def __eq__(self, other):
         return (
