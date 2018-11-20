@@ -54,8 +54,7 @@ class GridDefinition(object):
                 metatiling=metatiling
             )
         else:
-            raise TypeError(
-                "invalid grid definition type: %s" % type(grid_definition))
+            raise TypeError("invalid grid definition type: %s" % type(grid_definition))
 
     def __eq__(self, other):
         return (

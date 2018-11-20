@@ -17,7 +17,7 @@ TilePyramid(grid_definition, tile_size=256)
         "epsg": 3035
     }
     ```
-    * ``shape`` (width, height): Indicates the number of tiles per column and row at **zoom level 0**.
+    * ``shape`` (height, width): Indicates the number of tiles per column and row at **zoom level 0**.
     * ``bounds`` (left, bottom, right, top): Units are CRS units.
 
     Please note that the aspect ratios of ``shape`` and ``bounds`` have to be the same.
