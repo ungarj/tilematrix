@@ -28,7 +28,7 @@ setup(
         'affine',
         'click',
         'geojson',
-        'rasterio>=1.0a3',
+        'rasterio>=1.0.21',
         'shapely',
         'six'
     ],
