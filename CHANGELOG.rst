@@ -6,7 +6,8 @@ Changelog
 ----
 * ``TilePyramid.srid`` and ``TilePyramid.type``  are deprecated
 * ``GridDefinition`` can now be loaded from package root
-* ``GridDefinition`` got ``to_dict()`` and ``from_dict()``
+* ``GridDefinition`` got ``to_dict()`` and ``from_dict()`` methods
+
 
 0.18
 ----
