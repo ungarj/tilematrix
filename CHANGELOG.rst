@@ -4,6 +4,7 @@ Changelog
 
 0.19
 ----
+* Python 2 not supported anymore
 * ``TilePyramid.srid`` and ``TilePyramid.type``  are deprecated
 * ``GridDefinition`` can now be loaded from package root
 * ``GridDefinition`` got ``to_dict()`` and ``from_dict()`` methods
