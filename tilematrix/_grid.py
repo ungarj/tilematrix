@@ -1,72 +1,112 @@
-from rasterio.crs import CRS
 import six
+import warnings
 
 from ._conf import PYRAMID_PARAMS
-from ._funcs import _verify_shape_bounds
+from ._funcs import _get_crs, _verify_shape_bounds
 from ._types import Bounds, Shape
 
 
 class GridDefinition(object):
     """Object representing the tile pyramid source grid."""
 
-    def __init__(self, grid_definition, tile_size=256, metatiling=1):
-        if metatiling not in (1, 2, 4, 8, 16):
-            raise ValueError("metatling must be one of 1, 2, 4, 8, 16")
-        if isinstance(grid_definition, dict):
-            self.init_definition = dict(**grid_definition)
+    def __init__(
+        self, grid=None, shape=None, bounds=None, srs=None, is_global=False, **kwargs
+    ):
+        if isinstance(grid, six.string_types) and grid in PYRAMID_PARAMS:
+            self.type = grid
+            self.shape = Shape(*PYRAMID_PARAMS[grid]["shape"])
+            self.bounds = Bounds(*PYRAMID_PARAMS[grid]["bounds"])
+            self.is_global = PYRAMID_PARAMS[grid]["is_global"]
+            self.crs = _get_crs(PYRAMID_PARAMS[grid]["srs"])
+            self.left, self.bottom, self.right, self.top = self.bounds
+        elif grid is None or grid == "custom":
+            for i in ["proj", "epsg"]:
+                if i in kwargs:
+                    if srs is None:
+                        srs = {i: kwargs[i]}
+                        warnings.warn(
+                            DeprecationWarning(
+                                "'%s' should be packed into a dictionary and passed to "
+                                "'srs'" % i
+                            )
+                        )
+                    else:
+                        warnings.warn(
+                            DeprecationWarning(
+                                "srs parameter found, '%s' will be ignored" % i
+                            )
+                        )
             self.type = "custom"
-            if "shape" not in self.init_definition:
-                raise AttributeError("grid shape not provided")
-            self.shape = Shape(*self.init_definition["shape"])
-            self.bounds = Bounds(*self.init_definition["bounds"])
-            # verify that shape aspect ratio fits bounds apsect ratio
-            _verify_shape_bounds(shape=self.shape, bounds=self.bounds)
+            _verify_shape_bounds(shape=shape, bounds=bounds)
+            self.shape = Shape(*shape)
+            self.bounds = Bounds(*bounds)
+            self.is_global = is_global
+            self.crs = _get_crs(srs)
             self.left, self.bottom, self.right, self.top = self.bounds
-            self.is_global = self.init_definition.get("is_global", False)
-            if all([i in self.init_definition for i in ["proj", "epsg"]]):
-                raise ValueError("either 'epsg' or 'proj' are allowed.")
-            if "epsg" in self.init_definition:
-                self.crs = CRS().from_epsg(self.init_definition["epsg"])
-                self.srid = self.init_definition["epsg"]
-            elif "proj" in self.init_definition:
-                self.crs = CRS().from_string(self.init_definition["proj"])
-                self.srid = None
-            else:
-                raise AttributeError("either 'epsg' or 'proj' is required")
-        elif isinstance(grid_definition, six.string_types):
-            self.init_definition = grid_definition
-            if self.init_definition not in PYRAMID_PARAMS:
-                raise ValueError(
-                    "WMTS tileset '%s' not found. Use one of %s" % (
-                        self.init_definition, PYRAMID_PARAMS.keys()
-                    )
+            # check if parameters match with default grid type
+            for default_grid_name in PYRAMID_PARAMS:
+                default_grid = GridDefinition(default_grid_name)
+                if self.__eq__(default_grid):
+                    self.type = default_grid_name
+        elif isinstance(grid, dict):
+            if "type" in grid:
+                warnings.warn(
+                    DeprecationWarning("'type' is deprecated and should be 'grid'")
                 )
-            self.type = self.init_definition
-            self.shape = Shape(*PYRAMID_PARAMS[self.init_definition]["shape"])
-            self.bounds = Bounds(*PYRAMID_PARAMS[self.init_definition]["bounds"])
-            self.left, self.bottom, self.right, self.top = self.bounds
-            self.is_global = PYRAMID_PARAMS[self.init_definition]["is_global"]
-            self.srid = PYRAMID_PARAMS[self.init_definition]["epsg"]
-            self.crs = CRS().from_epsg(self.srid)
-        elif isinstance(grid_definition, GridDefinition):
-            self.__init__(
-                grid_definition.init_definition, tile_size=tile_size,
-                metatiling=metatiling
-            )
+                if "grid" not in grid:
+                    grid["grid"] = grid.pop("type")
+            self.__init__(**grid)
+        elif isinstance(grid, GridDefinition):
+            self.__init__(**grid.to_dict())
         else:
-            raise TypeError("invalid grid definition type: %s" % type(grid_definition))
+            raise ValueError("invalid grid definition: %s" % grid)
+
+    @property
+    def srid(self):
+        warnings.warn(DeprecationWarning("'srid' attribute is deprecated"))
+        return self.crs.to_epsg()
+
+    def to_dict(self):
+        return dict(
+            bounds=self.bounds,
+            is_global=self.is_global,
+            shape=self.shape,
+            srs=dict(wkt=self.crs.to_wkt()),
+            type=self.type,
+        )
+
+    def from_dict(self, config_dict):
+        return GridDefinition(**config_dict)
 
     def __eq__(self, other):
         return (
             isinstance(other, self.__class__) and
-            self.init_definition == other.init_definition
+            self.shape == other.shape and
+            self.bounds == other.bounds and
+            self.is_global == other.is_global and
+            self.crs == other.crs
         )
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return 'GridDefinition(init_definition=%s)' % self.init_definition
+        if self.type in PYRAMID_PARAMS:
+            return 'GridDefinition("%s")' % self.type
+        else:
+            return 'GridDefinition(' \
+                '"%s", ' \
+                'shape=%s, ' \
+                'bounds=%s, ' \
+                'is_global=%s, ' \
+                'srs=%s' \
+                ')' % (
+                    self.type,
+                    tuple(self.shape),
+                    tuple(self.bounds),
+                    self.is_global,
+                    self.crs
+                )
 
     def __hash__(self):
         return hash(repr(self))

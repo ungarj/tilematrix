@@ -2,6 +2,7 @@
 
 from shapely.prepared import prep
 import math
+import warnings
 
 from ._conf import ROUND
 from ._grid import GridDefinition
@@ -28,17 +29,17 @@ class TilePyramid(object):
         16.
     """
 
-    def __init__(self, grid_definition, tile_size=256, metatiling=1):
+    def __init__(self, grid=None, tile_size=256, metatiling=1):
         """Initialize TilePyramid."""
+        if grid is None:
+            raise ValueError("grid definition required")
+        if metatiling not in (1, 2, 4, 8, 16):
+            raise ValueError("metatling must be one of 1, 2, 4, 8, 16")
         # get source grid parameters
-        self.grid = GridDefinition(
-            grid_definition, tile_size=tile_size, metatiling=metatiling
-        )
-        self.type = self.grid.type
+        self.grid = GridDefinition(grid)
         self.bounds = self.grid.bounds
         self.left, self.bottom, self.right, self.top = self.bounds
         self.crs = self.grid.crs
-        self.srid = self.grid.srid
         self.is_global = self.grid.is_global
         self.metatiling = metatiling
         # size in pixels
@@ -47,6 +48,16 @@ class TilePyramid(object):
         # size in map units
         self.x_size = float(round(self.right - self.left, ROUND))
         self.y_size = float(round(self.top - self.bottom, ROUND))
+
+    @property
+    def type(self):
+        warnings.warn(DeprecationWarning("'type' attribute is deprecated"))
+        return self.grid.type
+
+    @property
+    def srid(self):
+        warnings.warn(DeprecationWarning("'srid' attribute is deprecated"))
+        return self.grid.srid
 
     def tile(self, zoom, row, col):
         """
@@ -231,6 +242,22 @@ class TilePyramid(object):
             raise ValueError("on_edge_use must be one of lb, rb, rt or lt")
         return _tile_from_xy(self, x, y, zoom, on_edge_use=on_edge_use)
 
+    def to_dict(self):
+        """
+        Return dictionary representation of pyramid parameters.
+        """
+        return dict(
+            grid=self.grid.to_dict(),
+            metatiling=self.metatiling,
+            tile_size=self.tile_size
+        )
+
+    def from_dict(config_dict):
+        """
+        Initialize TilePyramid from configuration dictionary.
+        """
+        return TilePyramid(**config_dict)
+
     def __eq__(self, other):
         return (
             isinstance(other, self.__class__) and
@@ -244,7 +271,7 @@ class TilePyramid(object):
 
     def __repr__(self):
         return 'TilePyramid(%s, tile_size=%s, metatiling=%s)' % (
-            self.type, self.tile_size, self.metatiling
+            self.grid, self.tile_size, self.metatiling
         )
 
     def __hash__(self):

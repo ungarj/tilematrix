@@ -28,4 +28,5 @@ def grid_definition_epsg():
         "shape": (1, 1),
         "bounds": (2426378.0132, 1528101.2618, 6293974.6215, 5395697.8701),
         "is_global": False,
-        "epsg": 3035}
+        "epsg": 3035
+    }

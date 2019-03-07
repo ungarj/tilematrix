@@ -1,11 +1,12 @@
 """Helper functions."""
 
 from itertools import product, chain
+from rasterio.crs import CRS
 from shapely.geometry import Polygon, GeometryCollection, box
 from shapely.affinity import translate
 
 from ._conf import DELTA
-from ._types import Bounds
+from ._types import Bounds, Shape
 
 
 def validate_zoom(zoom):
@@ -79,6 +80,16 @@ def snap_bounds(bounds=None, tile_pyramid=None, zoom=None, pixelbuffer=0):
 
 def _verify_shape_bounds(shape, bounds):
     """Verify that shape corresponds to bounds apect ratio."""
+    if not isinstance(shape, (tuple, list)) or len(shape) != 2:
+        raise TypeError(
+            "shape must be a tuple or list with two elements: %s" % str(shape)
+        )
+    if not isinstance(bounds, (tuple, list)) or len(bounds) != 4:
+        raise TypeError(
+            "bounds must be a tuple or list with four elements: %s" % str(bounds)
+        )
+    shape = Shape(*shape)
+    bounds = Bounds(*bounds)
     shape_ratio = shape.width / shape.height
     bounds_ratio = (bounds.right - bounds.left) / (bounds.top - bounds.bottom)
     if abs(shape_ratio - bounds_ratio) > DELTA:
@@ -94,6 +105,19 @@ def _verify_shape_bounds(shape, bounds):
         raise ValueError(
             "shape ratio (%s) must equal bounds ratio (%s); try %s" % (
                 shape_ratio, bounds_ratio, proposed_bounds))
+
+
+def _get_crs(srs):
+    if not isinstance(srs, dict):
+        raise TypeError("'srs' must be a dictionary")
+    if "wkt" in srs:
+        return CRS().from_wkt(srs["wkt"])
+    elif "epsg" in srs:
+        return CRS().from_epsg(srs["epsg"])
+    elif "proj" in srs:
+        return CRS().from_string(srs["proj"])
+    else:
+        raise TypeError("provide either 'wkt', 'epsg' or 'proj' definition")
 
 
 def _tile_intersecting_tilepyramid(tile, tp):
