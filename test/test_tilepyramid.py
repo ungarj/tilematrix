@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """TilePyramid creation."""
 
 import pytest
@@ -11,11 +10,11 @@ def test_init():
     """Initialize TilePyramids."""
     for tptype in ["geodetic", "mercator"]:
         assert TilePyramid(tptype)
-    try:
+    with pytest.raises(ValueError):
         TilePyramid("invalid")
-        raise Exception()
-    except ValueError:
-        pass
+    with pytest.raises(ValueError):
+        TilePyramid()
+    assert hash(TilePyramid(tptype))
 
 
 def test_metatiling():
@@ -175,10 +174,20 @@ def test_tile_from_xy():
     tile = tp.tile_from_xy(-180, 90, zoom, on_edge_use="lb")
     assert tile.id == (5, 0, 63)
 
+    with pytest.raises(ValueError):
+        tp.tile_from_xy(-180, 90, zoom, on_edge_use="invalid")
 
-def test_tiles_from_bounds():
+
+def test_tiles_from_bounds(grid_definition_proj):
+    # global pyramids
     tp = TilePyramid("geodetic")
     parent = tp.tile(8, 5, 5)
+    from_bounds = set([t.id for t in tp.tiles_from_bounds(parent.bounds(), 9)])
+    children = set([t.id for t in parent.get_children()])
+    assert from_bounds == children
+    # non-global pyramids
+    tp = TilePyramid(grid_definition_proj)
+    parent = tp.tile(8, 0, 0)
     from_bounds = set([t.id for t in tp.tiles_from_bounds(parent.bounds(), 9)])
     children = set([t.id for t in parent.get_children()])
     assert from_bounds == children
@@ -203,3 +212,9 @@ def test_snap_bounds():
         tile.bbox(pixelbuffer) for tile in tp.tiles_from_bounds(bounds, zoom)
     ]).bounds
     assert snapped == control
+
+
+def test_deprecated():
+    tp = TilePyramid("geodetic")
+    assert tp.type
+    assert tp.srid

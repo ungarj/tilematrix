@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Tile geometries and tiles from geometries."""
 
 import pytest
@@ -181,6 +180,13 @@ def test_tiles_from_empty_geom():
     tp = TilePyramid("geodetic")
     empty_tiles = {tile.id for tile in tp.tiles_from_geom(test_geom, 6)}
     assert empty_tiles == set([])
+
+
+def test_tiles_from_invalid_geom(invalid_geom):
+    """Get tiles from empty geometry."""
+    tp = TilePyramid("geodetic")
+    with pytest.raises(ValueError):
+        list(tp.tiles_from_geom(invalid_geom, 6))
 
 
 def test_tiles_from_point():

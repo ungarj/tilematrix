@@ -2,6 +2,14 @@
 Changelog
 #########
 
+0.19
+----
+* Python 2 not supported anymore
+* ``TilePyramid.srid`` and ``TilePyramid.type``  are deprecated
+* ``GridDefinition`` can now be loaded from package root
+* ``GridDefinition`` got ``to_dict()`` and ``from_dict()`` methods
+
+
 0.18
 ----
 * order of ``Tile.shape`` swapped to ``(height, width)`` in order to match rasterio array interpretation
