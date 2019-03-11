@@ -29,8 +29,7 @@ setup(
         'click',
         'geojson',
         'rasterio>=1.0.21',
-        'shapely',
-        'six'
+        'shapely'
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

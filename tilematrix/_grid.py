@@ -1,4 +1,3 @@
-import six
 import warnings
 
 from ._conf import PYRAMID_PARAMS
@@ -12,7 +11,7 @@ class GridDefinition(object):
     def __init__(
         self, grid=None, shape=None, bounds=None, srs=None, is_global=False, **kwargs
     ):
-        if isinstance(grid, six.string_types) and grid in PYRAMID_PARAMS:
+        if isinstance(grid, str) and grid in PYRAMID_PARAMS:
             self.type = grid
             self.shape = Shape(*PYRAMID_PARAMS[grid]["shape"])
             self.bounds = Bounds(*PYRAMID_PARAMS[grid]["bounds"])
@@ -22,20 +21,13 @@ class GridDefinition(object):
         elif grid is None or grid == "custom":
             for i in ["proj", "epsg"]:
                 if i in kwargs:
-                    if srs is None:
-                        srs = {i: kwargs[i]}
-                        warnings.warn(
-                            DeprecationWarning(
-                                "'%s' should be packed into a dictionary and passed to "
-                                "'srs'" % i
-                            )
+                    srs = {i: kwargs[i]} if srs is None else srs
+                    warnings.warn(
+                        DeprecationWarning(
+                            "'%s' should be packed into a dictionary and passed to "
+                            "'srs'" % i
                         )
-                    else:
-                        warnings.warn(
-                            DeprecationWarning(
-                                "srs parameter found, '%s' will be ignored" % i
-                            )
-                        )
+                    )
             self.type = "custom"
             _verify_shape_bounds(shape=shape, bounds=bounds)
             self.shape = Shape(*shape)
@@ -75,7 +67,7 @@ class GridDefinition(object):
             type=self.type,
         )
 
-    def from_dict(self, config_dict):
+    def from_dict(config_dict):
         return GridDefinition(**config_dict)
 
     def __eq__(self, other):

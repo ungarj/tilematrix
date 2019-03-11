@@ -45,7 +45,7 @@ class Tile(object):
     @property
     def srid(self):
         warnings.warn(DeprecationWarning("'srid' attribute is deprecated"))
-        return self.grid.srid
+        return self.tp.grid.srid
 
     @property
     def width(self):

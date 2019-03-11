@@ -101,10 +101,13 @@ def _verify_shape_bounds(shape, bounds):
             bounds.left,
             bounds.bottom,
             bounds.left + shape.width * min_length,
-            bounds.bottom + shape.height * min_length)
+            bounds.bottom + shape.height * min_length
+        )
         raise ValueError(
             "shape ratio (%s) must equal bounds ratio (%s); try %s" % (
-                shape_ratio, bounds_ratio, proposed_bounds))
+                shape_ratio, bounds_ratio, proposed_bounds
+            )
+        )
 
 
 def _get_crs(srs):
@@ -203,10 +206,7 @@ def _tiles_from_cleaned_bounds(tp, bounds, zoom):
     lb = _tile_from_xy(tp, bounds.left, bounds.bottom, zoom, on_edge_use="rt")
     rt = _tile_from_xy(tp, bounds.right, bounds.top, zoom, on_edge_use="lb")
     for tile_id in product([zoom], range(rt.row, lb.row + 1), range(lb.col, rt.col + 1)):
-        try:
-            yield tp.tile(*tile_id)
-        except ValueError:
-            pass
+        yield tp.tile(*tile_id)
 
 
 def _tile_from_xy(tp, x, y, zoom, on_edge_use="rb"):

@@ -205,6 +205,8 @@ class TilePyramid(object):
         validate_zoom(zoom)
         if geometry.is_empty:
             return
+        if not geometry.is_valid:
+            raise ValueError("no valid geometry: %s" % geometry.type)
         if geometry.geom_type == "Point":
             yield self.tile_from_xy(geometry.x, geometry.y, zoom)
         elif geometry.geom_type == "MultiPoint":
@@ -219,8 +221,6 @@ class TilePyramid(object):
             for tile in self.tiles_from_bbox(geometry, zoom):
                 if prepared_geometry.intersects(tile.bbox()):
                     yield tile
-        else:
-            raise ValueError("no valid geometry: %s" % geometry.type)
 
     def tile_from_xy(self, x, y, zoom, on_edge_use="rb"):
         """
