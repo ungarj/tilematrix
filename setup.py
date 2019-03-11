@@ -12,10 +12,16 @@ with open('tilematrix/__init__.py') as f:
             version = version.strip("'")
             continue
 
+# use README.rst for project long_description
+with open('README.rst') as f:
+    readme = f.read()
+
 setup(
     name='tilematrix',
     version=version,
     description='helps handling tile pyramids',
+    long_description=readme,
+    long_description_content_type='text/x-rst',
     author='Joachim Ungar',
     author_email='joachim.ungar@gmail.com',
     url='https://github.com/ungarj/tilematrix',
