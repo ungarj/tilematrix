@@ -69,6 +69,32 @@ def test_tiles():
         _run_tiles(zoom, bounds, output_format=output_format)
 
 
+def test_snap_bounds():
+    zoom = 6
+    bounds = (10, 20, 30, 40)
+    for grid in ["geodetic", "mercator"]:
+        _run_snap_bounds(zoom, bounds, "snap-bounds", grid=grid)
+    for metatiling in [1, 2, 4, 8, 16]:
+        _run_snap_bounds(zoom, bounds, "snap-bounds", metatiling=metatiling)
+    for pixelbuffer in [0, 1, 10]:
+        _run_snap_bounds(zoom, bounds, "snap-bounds", pixelbuffer=pixelbuffer)
+    for tile_size in [256, 512, 1024]:
+        _run_snap_bounds(zoom, bounds, "snap-bounds", tile_size=tile_size)
+
+
+def test_snap_bbox():
+    zoom = 6
+    bounds = (10, 20, 30, 40)
+    for grid in ["geodetic", "mercator"]:
+        _run_snap_bounds(zoom, bounds, "snap-bbox", grid=grid)
+    for metatiling in [1, 2, 4, 8, 16]:
+        _run_snap_bounds(zoom, bounds, "snap-bbox", metatiling=metatiling)
+    for pixelbuffer in [0, 1, 10]:
+        _run_snap_bounds(zoom, bounds, "snap-bbox", pixelbuffer=pixelbuffer)
+    for tile_size in [256, 512, 1024]:
+        _run_snap_bounds(zoom, bounds, "snap-bbox", tile_size=tile_size)
+
+
 def _run_bbox_bounds(
     zoom, row, col, command=None, grid="geodetic", metatiling=1, pixelbuffer=0,
     tile_size=256, output_format="WKT"
@@ -90,7 +116,6 @@ def _run_bbox_bounds(
     if command == "bounds":
         assert result.output.strip() == " ".join(map(str, tile.bounds(pixelbuffer)))
     elif output_format == "WKT":
-        print(result.output.strip())
         assert wkt.loads(result.output.strip()).almost_equals(tile.bbox(pixelbuffer))
     elif output_format == "GeoJSON":
         assert shape(
@@ -154,3 +179,18 @@ def _run_tiles(
     elif output_format == "GeoJSON":
         features = geojson.loads(result.output.strip())["features"]
         assert len(features) == len(tiles)
+
+
+def _run_snap_bounds(
+    zoom, bounds, command=None, grid="geodetic", metatiling=1, pixelbuffer=0,
+    tile_size=256
+):
+    left, bottom, right, top = bounds
+    result = CliRunner().invoke(tmx, [
+        "--pixelbuffer", str(pixelbuffer),
+        "--metatiling", str(metatiling),
+        "--grid", grid,
+        "--tile_size", str(tile_size),
+        command, str(zoom), str(left), str(bottom), str(right), str(top)
+    ])
+    assert result.exit_code == 0

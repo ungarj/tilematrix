@@ -1,7 +1,8 @@
 """Tile class."""
 
-from shapely.geometry import box
 from affine import Affine
+from shapely.geometry import box
+import warnings
 
 from ._conf import ROUND
 from ._funcs import _tile_intersecting_tilepyramid
@@ -40,7 +41,11 @@ class Tile(object):
             self.tile_pyramid.top-((self.row)*self.y_size), ROUND))
         self.right = self.left + self.x_size
         self.bottom = self.top - self.y_size
-        self.srid = tile_pyramid.srid
+
+    @property
+    def srid(self):
+        warnings.warn(DeprecationWarning("'srid' attribute is deprecated"))
+        return self.tp.grid.srid
 
     @property
     def width(self):

@@ -1,11 +1,12 @@
 """Helper functions."""
 
 from itertools import product, chain
+from rasterio.crs import CRS
 from shapely.geometry import Polygon, GeometryCollection, box
 from shapely.affinity import translate
 
 from ._conf import DELTA
-from ._types import Bounds
+from ._types import Bounds, Shape
 
 
 def validate_zoom(zoom):
@@ -79,6 +80,16 @@ def snap_bounds(bounds=None, tile_pyramid=None, zoom=None, pixelbuffer=0):
 
 def _verify_shape_bounds(shape, bounds):
     """Verify that shape corresponds to bounds apect ratio."""
+    if not isinstance(shape, (tuple, list)) or len(shape) != 2:
+        raise TypeError(
+            "shape must be a tuple or list with two elements: %s" % str(shape)
+        )
+    if not isinstance(bounds, (tuple, list)) or len(bounds) != 4:
+        raise TypeError(
+            "bounds must be a tuple or list with four elements: %s" % str(bounds)
+        )
+    shape = Shape(*shape)
+    bounds = Bounds(*bounds)
     shape_ratio = shape.width / shape.height
     bounds_ratio = (bounds.right - bounds.left) / (bounds.top - bounds.bottom)
     if abs(shape_ratio - bounds_ratio) > DELTA:
@@ -90,10 +101,26 @@ def _verify_shape_bounds(shape, bounds):
             bounds.left,
             bounds.bottom,
             bounds.left + shape.width * min_length,
-            bounds.bottom + shape.height * min_length)
+            bounds.bottom + shape.height * min_length
+        )
         raise ValueError(
             "shape ratio (%s) must equal bounds ratio (%s); try %s" % (
-                shape_ratio, bounds_ratio, proposed_bounds))
+                shape_ratio, bounds_ratio, proposed_bounds
+            )
+        )
+
+
+def _get_crs(srs):
+    if not isinstance(srs, dict):
+        raise TypeError("'srs' must be a dictionary")
+    if "wkt" in srs:
+        return CRS().from_wkt(srs["wkt"])
+    elif "epsg" in srs:
+        return CRS().from_epsg(srs["epsg"])
+    elif "proj" in srs:
+        return CRS().from_string(srs["proj"])
+    else:
+        raise TypeError("provide either 'wkt', 'epsg' or 'proj' definition")
 
 
 def _tile_intersecting_tilepyramid(tile, tp):
@@ -179,10 +206,7 @@ def _tiles_from_cleaned_bounds(tp, bounds, zoom):
     lb = _tile_from_xy(tp, bounds.left, bounds.bottom, zoom, on_edge_use="rt")
     rt = _tile_from_xy(tp, bounds.right, bounds.top, zoom, on_edge_use="lb")
     for tile_id in product([zoom], range(rt.row, lb.row + 1), range(lb.col, rt.col + 1)):
-        try:
-            yield tp.tile(*tile_id)
-        except ValueError:
-            pass
+        yield tp.tile(*tile_id)
 
 
 def _tile_from_xy(tp, x, y, zoom, on_edge_use="rb"):

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Tile properties."""
 
 from affine import Affine
@@ -69,7 +68,7 @@ def test_get_children():
     assert test_children == children
 
 
-def test_get_neighbors():
+def test_get_neighbors(grid_definition_proj):
     """Get Tile neighbors."""
     tp = TilePyramid("geodetic")
 
@@ -124,6 +123,14 @@ def test_get_neighbors():
     except ValueError:
         pass
 
+    # neighbors on non-global tilepyramids
+    tp = TilePyramid(grid_definition_proj)
+    zoom = 5
+    max_col = tp.matrix_width(zoom) - 1
+    tile = tp.tile(zoom=zoom, row=3, col=max_col)
+    # don't wrap around antimeridian, i.e. there are no tile neighbors
+    assert len(tile.get_neighbors()) == 5
+
 
 def test_intersecting():
     """Get intersecting Tiles from other TilePyramid."""
@@ -151,3 +158,9 @@ def test_tile_tuple():
     tp = TilePyramid("geodetic")
     a = tp.tile(5, 5, 5)
     assert tuple(a) == (5, 5, 5, )
+
+
+def test_deprecated():
+    tp = TilePyramid("geodetic")
+    tile = tp.tile(5, 5, 5)
+    assert tile.srid

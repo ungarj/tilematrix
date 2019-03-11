@@ -150,7 +150,7 @@ def tiles(ctx, bounds, zoom):
 @click.argument('BOUNDS', nargs=4, type=click.FLOAT, required=True)
 @click.pass_context
 def snap_bounds(ctx, bounds, zoom):
-    """Print Tiles from bounds."""
+    """nap bounds to tile grid."""
     click.echo('%s %s %s %s' % tilematrix.snap_bounds(
         bounds=bounds,
         tile_pyramid=TilePyramid(
@@ -168,7 +168,7 @@ def snap_bounds(ctx, bounds, zoom):
 @click.argument('BOUNDS', nargs=4, type=click.FLOAT, required=True)
 @click.pass_context
 def snap_bbox(ctx, bounds, zoom):
-    """Print Tiles from bounds."""
+    """Snap bbox to tile grid."""
     click.echo(box(*tilematrix.snap_bounds(
         bounds=bounds,
         tile_pyramid=TilePyramid(
