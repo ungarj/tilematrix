@@ -218,3 +218,7 @@ def test_deprecated():
     tp = TilePyramid("geodetic")
     assert tp.type
     assert tp.srid
+    assert tp.tile_x_size(0)
+    assert tp.tile_y_size(0)
+    assert tp.tile_height(0)
+    assert tp.tile_width(0)

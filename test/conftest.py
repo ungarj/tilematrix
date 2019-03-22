@@ -71,3 +71,15 @@ def invalid_geom():
             (1, 2), (1, 1), (2, 1), (2, 0), (0, 0)
         ]
     )
+
+
+@pytest.fixture
+def grid_definition_irregular():
+    return {
+        "shape": [161, 315],
+        "bounds": [141920, 89840, 948320, 502000],
+        "is_global": False,
+        "srs": {
+            "epsg": 31259
+        },
+    }

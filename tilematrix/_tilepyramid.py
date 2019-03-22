@@ -76,8 +76,7 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         validate_zoom(zoom)
-        width = int(math.ceil(
-            self.grid.shape.width * 2**(zoom) / self.metatiling))
+        width = int(math.ceil(self.grid.shape.width * 2**(zoom) / self.metatiling))
         return 1 if width < 1 else width
 
     def matrix_height(self, zoom):
@@ -87,8 +86,7 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         validate_zoom(zoom)
-        height = int(
-            math.ceil(self.grid.shape.height * 2**(zoom) / self.metatiling))
+        height = int(math.ceil(self.grid.shape.height * 2**(zoom) / self.metatiling))
         return 1 if height < 1 else height
 
     def tile_x_size(self, zoom):
@@ -97,6 +95,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
+        warnings.warn(DeprecationWarning("tile_x_size is deprecated"))
         validate_zoom(zoom)
         return round(self.x_size / self.matrix_width(zoom), ROUND)
 
@@ -106,6 +105,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
+        warnings.warn(DeprecationWarning("tile_y_size is deprecated"))
         validate_zoom(zoom)
         return round(self.y_size / self.matrix_height(zoom), ROUND)
 
@@ -115,6 +115,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
+        warnings.warn(DeprecationWarning("tile_width is deprecated"))
         validate_zoom(zoom)
         matrix_pixel = 2**(zoom) * self.tile_size * self.grid.shape.width
         tile_pixel = self.tile_size * self.metatiling
@@ -126,6 +127,7 @@ class TilePyramid(object):
 
         - zoom: zoom level
         """
+        warnings.warn(DeprecationWarning("tile_height is deprecated"))
         validate_zoom(zoom)
         matrix_pixel = 2**(zoom) * self.tile_size * self.grid.shape.height
         tile_pixel = self.tile_size * self.metatiling
@@ -138,8 +140,11 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         validate_zoom(zoom)
-        return float(
-            round(self.tile_x_size(zoom)/self.tile_width(zoom), ROUND))
+        return round(
+            (self.grid.right - self.grid.left) /
+            (self.grid.shape.width * 2**zoom * self.tile_size),
+            ROUND
+        )
 
     def pixel_y_size(self, zoom):
         """
@@ -148,8 +153,11 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         validate_zoom(zoom)
-        return float(
-            round(self.tile_y_size(zoom)/self.tile_height(zoom), ROUND))
+        return round(
+            (self.grid.top - self.grid.bottom) /
+            (self.grid.shape.height * 2**zoom * self.tile_size),
+            ROUND
+        )
 
     def intersecting(self, tile):
         """

@@ -5,7 +5,7 @@ from rasterio.crs import CRS
 from shapely.geometry import Polygon, GeometryCollection, box
 from shapely.affinity import translate
 
-from ._conf import DELTA
+from ._conf import DELTA, ROUND
 from ._types import Bounds, Shape
 
 
@@ -129,21 +129,21 @@ def _tile_intersecting_tilepyramid(tile, tp):
         raise ValueError("Tile and TilePyramid source grids must be the same.")
     tile_metatiling = tile.tile_pyramid.metatiling
     pyramid_metatiling = tp.metatiling
-    multiplier = float(tile_metatiling)/float(pyramid_metatiling)
+    multiplier = tile_metatiling // pyramid_metatiling
     if tile_metatiling > pyramid_metatiling:
         return [
             tp.tile(
                 tile.zoom,
-                int(multiplier) * tile.row + row_offset,
-                int(multiplier) * tile.col + col_offset
+                multiplier * tile.row + row_offset,
+                multiplier * tile.col + col_offset
             )
             for row_offset, col_offset in product(
-                range(int(multiplier)), range(int(multiplier))
+                range(multiplier), range(multiplier)
             )
         ]
     elif tile_metatiling < pyramid_metatiling:
         return [tp.tile(
-            tile.zoom, int(multiplier*tile.row), int(multiplier*tile.col)
+            tile.zoom, multiplier * tile.row, multiplier * tile.col
         )]
     else:
         return [tp.tile(*tile.id)]
@@ -211,13 +211,15 @@ def _tiles_from_cleaned_bounds(tp, bounds, zoom):
 
 def _tile_from_xy(tp, x, y, zoom, on_edge_use="rb"):
     # determine row
-    row = int((tp.top - y) / tp.tile_y_size(zoom))
-    if on_edge_use in ["rt", "lt"] and (tp.top - y) % tp.tile_y_size(zoom) == 0.:
+    tile_y_size = round(tp.y_size / tp.matrix_height(zoom), ROUND)
+    row = int((tp.top - y) / tile_y_size)
+    if on_edge_use in ["rt", "lt"] and (tp.top - y) % tile_y_size == 0.:
         row -= 1
 
     # determine column
-    col = int((x - tp.left) / tp.tile_x_size(zoom))
-    if on_edge_use in ["lb", "lt"] and (x - tp.left) % tp.tile_x_size(zoom) == 0.:
+    tile_x_size = round(tp.x_size / tp.matrix_width(zoom), ROUND)
+    col = int((x - tp.left) / tile_x_size)
+    if on_edge_use in ["lb", "lt"] and (x - tp.left) % tile_x_size == 0.:
         col -= 1
     # handle Antimeridian wrapping
     if tp.is_global:

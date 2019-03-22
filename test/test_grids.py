@@ -1,5 +1,6 @@
 """TilePyramid creation."""
 
+import math
 import pytest
 from tilematrix import TilePyramid, GridDefinition, PYRAMID_PARAMS
 
@@ -54,3 +55,24 @@ def test_neighbors(grid_definition_epsg):
     control_ids = set([(1, 1, 0), (1, 0, 1), (1, 1, 1)])
     assert len(neighbor_ids.symmetric_difference(control_ids)) == 0
 
+
+def test_crop_pixelbuffer(grid_definition_epsg):
+    tp = TilePyramid(grid_definition_epsg)
+    tile = tp.tile(0, 0, 0)
+    assert tile.shape(0) == tile.shape(1)
+
+
+def test_irregular_grids(grid_definition_irregular):
+    for metatiling in [1, 2, 4, 8]:
+        tp = TilePyramid(grid_definition_irregular, metatiling=metatiling)
+        assert tp.matrix_height(0) == math.ceil(161 / metatiling)
+        assert tp.matrix_width(0) == math.ceil(315 / metatiling)
+        assert tp.pixel_x_size(0) == tp.pixel_y_size(0)
+        for tile in [
+            tp.tile(0, 0, 0),
+            tp.tile(0, 10, 0),
+            tp.tile(0, tp.matrix_height(0) - 1, tp.matrix_width(0) - 1)
+        ]:
+            assert tile.pixel_x_size == tile.pixel_y_size
+            assert tile.pixel_x_size == 10.
+            assert tile.shape(10) != tile.shape()
