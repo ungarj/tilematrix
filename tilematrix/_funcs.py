@@ -129,21 +129,21 @@ def _tile_intersecting_tilepyramid(tile, tp):
         raise ValueError("Tile and TilePyramid source grids must be the same.")
     tile_metatiling = tile.tile_pyramid.metatiling
     pyramid_metatiling = tp.metatiling
-    multiplier = tile_metatiling // pyramid_metatiling
+    multiplier = tile_metatiling / pyramid_metatiling
     if tile_metatiling > pyramid_metatiling:
         return [
             tp.tile(
                 tile.zoom,
-                multiplier * tile.row + row_offset,
-                multiplier * tile.col + col_offset
+                int(multiplier) * tile.row + row_offset,
+                int(multiplier) * tile.col + col_offset
             )
             for row_offset, col_offset in product(
-                range(multiplier), range(multiplier)
+                range(int(multiplier)), range(int(multiplier))
             )
         ]
     elif tile_metatiling < pyramid_metatiling:
         return [tp.tile(
-            tile.zoom, multiplier * tile.row, multiplier * tile.col
+            tile.zoom, int(multiplier * tile.row), int(multiplier * tile.col)
         )]
     else:
         return [tp.tile(*tile.id)]
