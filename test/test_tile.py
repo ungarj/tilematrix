@@ -1,6 +1,7 @@
 """Tile properties."""
 
 from affine import Affine
+import pytest
 
 from tilematrix import TilePyramid
 
@@ -164,3 +165,20 @@ def test_deprecated():
     tp = TilePyramid("geodetic")
     tile = tp.tile(5, 5, 5)
     assert tile.srid
+
+
+def test_invalid_id():
+    tp = TilePyramid("geodetic")
+    # wrong id types
+    with pytest.raises(TypeError):
+        tp.tile(-1, 0, 0)
+    with pytest.raises(TypeError):
+        tp.tile(5, 0.7, 0)
+    with pytest.raises(TypeError):
+        tp.tile(10, 0, -11.56)
+    # column exceeds
+    with pytest.raises(ValueError):
+        tp.tile(5, 500, 0)
+    # row exceeds
+    with pytest.raises(ValueError):
+        tp.tile(5, 0, 500)

@@ -2,6 +2,7 @@
 
 import math
 import pytest
+from shapely.geometry import box
 from tilematrix import TilePyramid, GridDefinition, PYRAMID_PARAMS
 
 
@@ -76,3 +77,14 @@ def test_irregular_grids(grid_definition_irregular):
             assert tile.pixel_x_size == tile.pixel_y_size
             assert tile.pixel_x_size == 10.
             assert tile.shape(10) != tile.shape()
+
+
+def test_tiles_from_bounds(grid_definition_irregular):
+    bounds = (755336.179, 300068.615, 791558.022, 319499.955)
+    bbox = box(*bounds)
+    tp = TilePyramid(grid_definition_irregular, metatiling=4)
+    tiles_bounds = list(tp.tiles_from_bounds(bounds, 0))
+    tiles_bbox = list(tp.tiles_from_bbox(bbox, 0))
+    tiles_geom = list(tp.tiles_from_geom(bbox, 0))
+
+    assert set(tiles_bounds) == set(tiles_bbox) == set(tiles_geom)

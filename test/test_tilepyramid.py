@@ -168,9 +168,9 @@ def test_tile_from_xy():
     tile = tp.tile_from_xy(180, -90, zoom, on_edge_use="lt")
     assert tile.id == (5, 31, 63)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         tp.tile_from_xy(-180, 90, zoom, on_edge_use="lt")
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         tp.tile_from_xy(-180, 90, zoom, on_edge_use="rt")
 
     tile = tp.tile_from_xy(-180, 90, zoom, on_edge_use="rb")
