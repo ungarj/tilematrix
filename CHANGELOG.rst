@@ -2,6 +2,11 @@
 Changelog
 #########
 
+0.20
+----
+* fixed pixel size calculation on irregular grids with metatiling (closing #33)
+* ``TilePyramid.tile_x_size()``, ``TilePyramid.tile_y_size()``, ``TilePyramid.tile_height()``, ``TilePyramid.tile_width()`` are deprecated
+
 0.19
 ----
 * Python 2 not supported anymore

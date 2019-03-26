@@ -35,12 +35,15 @@ class Tile(object):
         self.id = TileIndex(zoom, row, col)
         self.pixel_x_size = self.tile_pyramid.pixel_x_size(self.zoom)
         self.pixel_y_size = self.tile_pyramid.pixel_y_size(self.zoom)
-        self.left = float(round(
-            self.tile_pyramid.left+((self.col)*self.x_size), ROUND))
-        self.top = float(round(
-            self.tile_pyramid.top-((self.row)*self.y_size), ROUND))
-        self.right = self.left + self.x_size
-        self.bottom = self.top - self.y_size
+
+        base_size = Shape(
+            height=self.pixel_y_size * self.tp.tile_size * self.tp.metatiling,
+            width=self.pixel_x_size * self.tp.tile_size * self.tp.metatiling
+        )
+        self.top = round(self.tp.top - (self.row * base_size.height), ROUND)
+        self.bottom = max([self.top - base_size.height, self.tp.bottom])
+        self.left = round(self.tp.left + (self.col * base_size.width), ROUND)
+        self.right = min([self.left + base_size.width, self.tp.right])
 
     @property
     def srid(self):
@@ -60,12 +63,12 @@ class Tile(object):
     @property
     def x_size(self):
         """Width of tile in SRID units at zoom level."""
-        return self.tile_pyramid.tile_x_size(self.zoom)
+        return self.right - self.left
 
     @property
     def y_size(self):
         """Height of tile in SRID units at zoom level."""
-        return self.tile_pyramid.tile_y_size(self.zoom)
+        return self.top - self.bottom
 
     def bounds(self, pixelbuffer=0):
         """
@@ -118,15 +121,27 @@ class Tile(object):
 
         - pixelbuffer: tile buffer in pixels
         """
-        base_height = self.tile_pyramid.tile_height(self.zoom)
+        # without any pixelbuffers
+        base_height = int(round((self.top - self.bottom) / self.pixel_y_size, 0))
+        base_width = int(round((self.right - self.left) / self.pixel_x_size, 0))
+        # apply pixelbuffers
         height = base_height + 2 * pixelbuffer
+        width = base_width + 2 * pixelbuffer
         if pixelbuffer:
+            # on first and last row, remove pixelbuffer on top or bottom
             matrix_height = self.tile_pyramid.matrix_height(self.zoom)
             if matrix_height == 1:
                 height = base_height
-            elif self.row in [0, matrix_height-1]:
+            elif self.row in [0, matrix_height - 1]:
                 height = base_height + pixelbuffer
-        width = self.tile_pyramid.tile_width(self.zoom) + 2 * pixelbuffer
+            # if grid is not global, do the same with left and right pixelbuffer
+            if not self.tp.grid.is_global:
+                matrix_width = self.tile_pyramid.matrix_width(self.zoom)
+                if matrix_width == 1:
+                    width = base_width
+                elif self.col in [0, matrix_width - 1]:
+                    width = base_width + pixelbuffer
+
         return Shape(height=height, width=width)
 
     def is_valid(self):
@@ -139,12 +154,14 @@ class Tile(object):
             isinstance(self.col, int),
             self.col >= 0,
             self.col < self.tile_pyramid.matrix_width(self.zoom),
-            self.row < self.tile_pyramid.matrix_height(self.zoom)])
+            self.row < self.tile_pyramid.matrix_height(self.zoom)
+        ])
 
     def get_parent(self):
         """Return tile from previous zoom level."""
         return None if self.zoom == 0 else self.tile_pyramid.tile(
-            self.zoom-1, int(self.row/2), int(self.col/2))
+            self.zoom - 1, self.row // 2, self.col // 2
+        )
 
     def get_children(self):
         """Return tiles from next zoom level."""
@@ -153,7 +170,8 @@ class Tile(object):
             self.tile_pyramid.tile(
                 next_zoom,
                 self.row * 2 + row_offset,
-                self.col * 2 + col_offset)
+                self.col * 2 + col_offset
+            )
             for row_offset, col_offset in [
                 (0, 0),  # top left
                 (0, 1),  # top right
@@ -162,7 +180,8 @@ class Tile(object):
             ]
             if all([
                 self.row * 2 + row_offset < self.tp.matrix_height(next_zoom),
-                self.col * 2 + col_offset < self.tp.matrix_width(next_zoom)])
+                self.col * 2 + col_offset < self.tp.matrix_width(next_zoom)
+            ])
         ]
 
     def get_neighbors(self, connectedness=8):

@@ -57,6 +57,10 @@ def test_intersect():
     control = {(5, 0, 0)}
     test_tiles = {tile.id for tile in tp.intersecting(intersect_tile)}
     assert control == test_tiles
+    intersect_tile = TilePyramid("geodetic").tile(4, 12, 31)
+    control = {(4, 6, 15)}
+    test_tiles = {tile.id for tile in tp.intersecting(intersect_tile)}
+    assert control == test_tiles
 
     # different CRSes
     tp = TilePyramid("geodetic")
@@ -218,3 +222,7 @@ def test_deprecated():
     tp = TilePyramid("geodetic")
     assert tp.type
     assert tp.srid
+    assert tp.tile_x_size(0)
+    assert tp.tile_y_size(0)
+    assert tp.tile_height(0)
+    assert tp.tile_width(0)
