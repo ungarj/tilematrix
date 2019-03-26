@@ -211,16 +211,17 @@ def _tiles_from_cleaned_bounds(tp, bounds, zoom):
 
 def _tile_from_xy(tp, x, y, zoom, on_edge_use="rb"):
     # determine row
-    tile_y_size = round(tp.y_size / tp.matrix_height(zoom), ROUND)
+    tile_y_size = round(tp.pixel_y_size(zoom) * tp.tile_size * tp.metatiling, ROUND)
     row = int((tp.top - y) / tile_y_size)
     if on_edge_use in ["rt", "lt"] and (tp.top - y) % tile_y_size == 0.:
         row -= 1
 
     # determine column
-    tile_x_size = round(tp.x_size / tp.matrix_width(zoom), ROUND)
+    tile_x_size = round(tp.pixel_x_size(zoom) * tp.tile_size * tp.metatiling, ROUND)
     col = int((x - tp.left) / tile_x_size)
     if on_edge_use in ["lb", "lt"] and (x - tp.left) % tile_x_size == 0.:
         col -= 1
+
     # handle Antimeridian wrapping
     if tp.is_global:
         # left side
@@ -234,5 +235,5 @@ def _tile_from_xy(tp, x, y, zoom, on_edge_use="rb"):
         return tp.tile(zoom, row, col)
     except ValueError as e:
         raise ValueError(
-                "on_edge_use '%s' results in an invalid tile here: %s" % (on_edge_use, e)
+                "on_edge_use '%s' results in an invalid tile: %s" % (on_edge_use, e)
             )

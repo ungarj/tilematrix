@@ -28,9 +28,7 @@ class Tile(object):
         self.zoom = zoom
         self.row = row
         self.col = col
-        if not self.is_valid():
-            raise ValueError(
-                "invalid tile index given: %s %s %s" % (zoom, row, col))
+        self.is_valid()
         self.index = TileIndex(zoom, row, col)
         self.id = TileIndex(zoom, row, col)
         self.pixel_x_size = self.tile_pyramid.pixel_x_size(self.zoom)
@@ -146,16 +144,22 @@ class Tile(object):
 
     def is_valid(self):
         """Return True if tile is available in tile pyramid."""
-        return all([
+        if not all([
             isinstance(self.zoom, int),
             self.zoom >= 0,
             isinstance(self.row, int),
             self.row >= 0,
             isinstance(self.col, int),
-            self.col >= 0,
-            self.col < self.tile_pyramid.matrix_width(self.zoom),
-            self.row < self.tile_pyramid.matrix_height(self.zoom)
-        ])
+            self.col >= 0
+        ]):
+            raise ValueError("zoom, col and row must be integers >= 0")
+        cols = self.tile_pyramid.matrix_width(self.zoom)
+        rows = self.tile_pyramid.matrix_height(self.zoom)
+        if self.col >= cols:
+            raise ValueError("col (%s) exceeds matrix width (%s)" % (self.col, cols))
+        if self.row >= rows:
+            raise ValueError("row (%s) exceeds matrix height (%s)" % (self.row, rows))
+        return True
 
     def get_parent(self):
         """Return tile from previous zoom level."""

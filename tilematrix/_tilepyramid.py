@@ -224,8 +224,7 @@ class TilePyramid(object):
             "LineString", "MultiLineString", "Polygon", "MultiPolygon",
             "GeometryCollection"
         ):
-            prepared_geometry = prep(
-                clip_geometry_to_srs_bounds(geometry, self))
+            prepared_geometry = prep(clip_geometry_to_srs_bounds(geometry, self))
             for tile in self.tiles_from_bbox(geometry, zoom):
                 if prepared_geometry.intersects(tile.bbox()):
                     yield tile
