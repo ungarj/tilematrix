@@ -152,7 +152,7 @@ class Tile(object):
             isinstance(self.col, int),
             self.col >= 0
         ]):
-            raise ValueError("zoom, col and row must be integers >= 0")
+            raise TypeError("zoom, col and row must be integers >= 0")
         cols = self.tile_pyramid.matrix_width(self.zoom)
         rows = self.tile_pyramid.matrix_height(self.zoom)
         if self.col >= cols:
