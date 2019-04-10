@@ -57,26 +57,43 @@ def test_neighbors(grid_definition_epsg):
     assert len(neighbor_ids.symmetric_difference(control_ids)) == 0
 
 
-def test_crop_pixelbuffer(grid_definition_epsg):
-    tp = TilePyramid(grid_definition_epsg)
-    tile = tp.tile(0, 0, 0)
-    assert tile.shape(0) == tile.shape(1)
-
-
 def test_irregular_grids(grid_definition_irregular):
     for metatiling in [1, 2, 4, 8]:
-        tp = TilePyramid(grid_definition_irregular, metatiling=metatiling)
-        assert tp.matrix_height(0) == math.ceil(161 / metatiling)
-        assert tp.matrix_width(0) == math.ceil(315 / metatiling)
-        assert tp.pixel_x_size(0) == tp.pixel_y_size(0)
-        for tile in [
-            tp.tile(0, 0, 0),
-            tp.tile(0, 10, 0),
-            tp.tile(0, tp.matrix_height(0) - 1, tp.matrix_width(0) - 1)
-        ]:
-            assert tile.pixel_x_size == tile.pixel_y_size
-            assert tile.pixel_x_size == 10.
-            assert tile.shape(10) != tile.shape()
+        for pixelbuffer in [0, 100]:
+            tp = TilePyramid(grid_definition_irregular, metatiling=metatiling)
+            assert tp.matrix_height(0) == math.ceil(161 / metatiling)
+            assert tp.matrix_width(0) == math.ceil(315 / metatiling)
+            assert tp.pixel_x_size(0) == tp.pixel_y_size(0)
+            for tile in [
+                tp.tile(0, 0, 0),
+                tp.tile(0, 10, 0),
+                tp.tile(0, tp.matrix_height(0) - 1, tp.matrix_width(0) - 1)
+            ]:
+                # pixel sizes have to be squares
+                assert tile.pixel_x_size == tile.pixel_y_size
+                assert tile.pixel_x_size == 10.
+                # pixelbuffer yields different shape and bounds
+                assert tile.shape(10) != tile.shape()
+                assert tile.bounds(10) != tile.bounds()
+                # without pixelbuffers, tile bounds have to be inside TilePyramid bounds
+                assert tile.left >= tp.left
+                assert tile.bottom >= tp.bottom
+                assert tile.right <= tp.right
+                assert tile.top <= tp.top
+
+            # with pixelbuffers, some tile bounds have to be outside TilePyramid bounds
+            if pixelbuffer:
+
+                # tile on top left corner
+                tile = tp.tile(0, 0, 0)
+                assert tile.bounds(pixelbuffer).left < tp.left
+                assert tile.bounds(pixelbuffer).top > tp.top
+
+                # tile on lower right corner
+                tile = tp.tile(0, tp.matrix_height(0) - 1, tp.matrix_width(0) - 1)
+                print(tp)
+                assert tile.bounds(pixelbuffer).bottom < tp.bottom
+                assert tile.bounds(pixelbuffer).right > tp.right
 
 
 def test_tiles_from_bounds(grid_definition_irregular):

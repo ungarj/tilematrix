@@ -29,19 +29,41 @@ class Tile(object):
         self.row = row
         self.col = col
         self.is_valid()
-        self.index = TileIndex(zoom, row, col)
-        self.id = TileIndex(zoom, row, col)
+        self.index = self.id = TileIndex(zoom, row, col)
         self.pixel_x_size = self.tile_pyramid.pixel_x_size(self.zoom)
         self.pixel_y_size = self.tile_pyramid.pixel_y_size(self.zoom)
-
-        base_size = Shape(
+        # base SRID size without pixelbuffer
+        self._base_srid_size = Shape(
             height=self.pixel_y_size * self.tp.tile_size * self.tp.metatiling,
             width=self.pixel_x_size * self.tp.tile_size * self.tp.metatiling
         )
-        self.top = round(self.tp.top - (self.row * base_size.height), ROUND)
-        self.bottom = max([self.top - base_size.height, self.tp.bottom])
-        self.left = round(self.tp.left + (self.col * base_size.width), ROUND)
-        self.right = min([self.left + base_size.width, self.tp.right])
+        # base bounds not accounting for pixelbuffers but metatiles are clipped to
+        # TilePyramid bounds
+        self._top = round(self.tp.top - (self.row * self._base_srid_size.height), ROUND)
+        self._bottom = max([self._top - self._base_srid_size.height, self.tp.bottom])
+        self._left = round(self.tp.left + (self.col * self._base_srid_size.width), ROUND)
+        self._right = min([self._left + self._base_srid_size.width, self.tp.right])
+        # base shape without pixelbuffer
+        self._base_shape = Shape(
+            height=int(round((self._top - self._bottom) / self.pixel_y_size, 0)),
+            width=int(round((self._right - self._left) / self.pixel_x_size, 0))
+        )
+
+    @property
+    def left(self):
+        return self.bounds().left
+
+    @property
+    def bottom(self):
+        return self.bounds().bottom
+
+    @property
+    def right(self):
+        return self.bounds().right
+
+    @property
+    def top(self):
+        return self.bounds().top
 
     @property
     def srid(self):
@@ -74,20 +96,20 @@ class Tile(object):
 
         - pixelbuffer: tile buffer in pixels
         """
-        left = self.left
-        bottom = self.top - self.y_size
-        right = self.left + self.x_size
-        top = self.top
-        if pixelbuffer > 0:
+        left = self._left
+        bottom = self._bottom
+        right = self._right
+        top = self._top
+        if pixelbuffer:
             offset = self.pixel_x_size * float(pixelbuffer)
             left -= offset
             bottom -= offset
             right += offset
             top += offset
-        if top > self.tile_pyramid.top:
-            top = self.tile_pyramid.top
-        if bottom < self.tile_pyramid.bottom:
-            bottom = self.tile_pyramid.bottom
+        # on global grids clip at northern and southern TilePyramid bound
+        if self.tp.grid.is_global:
+            top = min([top, self.tile_pyramid.top])
+            bottom = max([bottom, self.tile_pyramid.bottom])
         return Bounds(left, bottom, right, top)
 
     def bbox(self, pixelbuffer=0):
@@ -119,27 +141,16 @@ class Tile(object):
 
         - pixelbuffer: tile buffer in pixels
         """
-        # without any pixelbuffers
-        base_height = int(round((self.top - self.bottom) / self.pixel_y_size, 0))
-        base_width = int(round((self.right - self.left) / self.pixel_x_size, 0))
         # apply pixelbuffers
-        height = base_height + 2 * pixelbuffer
-        width = base_width + 2 * pixelbuffer
-        if pixelbuffer:
+        height = self._base_shape.height + 2 * pixelbuffer
+        width = self._base_shape.width + 2 * pixelbuffer
+        if pixelbuffer and self.tp.grid.is_global:
             # on first and last row, remove pixelbuffer on top or bottom
             matrix_height = self.tile_pyramid.matrix_height(self.zoom)
             if matrix_height == 1:
-                height = base_height
+                height = self._base_shape.height
             elif self.row in [0, matrix_height - 1]:
-                height = base_height + pixelbuffer
-            # if grid is not global, do the same with left and right pixelbuffer
-            if not self.tp.grid.is_global:
-                matrix_width = self.tile_pyramid.matrix_width(self.zoom)
-                if matrix_width == 1:
-                    width = base_width
-                elif self.col in [0, matrix_width - 1]:
-                    width = base_width + pixelbuffer
-
+                height = self._base_shape.height + pixelbuffer
         return Shape(height=height, width=width)
 
     def is_valid(self):
