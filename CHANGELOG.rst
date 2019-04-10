@@ -6,6 +6,7 @@ Changelog
 ----
 * fixed pixel size calculation on irregular grids with metatiling (closing #33)
 * ``TilePyramid.tile_x_size()``, ``TilePyramid.tile_y_size()``, ``TilePyramid.tile_height()``, ``TilePyramid.tile_width()`` are deprecated
+* metatiles are clipped to ``TilePyramid.bounds`` but ``pixelbuffer`` of edge tiles can exceed them unless it is a global grid
 
 0.19
 ----

@@ -182,3 +182,9 @@ def test_invalid_id():
     # row exceeds
     with pytest.raises(ValueError):
         tp.tile(5, 0, 500)
+
+
+def test_tile_sizes():
+    tp = TilePyramid("geodetic")
+    tile = tp.tile(5, 5, 5)
+    assert tile.x_size == tile.y_size
