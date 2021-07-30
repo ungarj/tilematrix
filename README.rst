@@ -16,7 +16,7 @@ Tilematrix handles geographic web tiles and tile pyramids.
 .. image:: https://img.shields.io/pypi/pyversions/mapchete.svg
 
 
-The module is designed to translate between tile indices (zoom, row, column) and
+The module is designed to translate between tile indices (zoom, row, column = ZYX) and
 map coordinates (e.g. latitute, longitude).
 
 Tilematrix supports **metatiling** and **tile buffers**. Furthermore it makes
