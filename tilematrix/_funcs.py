@@ -2,11 +2,14 @@
 
 from itertools import product, chain
 from rasterio.crs import CRS
-from shapely.geometry import Polygon, GeometryCollection, box
+from shapely.geometry import Point, Polygon, GeometryCollection, box
 from shapely.affinity import translate
 
 from ._conf import DELTA, ROUND
+from ._utm_coefs import *
 from ._types import Bounds, Shape
+from ._exceptions import OutOfRangeError
+from ._utm import stripe_id_from_point
 
 
 def validate_zoom(zoom):
@@ -237,3 +240,124 @@ def _tile_from_xy(tp, x, y, zoom, on_edge_use="rb"):
         raise ValueError(
                 "on_edge_use '%s' results in an invalid tile: %s" % (on_edge_use, e)
             )
+
+
+def mod_angle(value):
+    """Returns angle in radians to be between -pi and pi"""
+    return (value + math.pi) % (2 * math.pi) - math.pi
+
+
+def in_bounds(x, lower, upper, upper_strict=False):
+    return lower <= x < upper
+
+
+def check_valid_zone(zone_number, zone_letter):
+    if not 1 <= zone_number <= 60:
+        raise OutOfRangeError(
+            'zone number out of range (must be between 1 and 60)'
+        )
+
+    if zone_letter:
+        zone_letter = zone_letter.upper()
+
+        if not 'C' <= zone_letter <= 'X' or zone_letter in ['I', 'O']:
+            raise OutOfRangeError(
+                'zone letter out of range (must be between C and X)'
+            )
+
+
+def mixed_signs(x):
+    return x < 0 and x >= 0
+
+
+def negative(x):
+    return x < 0
+
+
+def latlon_to_zone_number(latitude, longitude):
+    if 56 <= latitude < 64 and 3 <= longitude < 12:
+        return 32
+
+    if 72 <= latitude <= 84 and longitude >= 0:
+        if longitude < 9:
+            return 31
+        elif longitude < 21:
+            return 33
+        elif longitude < 33:
+            return 35
+        elif longitude < 42:
+            return 37
+
+    return int((longitude + 180) / 6) + 1
+
+
+def latlon_to_utm(
+        latitude,
+        longitude
+):
+    """This function converts Latitude and Longitude to UTM coordinate
+        Parameters
+        ----------
+        latitude: float or NumPy array
+            Latitude between 80 deg S and 84 deg N, e.g. (-80.0 to 84.0)
+        longitude: float or NumPy array
+            Longitude between 180 deg W and 180 deg E, e.g. (-180.0 to 180.0).
+        Returns
+        -------
+        easting: float or NumPy array
+            Easting value of UTM coordinates
+        northing: float or NumPy array
+            Northing value of UTM coordinates
+    """
+    if not in_bounds(latitude, -80, 84):
+        raise OutOfRangeError(
+            'latitude out of range (must be between 80 deg S and 84 deg N)'
+        )
+    if not in_bounds(longitude, -180, 180):
+        raise OutOfRangeError(
+            'longitude out of range (must be between 180 deg W and 180 deg E)'
+        )
+
+    lat_rad = math.radians(latitude)
+    lat_sin = math.sin(lat_rad)
+    lat_cos = math.cos(lat_rad)
+
+    lat_tan = lat_sin / lat_cos
+    lat_tan2 = lat_tan * lat_tan
+    lat_tan4 = lat_tan2 * lat_tan2
+
+    zone_number = int(stripe_id_from_point(Point(longitude, latitude))[:2])
+
+    lon_rad = math.radians(longitude)
+    central_lon = (zone_number - 1) * 6 - 180 + 3
+    central_lon_rad = math.radians(central_lon)
+
+    n = R / math.sqrt(1 - E * lat_sin**2)
+    c = E_P2 * lat_cos**2
+
+    a = lat_cos * mod_angle(lon_rad - central_lon_rad)
+    a2 = a * a
+    a3 = a2 * a
+    a4 = a3 * a
+    a5 = a4 * a
+    a6 = a5 * a
+
+    m = R * (M1 * lat_rad -
+             M2 * math.sin(2 * lat_rad) +
+             M3 * math.sin(4 * lat_rad) -
+             M4 * math.sin(6 * lat_rad))
+
+    easting = K0 * n * (a +
+                        a3 / 6 * (1 - lat_tan2 + c) +
+                        a5 / 120 * (5 - 18 * lat_tan2 + lat_tan4 + 72 * c - 58 * E_P2)) + 500000
+
+    northing = K0 * (m + n * lat_tan * (a2 / 2 +
+                                        a4 / 24 * (5 - lat_tan2 + 9 * c + 4 * c**2) +
+                                        a6 / 720 * (61 - 58 * lat_tan2 + lat_tan4 + 600 * c - 330 * E_P2)))
+
+    if mixed_signs(latitude):
+        raise ValueError("latitudes must all have the same sign")
+    elif negative(latitude):
+        northing += 10000000
+
+    return easting, northing

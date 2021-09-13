@@ -1,11 +1,11 @@
 import click
 import geojson
 from shapely.geometry import box
-import utm
 
 import tilematrix
 from tilematrix import TilePyramid
 from tilematrix._conf import _get_utm_crs_list_from_bounds
+from tilematrix._funcs import latlon_to_utm
 
 
 @click.version_option(version=tilematrix.__version__, message='%(version)s')
@@ -77,7 +77,7 @@ def bbox(ctx, tile):
 def tile(ctx, point, zoom):
     """Print Tile containing POINT.."""
     if ctx.obj['grid'].startswith("32"):
-        utm_point = utm.from_latlon(point[1], point[0])
+        utm_point = latlon_to_utm(point[1], point[0])
         point = (utm_point[0], utm_point[1])
 
     tile = TilePyramid(
@@ -115,8 +115,8 @@ def tiles(ctx, bounds, zoom):
 
     # Convert lat lon into UTM coordinates
     if ctx.obj['grid'].startswith("32"):
-        utm_bottom_left = utm.from_latlon(bounds[1], bounds[0])
-        utm_upper_right = utm.from_latlon(bounds[3], bounds[2])
+        utm_bottom_left = latlon_to_utm(bounds[1], bounds[0])
+        utm_upper_right = latlon_to_utm(bounds[3], bounds[2])
         bounds = (
             utm_bottom_left[0], utm_bottom_left[1],
             utm_upper_right[0], utm_upper_right[1]
@@ -173,8 +173,8 @@ def snap_bounds(ctx, bounds, zoom):
 
     # Convert lat lon into UTM coordinates
     if ctx.obj['grid'].startswith("32"):
-        utm_bottom_left = utm.from_latlon(bounds[1], bounds[0])
-        utm_upper_right = utm.from_latlon(bounds[3], bounds[2])
+        utm_bottom_left = latlon_to_utm(bounds[1], bounds[0])
+        utm_upper_right = latlon_to_utm(bounds[3], bounds[2])
         bounds = (
             utm_bottom_left[0], utm_bottom_left[1],
             utm_upper_right[0], utm_upper_right[1]
@@ -201,8 +201,8 @@ def snap_bbox(ctx, bounds, zoom):
 
     # Convert lat lon into UTM coordinates
     if ctx.obj['grid'].startswith("32"):
-        utm_bottom_left = utm.from_latlon(bounds[1], bounds[0])
-        utm_upper_right = utm.from_latlon(bounds[3], bounds[2])
+        utm_bottom_left = latlon_to_utm(bounds[1], bounds[0])
+        utm_upper_right = latlon_to_utm(bounds[3], bounds[2])
         bounds = (
             utm_bottom_left[0], utm_bottom_left[1],
             utm_upper_right[0], utm_upper_right[1]
