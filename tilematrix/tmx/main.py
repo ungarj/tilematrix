@@ -169,7 +169,17 @@ def tiles(ctx, bounds, zoom):
 @click.argument('BOUNDS', nargs=4, type=click.FLOAT, required=True)
 @click.pass_context
 def snap_bounds(ctx, bounds, zoom):
-    """nap bounds to tile grid."""
+    """Snap bounds to tile grid."""
+
+    # Convert lat lon into UTM coordinates
+    if ctx.obj['grid'].startswith("32"):
+        utm_bottom_left = utm.from_latlon(bounds[1], bounds[0])
+        utm_upper_right = utm.from_latlon(bounds[3], bounds[2])
+        bounds = (
+            utm_bottom_left[0], utm_bottom_left[1],
+            utm_upper_right[0], utm_upper_right[1]
+        )
+
     click.echo('%s %s %s %s' % tilematrix.snap_bounds(
         bounds=bounds,
         tile_pyramid=TilePyramid(
@@ -188,6 +198,16 @@ def snap_bounds(ctx, bounds, zoom):
 @click.pass_context
 def snap_bbox(ctx, bounds, zoom):
     """Snap bbox to tile grid."""
+
+    # Convert lat lon into UTM coordinates
+    if ctx.obj['grid'].startswith("32"):
+        utm_bottom_left = utm.from_latlon(bounds[1], bounds[0])
+        utm_upper_right = utm.from_latlon(bounds[3], bounds[2])
+        bounds = (
+            utm_bottom_left[0], utm_bottom_left[1],
+            utm_upper_right[0], utm_upper_right[1]
+        )
+
     click.echo(box(*tilematrix.snap_bounds(
         bounds=bounds,
         tile_pyramid=TilePyramid(
