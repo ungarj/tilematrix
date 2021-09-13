@@ -1,9 +1,11 @@
 import click
 import geojson
 from shapely.geometry import box
+import utm
 
 import tilematrix
 from tilematrix import TilePyramid
+from tilematrix._conf import _get_utm_crs_list_from_bounds
 
 
 @click.version_option(version=tilematrix.__version__, message='%(version)s')
@@ -21,7 +23,11 @@ from tilematrix import TilePyramid
     help='TilePyramid metatile size. (default: 1)'
 )
 @click.option(
-    '--grid', '-g', type=click.Choice(['geodetic', 'mercator']), default='geodetic',
+    '--grid', '-g',
+    type=click.Choice(
+        ['geodetic', 'mercator'] + _get_utm_crs_list_from_bounds()
+    ),
+    default='geodetic',
     help='TilePyramid base grid. (default: geodetic)'
 )
 @click.option(
@@ -70,6 +76,10 @@ def bbox(ctx, tile):
 @click.pass_context
 def tile(ctx, point, zoom):
     """Print Tile containing POINT.."""
+    if ctx.obj['grid'].startswith("32"):
+        utm_point = utm.from_latlon(point[1], point[0])
+        point = (utm_point[0], utm_point[1])
+
     tile = TilePyramid(
         ctx.obj['grid'],
         tile_size=ctx.obj['tile_size'],
@@ -102,6 +112,15 @@ def tile(ctx, point, zoom):
 @click.pass_context
 def tiles(ctx, bounds, zoom):
     """Print Tiles from bounds."""
+
+    # Convert lat lon into UTM coordinates
+    if ctx.obj['grid'].startswith("32"):
+        utm_bottom_left = utm.from_latlon(bounds[1], bounds[0])
+        utm_upper_right = utm.from_latlon(bounds[3], bounds[2])
+        bounds = (
+            utm_bottom_left[0], utm_bottom_left[1],
+            utm_upper_right[0], utm_upper_right[1]
+        )
     tiles = TilePyramid(
         ctx.obj['grid'],
         tile_size=ctx.obj['tile_size'],
