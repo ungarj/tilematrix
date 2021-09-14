@@ -5,11 +5,11 @@ from rasterio.crs import CRS
 from shapely.geometry import Point, Polygon, GeometryCollection, box
 from shapely.affinity import translate
 
-from ._conf import DELTA, ROUND
-from ._utm_coefs import *
-from ._types import Bounds, Shape
-from ._exceptions import OutOfRangeError
-from ._utm import stripe_id_from_point
+from tilematrix._conf import DELTA, ROUND
+from tilematrix._utm_coefs import *
+from tilematrix._types import Bounds, Shape
+from tilematrix._exceptions import OutOfRangeError
+from tilematrix._utm import stripe_id_from_point
 
 
 def validate_zoom(zoom):
@@ -266,31 +266,6 @@ def check_valid_zone(zone_number, zone_letter):
             )
 
 
-def mixed_signs(x):
-    return x < 0 and x >= 0
-
-
-def negative(x):
-    return x < 0
-
-
-def latlon_to_zone_number(latitude, longitude):
-    if 56 <= latitude < 64 and 3 <= longitude < 12:
-        return 32
-
-    if 72 <= latitude <= 84 and longitude >= 0:
-        if longitude < 9:
-            return 31
-        elif longitude < 21:
-            return 33
-        elif longitude < 33:
-            return 35
-        elif longitude < 42:
-            return 37
-
-    return int((longitude + 180) / 6) + 1
-
-
 def latlon_to_utm(
         latitude,
         longitude
@@ -355,9 +330,7 @@ def latlon_to_utm(
                                         a4 / 24 * (5 - lat_tan2 + 9 * c + 4 * c**2) +
                                         a6 / 720 * (61 - 58 * lat_tan2 + lat_tan4 + 600 * c - 330 * E_P2)))
 
-    if mixed_signs(latitude):
-        raise ValueError("latitudes must all have the same sign")
-    elif negative(latitude):
+    if latitude <= 0:
         northing += 10000000
 
     return easting, northing

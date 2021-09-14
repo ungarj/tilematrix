@@ -14,20 +14,11 @@ DELTA = 1e-6
 FIRST_UTM_STRIPE = 32600
 LAST_UTM_STRIPE = 60
 
+# Grid with width (x-dif) of 1310720 and height (y-dif) of 10485760
+# This leads to exactly 10[m] grid at zoom 9
 UTM_STRIPE_SHAPE = (8, 1)
-UTM_STRIPE_BOUNDS = [166021.4431, 0.0000, 1476741.4431, 10485760]
-
-UTM_DEFAULT_DICT = {
-    '32600': {
-        'grid': None,
-        'shape': UTM_STRIPE_SHAPE,
-        'bounds': UTM_STRIPE_BOUNDS,
-        'crs': {
-            "epsg": FIRST_UTM_STRIPE
-        },
-        'is_global': False
-    }
-}
+UTM_STRIPE_NORTH_BOUNDS = [166021.4431, 0.0000, 1476741.4431, 10485760]
+UTM_STRIPE_SOUTH_BOUNDS = [441867.78, -485760.00, 1752587.78, 10000000.00]
 
 
 def _get_utm_crs_list_from_bounds(
@@ -51,9 +42,12 @@ def _get_utm_crs_list_from_bounds(
 
 def _get_utm_pyramid_config(
         crs_epsg,
-        utm_stripe_shape=UTM_STRIPE_SHAPE,
-        grid_bounds=UTM_STRIPE_BOUNDS
+        utm_stripe_shape=UTM_STRIPE_SHAPE
 ):
+    if crs_epsg.startswith("327"):
+        grid_bounds = UTM_STRIPE_SOUTH_BOUNDS
+    else:
+        grid_bounds = UTM_STRIPE_NORTH_BOUNDS
     out_utm_config_dict = {}
     out_utm_config_dict[str(crs_epsg)] = {
         'shape': utm_stripe_shape,
@@ -89,8 +83,11 @@ PYRAMID_PARAMS = {
     "mercator": {
         "shape": (1, 1),
         "bounds": (
-            -20037508.3427892, -20037508.3427892, 20037508.3427892,
-            20037508.3427892),
+            -20037508.3427892,
+            -20037508.3427892,
+            20037508.3427892,
+            20037508.3427892
+        ),
         "is_global": True,
         "srs": {
             "epsg": 3857
