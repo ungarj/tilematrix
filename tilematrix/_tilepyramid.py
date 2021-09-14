@@ -43,7 +43,10 @@ class TilePyramid(object):
         self.is_global = self.grid.is_global
         self.metatiling = metatiling
         # size in pixels
-        self.tile_size = tile_size
+        if not tile_size:
+            self.tile_size = self.grid.tile_size
+        else:
+            self.tile_size = tile_size
         self.metatile_size = tile_size * metatiling
         # size in map units
         self.x_size = float(round(self.right - self.left, ROUND))
