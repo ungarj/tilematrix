@@ -10,20 +10,21 @@ ROUND = 20
 # bounds ratio vs shape ratio uncertainty
 DELTA = 1e-6
 
-# UTM default settings
+# UTM default EOX settings
 FIRST_UTM_STRIPE = 32600
 LAST_UTM_STRIPE = 60
 
 # Grid with width (x-dif) of 1310720 and height (y-dif) of 10485760
-# This leads to exactly 10[m] grid at zoom 9
+# This leads to exactly 10[m] grid at zoom 9 and shape at z0 8 high and 1 wide
 UTM_STRIPE_SHAPE = (8, 1)
 UTM_STRIPE_NORTH_BOUNDS = [166021.4431, 0.0000, 1476741.4431, 10485760]
 UTM_STRIPE_SOUTH_BOUNDS = [441867.78, -485760.00, 1752587.78, 10000000.00]
 
+# CAREFUL IRREGULAR GRIDS below
 # Analog logic for S2 grid but the origin is shifted to match the S2 grid
-# and the TileMatrix Definition is defined to be dividible by 60, 20 and 10
-# width 1966080 to be dividible by 60, 20 and 10 and has 10[m] resolution
-# height 15728640 to be dividible by 60, 20 and 10 and has 10[m] resolution
+# and the TileMatrix Definition is defined to be divisible by 60, 20 and 10
+# width 1966080 to be divisible by 60, 20 and 10 and has 10[m] resolution
+# height 15728640 to be divisible by 60, 20 and 10 and has 10[m] resolution
 # S2 originally intended pyramid bounds [99960.00, 0.0000, 834000.00, 9000000]
 # Tile size is 384x384[px]
 # For the 60[m] grid the max/optimal zoom level is 7
