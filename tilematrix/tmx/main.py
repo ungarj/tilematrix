@@ -4,7 +4,7 @@ from shapely.geometry import box
 
 import tilematrix
 from tilematrix import TilePyramid
-from tilematrix._conf import _get_utm_crs_list_from_bounds
+from tilematrix._conf import _get_utm_pyramid_configs
 from tilematrix._funcs import latlon_to_utm
 
 
@@ -25,7 +25,9 @@ from tilematrix._funcs import latlon_to_utm
 @click.option(
     '--grid', '-g',
     type=click.Choice(
-        ['geodetic', 'mercator'] + _get_utm_crs_list_from_bounds()
+        [
+            'geodetic', 'mercator'
+        ] + list(_get_utm_pyramid_configs().keys())
     ),
     default='geodetic',
     help='TilePyramid base grid. (default: geodetic)'
@@ -76,7 +78,7 @@ def bbox(ctx, tile):
 @click.pass_context
 def tile(ctx, point, zoom):
     """Print Tile containing POINT.."""
-    if ctx.obj['grid'].startswith("32"):
+    if "utm" in ctx.obj['grid'].lower():
         utm_point = latlon_to_utm(point[1], point[0])
         point = (utm_point[0], utm_point[1])
 
@@ -114,7 +116,7 @@ def tiles(ctx, bounds, zoom):
     """Print Tiles from bounds."""
 
     # Convert lat lon into UTM coordinates
-    if ctx.obj['grid'].startswith("32"):
+    if "utm" in ctx.obj['grid'].lower():
         utm_bottom_left = latlon_to_utm(bounds[1], bounds[0])
         utm_upper_right = latlon_to_utm(bounds[3], bounds[2])
         bounds = (
@@ -172,7 +174,7 @@ def snap_bounds(ctx, bounds, zoom):
     """Snap bounds to tile grid."""
 
     # Convert lat lon into UTM coordinates
-    if ctx.obj['grid'].startswith("32"):
+    if "utm" in ctx.obj['grid'].lower():
         utm_bottom_left = latlon_to_utm(bounds[1], bounds[0])
         utm_upper_right = latlon_to_utm(bounds[3], bounds[2])
         bounds = (
@@ -200,7 +202,7 @@ def snap_bbox(ctx, bounds, zoom):
     """Snap bbox to tile grid."""
 
     # Convert lat lon into UTM coordinates
-    if ctx.obj['grid'].startswith("32"):
+    if "utm" in ctx.obj['grid'].lower():
         utm_bottom_left = latlon_to_utm(bounds[1], bounds[0])
         utm_upper_right = latlon_to_utm(bounds[3], bounds[2])
         bounds = (

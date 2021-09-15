@@ -35,6 +35,26 @@ UTM_STRIPE_S2_SHAPE = (117, 9)
 UTM_STRIPE_S2_60M_SHAPE = (39, 3)
 
 UTM_STRIPE_S2_GRID_NORTH_BOUNDS = [145980, 0, 883260, 9584640.0]
+UTM_STRIPE_S2_GRID_SOUTH_BOUNDS = [145980, 415360, 883260, 10000000.0]
+
+# Availible UTM grids in TMX
+UTM_GRIDS = {
+    "EOX_UTM": {
+        "shape": UTM_STRIPE_SHAPE,
+        "north_bounds": UTM_STRIPE_NORTH_BOUNDS,
+        "south_bounds": UTM_STRIPE_SOUTH_BOUNDS
+    },
+    "S2_10M_UTM": {
+        "shape": UTM_STRIPE_S2_SHAPE,
+        "north_bounds": UTM_STRIPE_S2_GRID_NORTH_BOUNDS,
+        "south_bounds": UTM_STRIPE_S2_GRID_SOUTH_BOUNDS
+    },
+    "S2_60M_UTM": {
+        "shape": UTM_STRIPE_S2_60M_SHAPE,
+        "north_bounds": UTM_STRIPE_S2_GRID_NORTH_BOUNDS,
+        "south_bounds": UTM_STRIPE_S2_GRID_SOUTH_BOUNDS
+    }
+}
 
 
 def _get_utm_crs_list_from_bounds(
@@ -58,32 +78,37 @@ def _get_utm_crs_list_from_bounds(
 
 def _get_utm_pyramid_config(
         crs_epsg,
-        utm_stripe_shape=UTM_STRIPE_SHAPE
+        utm_grid="EOX_UTM"
 ):
+    utm_grid_params = UTM_GRIDS[utm_grid]
     if crs_epsg.startswith("327"):
-        grid_bounds = UTM_STRIPE_SOUTH_BOUNDS
+        grid_bounds = utm_grid_params["south_bounds"]
     else:
-        grid_bounds = UTM_STRIPE_NORTH_BOUNDS
+        grid_bounds = utm_grid_params["north_bounds"]
     out_utm_config_dict = {}
-    out_utm_config_dict[str(crs_epsg)] = {
-        'shape': utm_stripe_shape,
+    out_utm_config_dict[f"{utm_grid}_{crs_epsg}"] = {
+        'shape': utm_grid_params['shape'],
         'bounds': grid_bounds,
         'srs': {"epsg": crs_epsg},
         'is_global': False,
-        'tile_size': 256
     }
     return out_utm_config_dict
 
 
-def _get_utm_pyramid_configs(bounds=[-180, -90, 180, 90]):
+def _get_utm_pyramid_configs(grids=UTM_GRIDS, bounds=[-180, -90, 180, 90]):
     out_dict = {}
     utm_epsg_list = _get_utm_crs_list_from_bounds(
         bounds=bounds
     )
-    for utm_epsg in utm_epsg_list:
-        out_dict.update(
-            _get_utm_pyramid_config(crs_epsg=utm_epsg)
-        )
+    for utm_grid in grids.keys():
+        for utm_epsg in utm_epsg_list:
+            out_dict.update(
+                _get_utm_pyramid_config(
+                    crs_epsg=utm_epsg,
+                    utm_grid=utm_grid
+                )
+            )
+    # print(out_dict)
     return out_dict
 
 
