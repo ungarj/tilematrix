@@ -1,5 +1,6 @@
 affine
 click
 geojson
+pyproj
 rasterio>=1.0.21
 shapely

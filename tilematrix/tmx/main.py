@@ -4,6 +4,8 @@ from shapely.geometry import box
 
 import tilematrix
 from tilematrix import TilePyramid
+from tilematrix._conf import _get_utm_pyramid_configs
+from tilematrix._funcs import latlon_to_utm
 
 
 @click.version_option(version=tilematrix.__version__, message='%(version)s')
@@ -21,7 +23,13 @@ from tilematrix import TilePyramid
     help='TilePyramid metatile size. (default: 1)'
 )
 @click.option(
-    '--grid', '-g', type=click.Choice(['geodetic', 'mercator']), default='geodetic',
+    '--grid', '-g',
+    type=click.Choice(
+        [
+            'geodetic', 'mercator'
+        ] + list(_get_utm_pyramid_configs().keys())
+    ),
+    default='geodetic',
     help='TilePyramid base grid. (default: geodetic)'
 )
 @click.option(
@@ -70,6 +78,10 @@ def bbox(ctx, tile):
 @click.pass_context
 def tile(ctx, point, zoom):
     """Print Tile containing POINT.."""
+    if "utm" in ctx.obj['grid'].lower():
+        utm_point = latlon_to_utm(point[1], point[0])
+        point = (utm_point[0], utm_point[1])
+
     tile = TilePyramid(
         ctx.obj['grid'],
         tile_size=ctx.obj['tile_size'],
@@ -102,6 +114,15 @@ def tile(ctx, point, zoom):
 @click.pass_context
 def tiles(ctx, bounds, zoom):
     """Print Tiles from bounds."""
+
+    # Convert lat lon into UTM coordinates
+    if "utm" in ctx.obj['grid'].lower():
+        utm_bottom_left = latlon_to_utm(bounds[1], bounds[0])
+        utm_upper_right = latlon_to_utm(bounds[3], bounds[2])
+        bounds = (
+            utm_bottom_left[0], utm_bottom_left[1],
+            utm_upper_right[0], utm_upper_right[1]
+        )
     tiles = TilePyramid(
         ctx.obj['grid'],
         tile_size=ctx.obj['tile_size'],
@@ -150,7 +171,17 @@ def tiles(ctx, bounds, zoom):
 @click.argument('BOUNDS', nargs=4, type=click.FLOAT, required=True)
 @click.pass_context
 def snap_bounds(ctx, bounds, zoom):
-    """nap bounds to tile grid."""
+    """Snap bounds to tile grid."""
+
+    # Convert lat lon into UTM coordinates
+    if "utm" in ctx.obj['grid'].lower():
+        utm_bottom_left = latlon_to_utm(bounds[1], bounds[0])
+        utm_upper_right = latlon_to_utm(bounds[3], bounds[2])
+        bounds = (
+            utm_bottom_left[0], utm_bottom_left[1],
+            utm_upper_right[0], utm_upper_right[1]
+        )
+
     click.echo('%s %s %s %s' % tilematrix.snap_bounds(
         bounds=bounds,
         tile_pyramid=TilePyramid(
@@ -169,6 +200,16 @@ def snap_bounds(ctx, bounds, zoom):
 @click.pass_context
 def snap_bbox(ctx, bounds, zoom):
     """Snap bbox to tile grid."""
+
+    # Convert lat lon into UTM coordinates
+    if "utm" in ctx.obj['grid'].lower():
+        utm_bottom_left = latlon_to_utm(bounds[1], bounds[0])
+        utm_upper_right = latlon_to_utm(bounds[3], bounds[2])
+        bounds = (
+            utm_bottom_left[0], utm_bottom_left[1],
+            utm_upper_right[0], utm_upper_right[1]
+        )
+
     click.echo(box(*tilematrix.snap_bounds(
         bounds=bounds,
         tile_pyramid=TilePyramid(
