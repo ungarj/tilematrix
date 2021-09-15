@@ -20,23 +20,21 @@ UTM_STRIPE_SHAPE = (8, 1)
 UTM_STRIPE_NORTH_BOUNDS = [166021.4431, 0.0000, 1476741.4431, 10485760]
 UTM_STRIPE_SOUTH_BOUNDS = [441867.78, -485760.00, 1752587.78, 10000000.00]
 
-# CAREFUL IRREGULAR GRIDS below
 # Analog logic for S2 grid but the origin is shifted to match the S2 grid
 # and the TileMatrix Definition is defined to be divisible by 60, 20 and 10
-# width 1966080 to be divisible by 60, 20 and 10 and has 10[m] resolution
-# height 15728640 to be divisible by 60, 20 and 10 and has 10[m] resolution
+# width 737280 to be divisible by 60, 20 and 10 and has 10[m] resolution
+# height 9584640 to be divisible by 60, 20 and 10 and has 10[m] resolution
 # S2 originally intended pyramid bounds [99960.00, 0.0000, 834000.00, 9000000]
-# Tile size is 384x384[px]
-# For the 60[m] grid the max/optimal zoom level is 7
-# For the 10[m] and 20[m] grid the optimal zoom level is 9 and 8 respectively
-UTM_STRIPE_S2_GRID_NORTH_BOUNDS = [
-    99960.00, 0.0000, 99960 + 1966080, 15728640
-]
-UTM_STRIPE_S2_GRID_SOUTH_BOUNDS = [
-    99960.00, -5728640, 99960 + 1966080, 10000000.00
-]
-UTM_S2_10M_GRID_TILE_SIZE = 384
-UTM_S2_60M_GRID_TILE_SIZE = 256
+# For the 60[m] grid the max/optimal zoom level is 4
+# For the 10[m] and 20[m] grid the optimal zoom level is 5 and 4 respectively
+
+# 10[m] and 20[m] grid
+UTM_STRIPE_S2_SHAPE = (117, 9)
+
+# 60[m] grid
+UTM_STRIPE_S2_60M_SHAPE = (39, 3)
+
+UTM_STRIPE_S2_GRID_NORTH_BOUNDS = [145980, 0, 883260, 9584640.0]
 
 
 def _get_utm_crs_list_from_bounds(
