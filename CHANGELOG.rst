@@ -2,6 +2,13 @@
 Changelog
 #########
 
+0.21
+----
+* allow metatiling up to 512
+* use GitHub actions instead of travis
+* use black and flake8 pre-commit checks
+
+
 0.20
 ----
 * fixed pixel size calculation on irregular grids with metatiling (closing #33)
