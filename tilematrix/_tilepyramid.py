@@ -33,8 +33,9 @@ class TilePyramid(object):
         """Initialize TilePyramid."""
         if grid is None:
             raise ValueError("grid definition required")
-        if metatiling not in (1, 2, 4, 8, 16):
-            raise ValueError("metatling must be one of 1, 2, 4, 8, 16")
+        _metatiling_opts = [2**x for x in range(10)]
+        if metatiling not in _metatiling_opts:
+            raise ValueError(f"metatling must be one of {_metatiling_opts}")
         # get source grid parameters
         self.grid = GridDefinition(grid)
         self.bounds = self.grid.bounds
