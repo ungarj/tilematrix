@@ -44,9 +44,9 @@ def clip_geometry_to_srs_bounds(geometry, pyramid, multipart=False):
         for geom in outside_geom:
             geom_bounds = Bounds(*geom.bounds)
             if geom_bounds.left < pyramid.left:
-                geom = translate(geom, xoff=2*pyramid.right)
+                geom = translate(geom, xoff=2 * pyramid.right)
             elif geom_bounds.right > pyramid.right:
-                geom = translate(geom, xoff=-2*pyramid.right)
+                geom = translate(geom, xoff=-2 * pyramid.right)
             all_geoms.append(geom)
         if multipart:
             return all_geoms
@@ -93,20 +93,21 @@ def _verify_shape_bounds(shape, bounds):
     shape_ratio = shape.width / shape.height
     bounds_ratio = (bounds.right - bounds.left) / (bounds.top - bounds.bottom)
     if abs(shape_ratio - bounds_ratio) > DELTA:
-        min_length = min([
-            (bounds.right - bounds.left) / shape.width,
-            (bounds.top - bounds.bottom) / shape.height
-        ])
+        min_length = min(
+            [
+                (bounds.right - bounds.left) / shape.width,
+                (bounds.top - bounds.bottom) / shape.height,
+            ]
+        )
         proposed_bounds = Bounds(
             bounds.left,
             bounds.bottom,
             bounds.left + shape.width * min_length,
-            bounds.bottom + shape.height * min_length
+            bounds.bottom + shape.height * min_length,
         )
         raise ValueError(
-            "shape ratio (%s) must equal bounds ratio (%s); try %s" % (
-                shape_ratio, bounds_ratio, proposed_bounds
-            )
+            "shape ratio (%s) must equal bounds ratio (%s); try %s"
+            % (shape_ratio, bounds_ratio, proposed_bounds)
         )
 
 
@@ -135,16 +136,16 @@ def _tile_intersecting_tilepyramid(tile, tp):
             tp.tile(
                 tile.zoom,
                 int(multiplier) * tile.row + row_offset,
-                int(multiplier) * tile.col + col_offset
+                int(multiplier) * tile.col + col_offset,
             )
             for row_offset, col_offset in product(
                 range(int(multiplier)), range(int(multiplier))
             )
         ]
     elif tile_metatiling < pyramid_metatiling:
-        return [tp.tile(
-            tile.zoom, int(multiplier * tile.row), int(multiplier * tile.col)
-        )]
+        return [
+            tp.tile(tile.zoom, int(multiplier * tile.row), int(multiplier * tile.col))
+        ]
     else:
         return [tp.tile(*tile.id)]
 
@@ -167,14 +168,10 @@ def _global_tiles_from_bounds(tp, bounds, zoom):
         for tile in chain(
             # tiles west of antimeridian
             _tiles_from_cleaned_bounds(
-                tp,
-                Bounds(left + (tp.right - tp.left), bottom, tp.right, top),
-                zoom
+                tp, Bounds(left + (tp.right - tp.left), bottom, tp.right, top), zoom
             ),
             # tiles east of antimeridian
-            _tiles_from_cleaned_bounds(
-                tp, Bounds(tp.left, bottom, right, top), zoom
-            )
+            _tiles_from_cleaned_bounds(tp, Bounds(tp.left, bottom, right, top), zoom),
         ):
             # make output tiles unique
             if tile.id not in seen:
@@ -185,15 +182,11 @@ def _global_tiles_from_bounds(tp, bounds, zoom):
     if right > tp.right:
         for tile in chain(
             # tiles west of antimeridian
-            _tiles_from_cleaned_bounds(
-                tp, Bounds(left, bottom, tp.right, top), zoom
-            ),
+            _tiles_from_cleaned_bounds(tp, Bounds(left, bottom, tp.right, top), zoom),
             # tiles east of antimeridian
             _tiles_from_cleaned_bounds(
-                tp,
-                Bounds(tp.left, bottom, right - (tp.right - tp.left), top),
-                zoom
-            )
+                tp, Bounds(tp.left, bottom, right - (tp.right - tp.left), top), zoom
+            ),
         ):
             # make output tiles unique
             if tile.id not in seen:
@@ -205,7 +198,9 @@ def _tiles_from_cleaned_bounds(tp, bounds, zoom):
     """Return all tiles intersecting with bounds."""
     lb = _tile_from_xy(tp, bounds.left, bounds.bottom, zoom, on_edge_use="rt")
     rt = _tile_from_xy(tp, bounds.right, bounds.top, zoom, on_edge_use="lb")
-    for tile_id in product([zoom], range(rt.row, lb.row + 1), range(lb.col, rt.col + 1)):
+    for tile_id in product(
+        [zoom], range(rt.row, lb.row + 1), range(lb.col, rt.col + 1)
+    ):
         yield tp.tile(*tile_id)
 
 
@@ -213,13 +208,13 @@ def _tile_from_xy(tp, x, y, zoom, on_edge_use="rb"):
     # determine row
     tile_y_size = round(tp.pixel_y_size(zoom) * tp.tile_size * tp.metatiling, ROUND)
     row = int((tp.top - y) / tile_y_size)
-    if on_edge_use in ["rt", "lt"] and (tp.top - y) % tile_y_size == 0.:
+    if on_edge_use in ["rt", "lt"] and (tp.top - y) % tile_y_size == 0.0:
         row -= 1
 
     # determine column
     tile_x_size = round(tp.pixel_x_size(zoom) * tp.tile_size * tp.metatiling, ROUND)
     col = int((x - tp.left) / tile_x_size)
-    if on_edge_use in ["lb", "lt"] and (x - tp.left) % tile_x_size == 0.:
+    if on_edge_use in ["lb", "lt"] and (x - tp.left) % tile_x_size == 0.0:
         col -= 1
 
     # handle Antimeridian wrapping
@@ -235,5 +230,5 @@ def _tile_from_xy(tp, x, y, zoom, on_edge_use="rb"):
         return tp.tile(zoom, row, col)
     except ValueError as e:
         raise ValueError(
-                "on_edge_use '%s' results in an invalid tile: %s" % (on_edge_use, e)
-            )
+            "on_edge_use '%s' results in an invalid tile: %s" % (on_edge_use, e)
+        )
