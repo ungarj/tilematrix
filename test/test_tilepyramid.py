@@ -3,6 +3,8 @@
 import pytest
 from shapely.geometry import Point
 from shapely.ops import unary_union
+from types import GeneratorType
+
 from tilematrix import TilePyramid, snap_bounds
 
 
@@ -92,7 +94,7 @@ def test_tilepyramid_compare(grid_definition_proj, grid_definition_epsg):
     assert TilePyramid(gproj) != TilePyramid(gproj, tile_size=512)
     # altered bounds
     abounds = dict(**gproj)
-    abounds.update(bounds=(-5000000., -5000000., 5000000., 5000000.))
+    abounds.update(bounds=(-5000000.0, -5000000.0, 5000000.0, 5000000.0))
     assert TilePyramid(abounds) == TilePyramid(abounds)
     assert TilePyramid(gproj) != TilePyramid(abounds)
     # other type
@@ -104,15 +106,11 @@ def test_grid_compare(grid_definition_proj, grid_definition_epsg):
     gproj, gepsg = grid_definition_proj, grid_definition_epsg
     # predefined
     assert TilePyramid("geodetic").grid == TilePyramid("geodetic").grid
-    assert TilePyramid("geodetic").grid == TilePyramid(
-        "geodetic", metatiling=2).grid
-    assert TilePyramid("geodetic").grid == TilePyramid(
-        "geodetic", tile_size=512).grid
+    assert TilePyramid("geodetic").grid == TilePyramid("geodetic", metatiling=2).grid
+    assert TilePyramid("geodetic").grid == TilePyramid("geodetic", tile_size=512).grid
     assert TilePyramid("mercator").grid == TilePyramid("mercator").grid
-    assert TilePyramid("mercator").grid == TilePyramid(
-        "mercator", metatiling=2).grid
-    assert TilePyramid("mercator").grid == TilePyramid(
-        "mercator", tile_size=512).grid
+    assert TilePyramid("mercator").grid == TilePyramid("mercator", metatiling=2).grid
+    assert TilePyramid("mercator").grid == TilePyramid("mercator", tile_size=512).grid
     # epsg based
     assert TilePyramid(gepsg).grid == TilePyramid(gepsg).grid
     assert TilePyramid(gepsg).grid == TilePyramid(gepsg, metatiling=2).grid
@@ -123,7 +121,7 @@ def test_grid_compare(grid_definition_proj, grid_definition_epsg):
     assert TilePyramid(gproj).grid == TilePyramid(gproj, tile_size=512).grid
     # altered bounds
     abounds = dict(**gproj)
-    abounds.update(bounds=(-5000000., -5000000., 5000000., 5000000.))
+    abounds.update(bounds=(-5000000.0, -5000000.0, 5000000.0, 5000000.0))
     assert TilePyramid(abounds).grid == TilePyramid(abounds).grid
     assert TilePyramid(gproj).grid != TilePyramid(abounds).grid
 
@@ -197,24 +195,152 @@ def test_tiles_from_bounds(grid_definition_proj):
     assert from_bounds == children
 
 
+def test_tiles_from_bounds_batch_by_row():
+    tp = TilePyramid("geodetic")
+    bounds = (0, 0, 90, 90)
+    zoom = 8
+
+    tiles = tp.tiles_from_bounds(bounds, zoom, batch_by="row")
+    assert isinstance(tiles, GeneratorType)
+    assert list(tiles)
+
+    previous_row = None
+    tiles = 0
+    for tile_row in tp.tiles_from_bounds(bounds, zoom, batch_by="row"):
+        assert isinstance(tile_row, GeneratorType)
+        previous_tile = None
+        for tile in tile_row:
+            tiles += 1
+            if previous_row is None:
+                if previous_tile is not None:
+                    assert tile.col == previous_tile.col + 1
+            else:
+                if previous_tile is not None:
+                    assert tile.col == previous_tile.col + 1
+                    assert tile.row == previous_tile.row
+                    assert tile.row == previous_row + 1
+
+            previous_tile = tile
+
+        previous_row = tile.row
+
+    assert tiles == len(list(tp.tiles_from_bounds(bounds, zoom)))
+
+
+def test_tiles_from_bounds_batch_by_column():
+    tp = TilePyramid("geodetic")
+    bounds = (0, 0, 90, 90)
+    zoom = 8
+
+    tiles = tp.tiles_from_bounds(bounds, zoom, batch_by="column")
+    assert isinstance(tiles, GeneratorType)
+    assert list(tiles)
+
+    previous_column = None
+    tiles = 0
+    for tile_column in tp.tiles_from_bounds(bounds, zoom, batch_by="column"):
+        assert isinstance(tile_column, GeneratorType)
+        previous_tile = None
+        for tile in tile_column:
+            tiles += 1
+            if previous_column is None:
+                if previous_tile is not None:
+                    assert tile.row == previous_tile.row + 1
+            else:
+                if previous_tile is not None:
+                    assert tile.row == previous_tile.row + 1
+                    assert tile.col == previous_tile.col
+                    assert tile.col == previous_column + 1
+
+            previous_tile = tile
+
+        previous_column = tile.col
+
+    assert tiles == len(list(tp.tiles_from_bounds(bounds, zoom)))
+
+
+def test_tiles_from_bounds_batch_by_row_antimeridian_bounds():
+    tp = TilePyramid("geodetic")
+    bounds = (0, 0, 185, 95)
+    zoom = 8
+
+    tiles = tp.tiles_from_bounds(bounds, zoom, batch_by="row")
+    assert isinstance(tiles, GeneratorType)
+    assert list(tiles)
+
+    previous_row = None
+    tiles = 0
+    for tile_row in tp.tiles_from_bounds(bounds, zoom, batch_by="row"):
+        assert isinstance(tile_row, GeneratorType)
+        previous_tile = None
+        for tile in tile_row:
+            tiles += 1
+            if previous_row is None:
+                if previous_tile is not None:
+                    assert tile.col > previous_tile.col
+            else:
+                if previous_tile is not None:
+                    assert tile.col > previous_tile.col
+                    assert tile.row == previous_tile.row
+                    assert tile.row > previous_row
+
+            previous_tile = tile
+
+        previous_row = tile.row
+
+    assert tiles == len(list(tp.tiles_from_bounds(bounds, zoom)))
+
+
+def test_tiles_from_bounds_batch_by_row_both_antimeridian_bounds():
+    tp = TilePyramid("geodetic")
+    bounds = (-185, 0, 185, 95)
+    zoom = 8
+
+    tiles = tp.tiles_from_bounds(bounds, zoom, batch_by="row")
+    assert isinstance(tiles, GeneratorType)
+    assert list(tiles)
+
+    previous_row = None
+    tiles = 0
+    for tile_row in tp.tiles_from_bounds(bounds, zoom, batch_by="row"):
+        assert isinstance(tile_row, GeneratorType)
+        previous_tile = None
+        for tile in tile_row:
+            tiles += 1
+            if previous_row is None:
+                if previous_tile is not None:
+                    assert tile.col == previous_tile.col + 1
+            else:
+                if previous_tile is not None:
+                    assert tile.col == previous_tile.col + 1
+                    assert tile.row == previous_tile.row
+                    assert tile.row == previous_row + 1
+
+            previous_tile = tile
+
+        previous_row = tile.row
+
+    assert tiles == len(list(tp.tiles_from_bounds(bounds, zoom)))
+
+
 def test_snap_bounds():
     bounds = (0, 1, 2, 3)
     tp = TilePyramid("geodetic")
     zoom = 8
 
     snapped = snap_bounds(bounds=bounds, tile_pyramid=tp, zoom=zoom)
-    control = unary_union([
-        tile.bbox() for tile in tp.tiles_from_bounds(bounds, zoom)
-    ]).bounds
+    control = unary_union(
+        [tile.bbox() for tile in tp.tiles_from_bounds(bounds, zoom)]
+    ).bounds
     assert snapped == control
 
     pixelbuffer = 10
     snapped = snap_bounds(
         bounds=bounds, tile_pyramid=tp, zoom=zoom, pixelbuffer=pixelbuffer
     )
-    control = unary_union([
-        tile.bbox(pixelbuffer) for tile in tp.tiles_from_bounds(bounds, zoom)
-    ]).bounds
+    control = unary_union(
+        [tile.bbox(pixelbuffer) for tile in tp.tiles_from_bounds(bounds, zoom)]
+    ).bounds
     assert snapped == control
 
 

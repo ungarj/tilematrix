@@ -2,8 +2,10 @@
 
 from itertools import product, chain
 from rasterio.crs import CRS
-from shapely.geometry import Polygon, GeometryCollection, box
 from shapely.affinity import translate
+from shapely.geometry import Polygon, GeometryCollection, box
+from shapely.ops import unary_union
+from shapely.prepared import prep
 
 from ._conf import DELTA, ROUND
 from ._types import Bounds, Shape
@@ -150,58 +152,82 @@ def _tile_intersecting_tilepyramid(tile, tp):
         return [tp.tile(*tile.id)]
 
 
-def _global_tiles_from_bounds(tp, bounds, zoom):
+def _global_tiles_from_bounds(tp, bounds, zoom, batch_by=None):
     """Return also Tiles if bounds cross the antimeridian."""
-    seen = set()
 
     # clip to tilepyramid top and bottom bounds
     left, right = bounds.left, bounds.right
-    top = tp.top if bounds.top > tp.top else bounds.top
-    bottom = tp.bottom if bounds.bottom < tp.bottom else bounds.bottom
+    top = min([tp.top, bounds.top])
+    bottom = max([tp.bottom, bounds.bottom])
 
-    if left >= tp.left and right <= tp.right:
-        for tile in _tiles_from_cleaned_bounds(tp, bounds, zoom):
-            yield tile
+    # special case if bounds cross the antimeridian
+    if left < tp.left or right > tp.right:
+        # shift overlap to valid side of antimeridian
+        # create MultiPolygon
+        # yield tiles by
+        bounds_geoms = []
 
-    # bounds overlap on the Western side with antimeridian
-    if left < tp.left:
-        for tile in chain(
-            # tiles west of antimeridian
-            _tiles_from_cleaned_bounds(
-                tp, Bounds(left + (tp.right - tp.left), bottom, tp.right, top), zoom
-            ),
-            # tiles east of antimeridian
-            _tiles_from_cleaned_bounds(tp, Bounds(tp.left, bottom, right, top), zoom),
-        ):
-            # make output tiles unique
-            if tile.id not in seen:
-                seen.add(tile.id)
-                yield tile
+        # tiles west of antimeridian
+        if left < tp.left:
+            # move outside part of bounding box to the valid side of antimeridian
+            bounds_geoms.append(box(left + (tp.right - tp.left), bottom, tp.right, top))
+            bounds_geoms.append(
+                # remaining part of bounding box
+                box(tp.left, bottom, min([right, tp.right]), top)
+            )
 
-    # bounds overlap on the Eastern side with antimeridian
-    if right > tp.right:
-        for tile in chain(
-            # tiles west of antimeridian
-            _tiles_from_cleaned_bounds(tp, Bounds(left, bottom, tp.right, top), zoom),
-            # tiles east of antimeridian
-            _tiles_from_cleaned_bounds(
-                tp, Bounds(tp.left, bottom, right - (tp.right - tp.left), top), zoom
-            ),
-        ):
-            # make output tiles unique
-            if tile.id not in seen:
-                seen.add(tile.id)
-                yield tile
+        # tiles east of antimeridian
+        if right > tp.right:
+            # move outside part of bounding box to the valid side of antimeridian
+            bounds_geoms.append(box(tp.left, bottom, right - (tp.right - tp.left), top))
+            bounds_geoms.append(box(max([left, tp.left]), bottom, tp.right, top))
+
+        bounds_geom = unary_union(bounds_geoms).buffer(0)
+        bounds_geom_prep = prep(bounds_geom)
+
+        # if union of bounding boxes is a multipart geometry, do some costly checks to be able
+        # to yield in batches
+        if bounds_geom.geom_type.lower().startswith("multi"):
+            if batch_by:
+                for batch in _tiles_from_cleaned_bounds(
+                    tp, bounds_geom.bounds, zoom, batch_by
+                ):
+                    yield (
+                        tile
+                        for tile in batch
+                        if bounds_geom_prep.intersects(tile.bbox())
+                    )
+            else:
+                for tile in _tiles_from_cleaned_bounds(tp, bounds_geom.bounds, zoom):
+                    if bounds_geom_prep.intersects(tile.bbox()):
+                        yield tile
+            return
+
+        # else, continue with cleaned bounds
+        bounds = bounds_geom.bounds
+
+    # yield using cleaned bounds
+    yield from _tiles_from_cleaned_bounds(tp, bounds, zoom, batch_by=batch_by)
 
 
-def _tiles_from_cleaned_bounds(tp, bounds, zoom):
+def _tiles_from_cleaned_bounds(tp, bounds, zoom, batch_by=None):
     """Return all tiles intersecting with bounds."""
+    bounds = Bounds(*bounds)
     lb = _tile_from_xy(tp, bounds.left, bounds.bottom, zoom, on_edge_use="rt")
     rt = _tile_from_xy(tp, bounds.right, bounds.top, zoom, on_edge_use="lb")
-    for tile_id in product(
-        [zoom], range(rt.row, lb.row + 1), range(lb.col, rt.col + 1)
-    ):
-        yield tp.tile(*tile_id)
+    row_range = range(rt.row, lb.row + 1)
+    col_range = range(lb.col, rt.col + 1)
+    if batch_by is None:
+        for row, col in product(row_range, col_range):
+            yield tp.tile(zoom, row, col)
+    elif batch_by == "row":
+        for row in row_range:
+            yield (tp.tile(zoom, row, col) for col in col_range)
+    elif batch_by == "column":
+        for col in col_range:
+            yield (tp.tile(zoom, row, col) for row in row_range)
+    else:  # pragma: no cover
+        raise ValueError("'batch_by' must either be None, 'row' or 'column'.")
 
 
 def _tile_from_xy(tp, x, y, zoom, on_edge_use="rb"):
