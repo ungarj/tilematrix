@@ -2,8 +2,9 @@
 
 import pytest
 from shapely.geometry import Point, Polygon, shape
+from types import GeneratorType
 
-from tilematrix import TilePyramid
+from tilematrix import TilePyramid, Tile
 
 
 def test_top_left_coord():
@@ -212,13 +213,12 @@ def test_tiles_from_invalid_geom(invalid_geom):
         list(tp.tiles_from_geom(invalid_geom, 6))
 
 
-def test_tiles_from_point():
+def test_tiles_from_point(point):
     """Get tile from point."""
-    test_point = Point(16.36, 48.20)
     for metatiling in [1, 2, 4, 8, 16]:
         tp = TilePyramid("geodetic", metatiling=metatiling)
-        tile_bbox = next(tp.tiles_from_geom(test_point, 6)).bbox()
-        assert test_point.within(tile_bbox)
+        tile_bbox = next(tp.tiles_from_geom(point, 6)).bbox()
+        assert point.within(tile_bbox)
     tp = TilePyramid("geodetic")
     with pytest.raises(ValueError):
         next(tp.tiles_from_geom(Point(-300, 100), 6))
@@ -333,3 +333,99 @@ def test_tiles_from_multipolygon(multipolygon):
     tp = TilePyramid("geodetic")
     multipolygon_tiles = {tile.id for tile in tp.tiles_from_geom(multipolygon, 9)}
     assert multipolygon_tiles == test_tiles
+
+
+def test_tiles_from_point_batches(point):
+    """Get tile from point."""
+    tp = TilePyramid("geodetic")
+    zoom = 9
+    tiles = 0
+    gen = tp.tiles_from_geom(point, zoom, batch_by="row")
+    assert isinstance(gen, GeneratorType)
+    for row in gen:
+        assert isinstance(row, GeneratorType)
+        for tile in row:
+            tiles += 1
+            assert isinstance(tile, Tile)
+    assert tiles
+    assert tiles == len(list(tp.tiles_from_geom(point, zoom)))
+
+
+def test_tiles_from_multipoint_batches(multipoint):
+    """Get tiles from multiple points."""
+    tp = TilePyramid("geodetic")
+    zoom = 9
+    tiles = 0
+    gen = tp.tiles_from_geom(multipoint, zoom, batch_by="row")
+    assert isinstance(gen, GeneratorType)
+    for row in gen:
+        assert isinstance(row, GeneratorType)
+        for tile in row:
+            tiles += 1
+            assert isinstance(tile, Tile)
+    assert tiles
+    assert tiles == len(list(tp.tiles_from_geom(multipoint, zoom)))
+
+
+def test_tiles_from_linestring_batches(linestring):
+    """Get tiles from LineString."""
+    tp = TilePyramid("geodetic")
+    zoom = 9
+    tiles = 0
+    gen = tp.tiles_from_geom(linestring, zoom, batch_by="row")
+    assert isinstance(gen, GeneratorType)
+    for row in gen:
+        assert isinstance(row, GeneratorType)
+        for tile in row:
+            tiles += 1
+            assert isinstance(tile, Tile)
+    assert tiles
+    assert tiles == len(list(tp.tiles_from_geom(linestring, zoom)))
+
+
+def test_tiles_from_multilinestring_batches(multilinestring):
+    """Get tiles from MultiLineString."""
+    tp = TilePyramid("geodetic")
+    zoom = 9
+    tiles = 0
+    gen = tp.tiles_from_geom(multilinestring, zoom, batch_by="row")
+    assert isinstance(gen, GeneratorType)
+    for row in gen:
+        assert isinstance(row, GeneratorType)
+        for tile in row:
+            tiles += 1
+            assert isinstance(tile, Tile)
+    assert tiles
+    assert tiles == len(list(tp.tiles_from_geom(multilinestring, zoom)))
+
+
+def test_tiles_from_polygon_batches(polygon):
+    """Get tiles from Polygon."""
+    tp = TilePyramid("geodetic")
+    zoom = 9
+    tiles = 0
+    gen = tp.tiles_from_geom(polygon, zoom, batch_by="row")
+    assert isinstance(gen, GeneratorType)
+    for row in gen:
+        assert isinstance(row, GeneratorType)
+        for tile in row:
+            tiles += 1
+            assert isinstance(tile, Tile)
+    assert tiles
+    assert tiles == len(list(tp.tiles_from_geom(polygon, zoom)))
+
+
+def test_tiles_from_multipolygon_batches(multipolygon):
+    """Get tiles from MultiPolygon."""
+    tp = TilePyramid("geodetic")
+    zoom = 9
+    tiles = 0
+    gen = tp.tiles_from_geom(multipolygon, zoom, batch_by="row")
+    assert isinstance(gen, GeneratorType)
+    for row in gen:
+        assert isinstance(row, GeneratorType)
+        for tile in row:
+            tiles += 1
+            assert isinstance(tile, Tile)
+    assert tiles
+    assert tiles == len(list(tp.tiles_from_geom(multipolygon, zoom)))

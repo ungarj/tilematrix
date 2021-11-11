@@ -222,7 +222,9 @@ class TilePyramid(object):
             raise ValueError("no valid geometry: %s" % geometry.type)
         if geometry.geom_type == "Point":
             if batch_by:
-                yield (i for i in self.tile_from_xy(geometry.x, geometry.y, zoom))
+                yield (
+                    self.tile_from_xy(geometry.x, geometry.y, zoom) for _ in range(1)
+                )
             else:
                 yield self.tile_from_xy(geometry.x, geometry.y, zoom)
         elif geometry.geom_type in (
@@ -234,9 +236,17 @@ class TilePyramid(object):
             "GeometryCollection",
         ):
             prepared_geometry = prep(clip_geometry_to_srs_bounds(geometry, self))
-            for tile in self.tiles_from_bbox(geometry, zoom, batch_by=batch_by):
-                if prepared_geometry.intersects(tile.bbox()):
-                    yield tile
+            if batch_by:
+                for batch in self.tiles_from_bbox(geometry, zoom, batch_by=batch_by):
+                    yield (
+                        tile
+                        for tile in batch
+                        if prepared_geometry.intersects(tile.bbox())
+                    )
+            else:
+                for tile in self.tiles_from_bbox(geometry, zoom, batch_by=batch_by):
+                    if prepared_geometry.intersects(tile.bbox()):
+                        yield tile
 
     def tile_from_xy(self, x=None, y=None, zoom=None, on_edge_use="rb"):
         """

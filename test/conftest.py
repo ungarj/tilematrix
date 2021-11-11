@@ -1,7 +1,7 @@
 """Fixtures for test suite."""
 
 import pytest
-from shapely.geometry import Polygon, shape
+from shapely.geometry import Polygon, shape, Point
 
 example_proj = """
         +proj=ortho
@@ -170,6 +170,11 @@ def overflow_polygon():
             ),
         }
     )
+
+
+@pytest.fixture
+def point():
+    return Point(16.36, 48.20)
 
 
 @pytest.fixture
