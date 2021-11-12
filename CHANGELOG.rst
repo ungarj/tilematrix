@@ -2,6 +2,16 @@
 Changelog
 #########
 
+2021.11.0 - 2021-11-12
+----------------------
+* enable yielding tiles in batches by either row or column for following methods:
+  * `TilePyramid.tiles_from_bounds()`
+  * `TilePyramid.tiles_from_bbox()`
+  * `TilePyramid.tiles_from_geom()`
+
+* convert TilePyramid arguments into keyword arguments
+
+
 0.21
 ----
 * allow metatiling up to 512
