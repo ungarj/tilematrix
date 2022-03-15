@@ -1,6 +1,7 @@
 """Helper functions."""
 
-from itertools import product, chain
+from itertools import product
+
 from rasterio.crs import CRS
 from shapely.affinity import translate
 from shapely.geometry import Polygon, GeometryCollection, box

@@ -2,6 +2,11 @@
 Changelog
 #########
 
+2022.3.0 - 2022-03-15
+---------------------
+* add option to exactly get intersection tiles using `TilePyramid.tiles_from_geom(exact=True)`
+
+
 2021.11.0 - 2021-11-12
 ----------------------
 * enable yielding tiles in batches by either row or column for following methods:

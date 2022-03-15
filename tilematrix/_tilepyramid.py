@@ -185,6 +185,7 @@ class TilePyramid(object):
         - bounds: tuple of (left, bottom, right, top) bounding values in tile
             pyramid CRS
         - zoom: zoom level
+        - batch_by: yield tiles in row or column batches if activated
         """
         validate_zoom(zoom)
         if not isinstance(bounds, tuple) or len(bounds) != 4:
@@ -208,7 +209,7 @@ class TilePyramid(object):
         validate_zoom(zoom)
         yield from self.tiles_from_bounds(geometry.bounds, zoom, batch_by=batch_by)
 
-    def tiles_from_geom(self, geometry=None, zoom=None, batch_by=None):
+    def tiles_from_geom(self, geometry=None, zoom=None, batch_by=None, exact=False):
         """
         Return all tiles intersecting with input geometry.
 
@@ -235,18 +236,36 @@ class TilePyramid(object):
             "MultiPolygon",
             "GeometryCollection",
         ):
-            prepared_geometry = prep(clip_geometry_to_srs_bounds(geometry, self))
-            if batch_by:
-                for batch in self.tiles_from_bbox(geometry, zoom, batch_by=batch_by):
-                    yield (
-                        tile
-                        for tile in batch
-                        if prepared_geometry.intersects(tile.bbox())
-                    )
+            if exact:
+                geometry = clip_geometry_to_srs_bounds(geometry, self)
+                if batch_by:
+                    for batch in self.tiles_from_bbox(
+                        geometry, zoom, batch_by=batch_by
+                    ):
+                        yield (
+                            tile
+                            for tile in batch
+                            if geometry.intersection(tile.bbox()).area
+                        )
+                else:
+                    for tile in self.tiles_from_bbox(geometry, zoom, batch_by=batch_by):
+                        if geometry.intersection(tile.bbox()).area:
+                            yield tile
             else:
-                for tile in self.tiles_from_bbox(geometry, zoom, batch_by=batch_by):
-                    if prepared_geometry.intersects(tile.bbox()):
-                        yield tile
+                prepared_geometry = prep(clip_geometry_to_srs_bounds(geometry, self))
+                if batch_by:
+                    for batch in self.tiles_from_bbox(
+                        geometry, zoom, batch_by=batch_by
+                    ):
+                        yield (
+                            tile
+                            for tile in batch
+                            if prepared_geometry.intersects(tile.bbox())
+                        )
+                else:
+                    for tile in self.tiles_from_bbox(geometry, zoom, batch_by=batch_by):
+                        if prepared_geometry.intersects(tile.bbox()):
+                            yield tile
 
     def tile_from_xy(self, x=None, y=None, zoom=None, on_edge_use="rb"):
         """
