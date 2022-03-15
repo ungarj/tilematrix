@@ -328,10 +328,21 @@ def test_tiles_from_geom_exact(tile_bounds_polygon):
     tp = TilePyramid("geodetic")
     zoom = 3
 
-    tiles = list(tp.tiles_from_geom(tile_bounds_polygon, zoom))
-    exact_tiles = list(tp.tiles_from_geom(tile_bounds_polygon, zoom, exact=True))
-    assert len(tiles) == 4
-    assert len(exact_tiles) == 3
+    tiles = len(list(tp.tiles_from_geom(tile_bounds_polygon, zoom)))
+    assert tiles == 4
+    tiles = 0
+    for batch in tp.tiles_from_geom(tile_bounds_polygon, zoom, batch_by="row"):
+        tiles += len(list(batch))
+    assert tiles == 4
+
+    exact_tiles = len(list(tp.tiles_from_geom(tile_bounds_polygon, zoom, exact=True)))
+    assert exact_tiles == 3
+    tiles = 0
+    for batch in tp.tiles_from_geom(
+        tile_bounds_polygon, zoom, batch_by="row", exact=True
+    ):
+        tiles += len(list(batch))
+    assert tiles == 3
 
 
 def test_snap_bounds():
