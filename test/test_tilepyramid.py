@@ -1,7 +1,7 @@
 """TilePyramid creation."""
 
 import pytest
-from shapely.geometry import Point
+from shapely.geometry import Point, box
 from shapely.ops import unary_union
 from types import GeneratorType
 
@@ -321,6 +321,17 @@ def test_tiles_from_bounds_batch_by_row_both_antimeridian_bounds():
         previous_row = tile.row
 
     assert tiles == len(list(tp.tiles_from_bounds(bounds, zoom)))
+
+
+def test_tiles_from_geom_exact(tile_bounds_polygon):
+
+    tp = TilePyramid("geodetic")
+    zoom = 3
+
+    tiles = list(tp.tiles_from_geom(tile_bounds_polygon, zoom))
+    exact_tiles = list(tp.tiles_from_geom(tile_bounds_polygon, zoom, exact=True))
+    assert len(tiles) == 4
+    assert len(exact_tiles) == 3
 
 
 def test_snap_bounds():

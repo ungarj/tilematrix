@@ -285,3 +285,15 @@ def multipolygon():
             ],
         }
     )
+
+
+@pytest.fixture
+def tile_bounds_polygon():
+    return shape(
+        {
+            "type": "Polygon",
+            "coordinates": [
+                [(0, 0), (0, 45), (22.5, 45), (22.5, 22.5), (45, 22.5), (45, 0), (0, 0)]
+            ],
+        }
+    )
