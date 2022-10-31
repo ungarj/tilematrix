@@ -72,11 +72,11 @@ class GridDefinition(object):
 
     def __eq__(self, other):
         return (
-            isinstance(other, self.__class__) and
-            self.shape == other.shape and
-            self.bounds == other.bounds and
-            self.is_global == other.is_global and
-            self.crs == other.crs
+            isinstance(other, self.__class__)
+            and self.shape == other.shape
+            and self.bounds == other.bounds
+            and self.is_global == other.is_global
+            and self.crs == other.crs
         )
 
     def __ne__(self, other):
@@ -86,19 +86,22 @@ class GridDefinition(object):
         if self.type in PYRAMID_PARAMS:
             return 'GridDefinition("%s")' % self.type
         else:
-            return 'GridDefinition(' \
-                '"%s", ' \
-                'shape=%s, ' \
-                'bounds=%s, ' \
-                'is_global=%s, ' \
-                'srs=%s' \
-                ')' % (
+            return (
+                "GridDefinition("
+                '"%s", '
+                "shape=%s, "
+                "bounds=%s, "
+                "is_global=%s, "
+                "srs=%s"
+                ")"
+                % (
                     self.type,
                     tuple(self.shape),
                     tuple(self.bounds),
                     self.is_global,
-                    self.crs
+                    self.crs,
                 )
+            )
 
     def __hash__(self):
         return hash(repr(self))

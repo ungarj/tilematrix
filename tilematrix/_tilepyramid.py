@@ -8,8 +8,12 @@ from ._conf import ROUND
 from ._grid import GridDefinition
 from ._tile import Tile
 from ._funcs import (
-    validate_zoom, clip_geometry_to_srs_bounds, _tile_intersecting_tilepyramid,
-    _global_tiles_from_bounds, _tiles_from_cleaned_bounds, _tile_from_xy
+    validate_zoom,
+    clip_geometry_to_srs_bounds,
+    _tile_intersecting_tilepyramid,
+    _global_tiles_from_bounds,
+    _tiles_from_cleaned_bounds,
+    _tile_from_xy,
 )
 from ._types import Bounds
 
@@ -33,8 +37,9 @@ class TilePyramid(object):
         """Initialize TilePyramid."""
         if grid is None:
             raise ValueError("grid definition required")
-        if metatiling not in (1, 2, 4, 8, 16):
-            raise ValueError("metatling must be one of 1, 2, 4, 8, 16")
+        _metatiling_opts = [2 ** x for x in range(10)]
+        if metatiling not in _metatiling_opts:
+            raise ValueError(f"metatling must be one of {_metatiling_opts}")
         # get source grid parameters
         self.grid = GridDefinition(grid)
         self.bounds = self.grid.bounds
@@ -59,7 +64,7 @@ class TilePyramid(object):
         warnings.warn(DeprecationWarning("'srid' attribute is deprecated"))
         return self.grid.srid
 
-    def tile(self, zoom, row, col):
+    def tile(self, zoom=None, row=None, col=None):
         """
         Return Tile object of this TilePyramid.
 
@@ -76,7 +81,7 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         validate_zoom(zoom)
-        width = int(math.ceil(self.grid.shape.width * 2**(zoom) / self.metatiling))
+        width = int(math.ceil(self.grid.shape.width * 2 ** (zoom) / self.metatiling))
         return 1 if width < 1 else width
 
     def matrix_height(self, zoom):
@@ -86,7 +91,7 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         validate_zoom(zoom)
-        height = int(math.ceil(self.grid.shape.height * 2**(zoom) / self.metatiling))
+        height = int(math.ceil(self.grid.shape.height * 2 ** (zoom) / self.metatiling))
         return 1 if height < 1 else height
 
     def tile_x_size(self, zoom):
@@ -117,7 +122,7 @@ class TilePyramid(object):
         """
         warnings.warn(DeprecationWarning("tile_width is deprecated"))
         validate_zoom(zoom)
-        matrix_pixel = 2**(zoom) * self.tile_size * self.grid.shape.width
+        matrix_pixel = 2 ** (zoom) * self.tile_size * self.grid.shape.width
         tile_pixel = self.tile_size * self.metatiling
         return matrix_pixel if tile_pixel > matrix_pixel else tile_pixel
 
@@ -129,7 +134,7 @@ class TilePyramid(object):
         """
         warnings.warn(DeprecationWarning("tile_height is deprecated"))
         validate_zoom(zoom)
-        matrix_pixel = 2**(zoom) * self.tile_size * self.grid.shape.height
+        matrix_pixel = 2 ** (zoom) * self.tile_size * self.grid.shape.height
         tile_pixel = self.tile_size * self.metatiling
         return matrix_pixel if tile_pixel > matrix_pixel else tile_pixel
 
@@ -141,9 +146,9 @@ class TilePyramid(object):
         """
         validate_zoom(zoom)
         return round(
-            (self.grid.right - self.grid.left) /
-            (self.grid.shape.width * 2**zoom * self.tile_size),
-            ROUND
+            (self.grid.right - self.grid.left)
+            / (self.grid.shape.width * 2 ** zoom * self.tile_size),
+            ROUND,
         )
 
     def pixel_y_size(self, zoom):
@@ -154,9 +159,9 @@ class TilePyramid(object):
         """
         validate_zoom(zoom)
         return round(
-            (self.grid.top - self.grid.bottom) /
-            (self.grid.shape.height * 2**zoom * self.tile_size),
-            ROUND
+            (self.grid.top - self.grid.bottom)
+            / (self.grid.shape.height * 2 ** zoom * self.tile_size),
+            ROUND,
         )
 
     def intersecting(self, tile):
@@ -170,7 +175,7 @@ class TilePyramid(object):
         """
         return _tile_intersecting_tilepyramid(tile, self)
 
-    def tiles_from_bounds(self, bounds, zoom):
+    def tiles_from_bounds(self, bounds=None, zoom=None, batch_by=None):
         """
         Return all tiles intersecting with bounds.
 
@@ -180,20 +185,21 @@ class TilePyramid(object):
         - bounds: tuple of (left, bottom, right, top) bounding values in tile
             pyramid CRS
         - zoom: zoom level
+        - batch_by: yield tiles in row or column batches if activated
         """
         validate_zoom(zoom)
         if not isinstance(bounds, tuple) or len(bounds) != 4:
-            raise ValueError("bounds must be a tuple of left, bottom, right, top values")
+            raise ValueError(
+                "bounds must be a tuple of left, bottom, right, top values"
+            )
         if not isinstance(bounds, Bounds):
             bounds = Bounds(*bounds)
         if self.is_global:
-            for tile in _global_tiles_from_bounds(self, bounds, zoom):
-                yield tile
+            yield from _global_tiles_from_bounds(self, bounds, zoom, batch_by=batch_by)
         else:
-            for tile in _tiles_from_cleaned_bounds(self, bounds, zoom):
-                yield tile
+            yield from _tiles_from_cleaned_bounds(self, bounds, zoom, batch_by=batch_by)
 
-    def tiles_from_bbox(self, geometry, zoom):
+    def tiles_from_bbox(self, geometry=None, zoom=None, batch_by=None):
         """
         All metatiles intersecting with given bounding box.
 
@@ -201,9 +207,9 @@ class TilePyramid(object):
         - zoom: zoom level
         """
         validate_zoom(zoom)
-        return self.tiles_from_bounds(geometry.bounds, zoom)
+        yield from self.tiles_from_bounds(geometry.bounds, zoom, batch_by=batch_by)
 
-    def tiles_from_geom(self, geometry, zoom):
+    def tiles_from_geom(self, geometry=None, zoom=None, batch_by=None, exact=False):
         """
         Return all tiles intersecting with input geometry.
 
@@ -216,20 +222,52 @@ class TilePyramid(object):
         if not geometry.is_valid:
             raise ValueError("no valid geometry: %s" % geometry.type)
         if geometry.geom_type == "Point":
-            yield self.tile_from_xy(geometry.x, geometry.y, zoom)
-        elif geometry.geom_type == "MultiPoint":
-            for point in geometry:
-                yield self.tile_from_xy(point.x, point.y, zoom)
+            if batch_by:
+                yield (
+                    self.tile_from_xy(geometry.x, geometry.y, zoom) for _ in range(1)
+                )
+            else:
+                yield self.tile_from_xy(geometry.x, geometry.y, zoom)
         elif geometry.geom_type in (
-            "LineString", "MultiLineString", "Polygon", "MultiPolygon",
-            "GeometryCollection"
+            "MultiPoint",
+            "LineString",
+            "MultiLineString",
+            "Polygon",
+            "MultiPolygon",
+            "GeometryCollection",
         ):
-            prepared_geometry = prep(clip_geometry_to_srs_bounds(geometry, self))
-            for tile in self.tiles_from_bbox(geometry, zoom):
-                if prepared_geometry.intersects(tile.bbox()):
-                    yield tile
+            if exact:
+                geometry = clip_geometry_to_srs_bounds(geometry, self)
+                if batch_by:
+                    for batch in self.tiles_from_bbox(
+                        geometry, zoom, batch_by=batch_by
+                    ):
+                        yield (
+                            tile
+                            for tile in batch
+                            if geometry.intersection(tile.bbox()).area
+                        )
+                else:
+                    for tile in self.tiles_from_bbox(geometry, zoom, batch_by=batch_by):
+                        if geometry.intersection(tile.bbox()).area:
+                            yield tile
+            else:
+                prepared_geometry = prep(clip_geometry_to_srs_bounds(geometry, self))
+                if batch_by:
+                    for batch in self.tiles_from_bbox(
+                        geometry, zoom, batch_by=batch_by
+                    ):
+                        yield (
+                            tile
+                            for tile in batch
+                            if prepared_geometry.intersects(tile.bbox())
+                        )
+                else:
+                    for tile in self.tiles_from_bbox(geometry, zoom, batch_by=batch_by):
+                        if prepared_geometry.intersects(tile.bbox()):
+                            yield tile
 
-    def tile_from_xy(self, x, y, zoom, on_edge_use="rb"):
+    def tile_from_xy(self, x=None, y=None, zoom=None, on_edge_use="rb"):
         """
         Return tile covering a point defined by x and y values.
 
@@ -256,7 +294,7 @@ class TilePyramid(object):
         return dict(
             grid=self.grid.to_dict(),
             metatiling=self.metatiling,
-            tile_size=self.tile_size
+            tile_size=self.tile_size,
         )
 
     def from_dict(config_dict):
@@ -267,18 +305,20 @@ class TilePyramid(object):
 
     def __eq__(self, other):
         return (
-            isinstance(other, self.__class__) and
-            self.grid == other.grid and
-            self.tile_size == other.tile_size and
-            self.metatiling == other.metatiling
+            isinstance(other, self.__class__)
+            and self.grid == other.grid
+            and self.tile_size == other.tile_size
+            and self.metatiling == other.metatiling
         )
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return 'TilePyramid(%s, tile_size=%s, metatiling=%s)' % (
-            self.grid, self.tile_size, self.metatiling
+        return "TilePyramid(%s, tile_size=%s, metatiling=%s)" % (
+            self.grid,
+            self.tile_size,
+            self.metatiling,
         )
 
     def __hash__(self):

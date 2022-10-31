@@ -8,17 +8,17 @@ from ._tile import Tile
 from ._types import Bounds, Shape, TileIndex
 
 __all__ = [
-    'Bounds',
-    'clip_geometry_to_srs_bounds',
-    'GridDefinition',
-    'PYRAMID_PARAMS',
-    'Shape',
-    'snap_bounds',
-    'TilePyramid',
-    'Tile',
-    'TileIndex',
-    'validate_zoom'
+    "Bounds",
+    "clip_geometry_to_srs_bounds",
+    "GridDefinition",
+    "PYRAMID_PARAMS",
+    "Shape",
+    "snap_bounds",
+    "TilePyramid",
+    "Tile",
+    "TileIndex",
+    "validate_zoom",
 ]
 
 
-__version__ = "0.20"
+__version__ = "2022.3.0"

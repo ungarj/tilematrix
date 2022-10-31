@@ -35,18 +35,20 @@ class Tile(object):
         # base SRID size without pixelbuffer
         self._base_srid_size = Shape(
             height=self.pixel_y_size * self.tp.tile_size * self.tp.metatiling,
-            width=self.pixel_x_size * self.tp.tile_size * self.tp.metatiling
+            width=self.pixel_x_size * self.tp.tile_size * self.tp.metatiling,
         )
         # base bounds not accounting for pixelbuffers but metatiles are clipped to
         # TilePyramid bounds
         self._top = round(self.tp.top - (self.row * self._base_srid_size.height), ROUND)
         self._bottom = max([self._top - self._base_srid_size.height, self.tp.bottom])
-        self._left = round(self.tp.left + (self.col * self._base_srid_size.width), ROUND)
+        self._left = round(
+            self.tp.left + (self.col * self._base_srid_size.width), ROUND
+        )
         self._right = min([self._left + self._base_srid_size.width, self.tp.right])
         # base shape without pixelbuffer
         self._base_shape = Shape(
             height=int(round((self._top - self._bottom) / self.pixel_y_size, 0)),
-            width=int(round((self._right - self._left) / self.pixel_x_size, 0))
+            width=int(round((self._right - self._left) / self.pixel_x_size, 0)),
         )
 
     @property
@@ -132,7 +134,7 @@ class Tile(object):
             self.bounds(pixelbuffer).left,
             0,
             -self.pixel_y_size,
-            self.bounds(pixelbuffer).top
+            self.bounds(pixelbuffer).top,
         )
 
     def shape(self, pixelbuffer=0):
@@ -155,14 +157,16 @@ class Tile(object):
 
     def is_valid(self):
         """Return True if tile is available in tile pyramid."""
-        if not all([
-            isinstance(self.zoom, int),
-            self.zoom >= 0,
-            isinstance(self.row, int),
-            self.row >= 0,
-            isinstance(self.col, int),
-            self.col >= 0
-        ]):
+        if not all(
+            [
+                isinstance(self.zoom, int),
+                self.zoom >= 0,
+                isinstance(self.row, int),
+                self.row >= 0,
+                isinstance(self.col, int),
+                self.col >= 0,
+            ]
+        ):
             raise TypeError("zoom, col and row must be integers >= 0")
         cols = self.tile_pyramid.matrix_width(self.zoom)
         rows = self.tile_pyramid.matrix_height(self.zoom)
@@ -174,8 +178,10 @@ class Tile(object):
 
     def get_parent(self):
         """Return tile from previous zoom level."""
-        return None if self.zoom == 0 else self.tile_pyramid.tile(
-            self.zoom - 1, self.row // 2, self.col // 2
+        return (
+            None
+            if self.zoom == 0
+            else self.tile_pyramid.tile(self.zoom - 1, self.row // 2, self.col // 2)
         )
 
     def get_children(self):
@@ -183,9 +189,7 @@ class Tile(object):
         next_zoom = self.zoom + 1
         return [
             self.tile_pyramid.tile(
-                next_zoom,
-                self.row * 2 + row_offset,
-                self.col * 2 + col_offset
+                next_zoom, self.row * 2 + row_offset, self.col * 2 + col_offset
             )
             for row_offset, col_offset in [
                 (0, 0),  # top left
@@ -193,10 +197,12 @@ class Tile(object):
                 (1, 1),  # bottom right
                 (1, 0),  # bottom left
             ]
-            if all([
-                self.row * 2 + row_offset < self.tp.matrix_height(next_zoom),
-                self.col * 2 + col_offset < self.tp.matrix_width(next_zoom)
-            ])
+            if all(
+                [
+                    self.row * 2 + row_offset < self.tp.matrix_height(next_zoom),
+                    self.col * 2 + col_offset < self.tp.matrix_width(next_zoom),
+                ]
+            )
         ]
 
     def get_neighbors(self, connectedness=8):
@@ -225,17 +231,19 @@ class Tile(object):
         # 4-connected neighborsfor pyramid
         matrix_offsets = [
             (-1, 0),  # 1: above
-            (0, 1),   # 2: right
-            (1, 0),   # 3: below
-            (0, -1)   # 4: left
+            (0, 1),  # 2: right
+            (1, 0),  # 3: below
+            (0, -1),  # 4: left
         ]
         if connectedness == 8:
-            matrix_offsets.extend([
-                (-1, 1),  # 5: above right
-                (1, 1),   # 6: below right
-                (1, -1),  # 7: below left
-                (-1, -1)  # 8: above left
-            ])
+            matrix_offsets.extend(
+                [
+                    (-1, 1),  # 5: above right
+                    (1, 1),  # 6: below right
+                    (1, -1),  # 7: below left
+                    (-1, -1),  # 8: above left
+                ]
+            )
 
         for row_offset, col_offset in matrix_offsets:
             new_row = self.row + row_offset
@@ -275,16 +283,16 @@ class Tile(object):
 
     def __eq__(self, other):
         return (
-            isinstance(other, self.__class__) and
-            self.tp == other.tp and
-            self.id == other.id
+            isinstance(other, self.__class__)
+            and self.tp == other.tp
+            and self.id == other.id
         )
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return 'Tile(%s, %s)' % (self.id, self.tp)
+        return "Tile(%s, %s)" % (self.id, self.tp)
 
     def __hash__(self):
         return hash(repr(self))

@@ -2,6 +2,28 @@
 Changelog
 #########
 
+2022.3.0 - 2022-03-15
+---------------------
+* add option to exactly get intersection tiles using `TilePyramid.tiles_from_geom(exact=True)`
+
+
+2021.11.0 - 2021-11-12
+----------------------
+* enable yielding tiles in batches by either row or column for following methods:
+  * `TilePyramid.tiles_from_bounds()`
+  * `TilePyramid.tiles_from_bbox()`
+  * `TilePyramid.tiles_from_geom()`
+
+* convert TilePyramid arguments into keyword arguments
+
+
+0.21
+----
+* allow metatiling up to 512
+* use GitHub actions instead of travis
+* use black and flake8 pre-commit checks
+
+
 0.20
 ----
 * fixed pixel size calculation on irregular grids with metatiling (closing #33)
