@@ -2,6 +2,10 @@
 Changelog
 #########
 
+2022.11.0 - 2022-11-03
+----------------------
+* add ``conda`` publish to github actions (workflows)
+
 2022.3.0 - 2022-03-15
 ---------------------
 * add option to exactly get intersection tiles using `TilePyramid.tiles_from_geom(exact=True)`

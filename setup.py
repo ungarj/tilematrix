@@ -42,7 +42,7 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Scientific/Engineering :: GIS',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.6'
+        'Programming Language :: Python :: 3.6, 3.8, 3.9'
     ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest']
