@@ -1,5 +1,5 @@
 {% set name = "tilematrix" %}
-{% set version = ${GITHUB_REF#refs/*/} %}
+{% set version = "dud" %}
 
 package:
   name: {{ name|lower }}
