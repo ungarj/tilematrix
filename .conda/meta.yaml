@@ -1,5 +1,5 @@
 {% set name = "tilematrix" %}
-{% set version = "2022.11.dev0" %}
+{% set version = "2022.11.0" %}
 
 package:
   name: {{ name|lower }}
