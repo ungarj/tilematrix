@@ -1,5 +1,5 @@
 {% set name = "tilematrix" %}
-{% set version = "dud" %}
+{% set version = "2022.11.0.dud" %}
 
 package:
   name: {{ name|lower }}
