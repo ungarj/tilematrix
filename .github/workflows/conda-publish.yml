@@ -1,6 +1,8 @@
 name: Upload Conda Package
 
 on:
+  push:
+    branches: [ main, release_2022.11.0 ]
   release:
     types: [created]
     
