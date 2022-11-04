@@ -1,5 +1,5 @@
 {% set name = "tilematrix" %}
-{% set version = 2022.11.1 %}
+{% set version = "2022.11.1" %}
 
 package:
   name: {{ name|lower }}
@@ -19,6 +19,7 @@ build:
 requirements:
   host:
     - python >=3.6
+    - pytest
     - pytest-runner
     - pip
   run:
@@ -35,8 +36,13 @@ test:
   commands:
     - pip check
     - tmx --help
+    - pytest ./test/* -v
+  source_files:
+    - ./test/*
   requires:
     - pip
+    - pytest
+    - pytest-runner
 
 about:
   home: https://github.com/ungarj/tilematrix

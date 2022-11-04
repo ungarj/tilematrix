@@ -5,6 +5,7 @@ channels:
 dependencies:
   - anaconda-client
   - conda-build
+  - conda-verify
   - pytest-runner
   - pytest
   - gdal
