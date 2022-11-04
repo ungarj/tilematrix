@@ -1,5 +1,5 @@
 {% set name = "tilematrix" %}
-{% set version = "{{ github.head_ref || github.ref_name }}" %}
+{% set version = {{ github.head_ref || github.ref_name }} %}
 
 package:
   name: {{ name|lower }}
