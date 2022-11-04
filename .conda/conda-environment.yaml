@@ -8,6 +8,7 @@ dependencies:
   - pytest-runner
   - pytest
   - gdal>=3.5.2
+  - rasterio>=1.0.21
   - pip
   - pip:
     - -r ../requirements.txt
