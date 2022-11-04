@@ -33,6 +33,11 @@ tile pyramids, it also supports geodetic (WGS84) tile pyramids.
 ------------
 Installation
 ------------
+Use ``conda`` to install the latest stable version:
+
+.. code-block:: shell
+
+    conda install -c conda-forge -y tilematrix
 
 Use ``pip`` to install the latest stable version:
 

@@ -1,0 +1,18 @@
+name: Upload Conda Package
+
+on:
+  release:
+    types: [created]
+    
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: publish-to-conda
+      uses: MichaelsJP/conda-package-publish-action@v1.0.0
+      with:
+        subDir: '.conda'
+        AnacondaToken: ${{ secrets.ANACONDA_TOKEN }}
+        platforms: 'all'
+        override: true
