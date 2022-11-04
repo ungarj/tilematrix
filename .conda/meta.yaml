@@ -1,5 +1,5 @@
 {% set name = "tilematrix" %}
-{% set version = lookup('env', 'ref_name') %}
+{% set version = github['ref_name'] %}
 
 package:
   name: {{ name|lower }}
