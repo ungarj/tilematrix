@@ -12,7 +12,7 @@ jobs:
         python-version: 3.9
         activate-environment: conda-build-publish-env
         auto-update-conda: true
-        environment-file: conda-environment.yaml
+        environment-file: .github/workflows/conda-environment.yaml
     - uses: actions/checkout@v2        
     - name: build conda package
       run: conda index && conda-build --output-folder .conda/ --no-test --no-anaconda-upload tilematrix .conda/
