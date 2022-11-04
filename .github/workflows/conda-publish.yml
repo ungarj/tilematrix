@@ -2,7 +2,8 @@ name: Build, Test and Upload Conda Package
 
 on:
   release:
-    types: [*]
+    types: [create]
+  push: [ * ]
     
 jobs:
   publish:
