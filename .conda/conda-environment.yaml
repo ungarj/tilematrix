@@ -10,4 +10,4 @@ dependencies:
   - pytest
   - pip
   - conda:
-    - --file ./requirements.txt 
+    - -f ./requirements.txt 
