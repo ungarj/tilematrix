@@ -1,5 +1,5 @@
 affine
-click
+click>=7.1.1
 geojson
 rasterio>=1.0.21
 shapely
