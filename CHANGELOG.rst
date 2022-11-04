@@ -2,11 +2,17 @@
 Changelog
 #########
 
+2022.11.1 - 2022-11-03
+----------------------
+* fix `conda` & `pip ` builds
+
+
 2022.11.0 - 2022-11-03
 ----------------------
 * test also for python `3.9`
 * renaming `master` branch to `main`
 * add ``conda`` publish to github actions (workflows)
+
 
 2022.3.0 - 2022-03-15
 ---------------------
