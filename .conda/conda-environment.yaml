@@ -10,6 +10,7 @@ dependencies:
   - pytest
   - gdal
   - rasterio>=1.0.21
+  - numcodecs
   - shapely
   - pip
   - pip:
