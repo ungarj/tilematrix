@@ -1,0 +1,14 @@
+name: conda-build-publish-env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - anaconda-client
+  - conda-build
+  - gdal 
+  - rasterio>=1.0.21
+  - pytest-runner
+  - pytest
+  - pip
+  - pip:
+    - -r requirements.txt 
