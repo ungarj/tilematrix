@@ -13,7 +13,7 @@ build:
   entry_points:
     - tmx=tilematrix.tmx.main:tmx
   noarch: python
-  script: {{ PYTHON }} -m pip install -e . -vv
+  script: python setup.py install
   number: 0
 
 requirements:
@@ -31,16 +31,12 @@ requirements:
     - shapely
 
 test:
-  imports:
-    - tilematrix
   commands:
-    - pip check
     - tmx --help
-    - pytest ./test/* -v
+    - pytest test/* -v
   source_files:
-    - ./test/*
+    - test/*
   requires:
-    - pip
     - pytest
     - pytest-runner
 
