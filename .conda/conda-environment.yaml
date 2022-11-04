@@ -4,10 +4,9 @@ channels:
 dependencies:
   - anaconda-client
   - conda-build
-  - gdal 
-  - rasterio>=1.0.21
   - pytest-runner
   - pytest
+  - gdal>=3.5.2
   - pip
-  - conda:
-    - -f ./requirements.txt 
+  - pip:
+  -  -r ./requirements.txt
