@@ -7,8 +7,9 @@ dependencies:
   - conda-build
   - pytest-runner
   - pytest
-  - gdal>=3.5.2
+  - gdal
   - rasterio>=1.0.21
+  - shapely
   - pip
   - pip:
     - -r ../requirements.txt
