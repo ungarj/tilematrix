@@ -17,6 +17,6 @@ jobs:
     - name: build conda package
       run: conda index && conda-build --output-folder .conda/ --no-test --no-anaconda-upload tilematrix .conda/
     - name: install local conda build and test conda package
-      run: conda install -y --use-local tilematrix && pytest ./test/* -v
+      run: conda install -y --use-local tilematrix && pytest ../test/* -v
     # - name: upload conda package
     # run: export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }} && anaconda upload --force .conda/noarch/*.tar.bz2
