@@ -1,10 +1,7 @@
 name: Build, Test and Upload Conda Package
 
-on:
-  release:
-    types: [create]
-  push: [ * ]
-    
+on: [push]
+
 jobs:
   publish:
     runs-on: continuumio/miniconda3
