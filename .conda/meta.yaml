@@ -1,19 +1,19 @@
 {% set name = "tilematrix" %}
-{% set version = "dud" %}
+{% set version = "2022.11.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/tilematrix-{{ version }}.tar.gz
-  sha256: cc7c28faee8a6949dedaeb37dc0a3739cfa5e64a164eee0eb7558e2ce9b2ef16
+  git_url: https://github.com/ungarj/tilematrix
+  git_rev: {{ version }}
 
 build:
   entry_points:
     - tmx=tilematrix.tmx.main:tmx
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
+  script: {{ PYTHON }} -m pip install -e . -vv
   number: 0
 
 requirements:
