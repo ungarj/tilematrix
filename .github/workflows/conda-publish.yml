@@ -18,7 +18,7 @@ jobs:
         auto-update-conda: true
         environment-file: .conda/conda-environment.yaml  
     - name: build conda package
-      run: conda index && conda-build --output-folder .conda/ --no-anaconda-upload --verify tilematrix .conda/
+      run: conda index && conda-build --no-anaconda-upload --verify tilematrix .conda/
     - name: test conda package
       run: VERSION=$(python setup.py --version) && conda install -y --use-local tilematrix=$VERSION && pytest test/* -v
     # - name: upload conda package

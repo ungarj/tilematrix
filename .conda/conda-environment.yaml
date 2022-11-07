@@ -2,10 +2,6 @@ name: conda-build-publish-env
 channels:
   - conda-forge
   - defaults
-subdir: linux-64  
-subdirs:
-  - linux-64
-  - noarch
 dependencies:
   - affine
   - anaconda-client
