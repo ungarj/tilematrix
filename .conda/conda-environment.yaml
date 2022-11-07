@@ -9,9 +9,7 @@ dependencies:
   - pytest-runner
   - pytest
   - gdal
-  - rasterio>=1.0.21
   - numcodecs
-  - shapely
   - pip
   - pip:
-    - -r ../requirements.txt
+    - -r ../requirements.txt --no-binary :all:
