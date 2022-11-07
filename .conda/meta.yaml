@@ -9,13 +9,16 @@ source:
   path: ../
 
 build:
+  entry_points:
+    - tmx=tilematrix.tmx.main:tmx
   noarch: python
-  script: pip install -e . --no-deps
+  script: {{ PYTHON }} -m pip install . -vv
   number: 0
 
 requirements:
   host:
     - python >=3.6
+    - pytest-runner
     - pip
   run:
     - python >=3.6
@@ -24,6 +27,25 @@ requirements:
     - geojson
     - rasterio >=1.0.21
     - shapely
+
+test:
+  imports:
+    - tilematrix
+  commands:
+    - tmx --help
+    - pytest test/ -v
+  requires:
+    - pip
+    - black
+    - coveralls
+    - flake8
+    - pre-commit
+    - pytest
+    - pytest-cov   
+  source_files:
+    - test 
+  files:
+    - test                     
 
 about:
   home: https://github.com/ungarj/tilematrix
