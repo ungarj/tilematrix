@@ -2,6 +2,7 @@ name: conda-build-publish-env
 channels:
   - conda-forge
   - defaults
+  - .conda/
 dependencies:
   - affine
   - anaconda-client
