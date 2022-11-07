@@ -10,7 +10,7 @@ source:
 
 build:
   noarch: python
-  script: pip install -e . --no-deps -vv
+  script: pip install -e . --no-deps
   number: 0
 
 requirements:
