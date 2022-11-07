@@ -14,7 +14,7 @@ def test_version():
     assert __version__ in result.output
 
 
-@pytest.mark.skip(reason="_run_bbox_bounds needs fixing! it has some broken dependency, probly numcodecs")
+# @pytest.mark.skip(reason="_run_bbox_bounds needs fixing! it has some broken dependency, probly numcodecs")
 def test_bounds():
     zoom, row, col = 12, 0, 0
     for grid in ["geodetic", "mercator"]:
@@ -27,7 +27,7 @@ def test_bounds():
         _run_bbox_bounds(zoom, row, col, "bounds", tile_size=tile_size)
 
 
-@pytest.mark.skip(reason="_run_bbox_bounds needs fixing! it has some broken dependency, probly numcodecs")
+# @pytest.mark.skip(reason="_run_bbox_bounds needs fixing! it has some broken dependency, probly numcodecs")
 def test_bbox():
     zoom, row, col = 12, 0, 0
     for grid in ["geodetic", "mercator"]:

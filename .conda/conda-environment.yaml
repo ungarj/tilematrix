@@ -3,13 +3,15 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - affine
   - anaconda-client
+  - click>=7.1.1
   - conda-build
   - conda-verify
-  - pytest-runner
-  - pytest
   - gdal
-  - numcodecs
-  - pip
-  - pip:
-    - -r ../requirements.txt --no-binary :all:
+  - geojson
+  - rasterio>=1.0.21
+  - shapely  
+  - pytest-runner
+  - pytest  
+
