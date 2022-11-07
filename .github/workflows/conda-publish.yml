@@ -3,7 +3,7 @@ name: Build, Test and Upload Conda Package
 on: [push]
 
 jobs:
-  build:
+  build_test:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -18,8 +18,6 @@ jobs:
         auto-update-conda: true
         environment-file: .conda/conda-environment.yaml  
     - name: build conda package
-      run: conda index && conda-build --output-folder ./ --no-anaconda-upload --verify tilematrix .conda/
-    - name: test conda package
-      run: VERSION=$(python setup.py --version) && conda install -y --use-local tilematrix=$VERSION && pytest test/* -v
+      run: conda index && conda-build --output-folder ./ --no-anaconda-upload --verify tilematrix .conda/ && VERSION=$(python setup.py --version) && conda install -y --use-local tilematrix=$VERSION && pytest test/* -v
     # - name: upload conda package
     # run: export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }} && anaconda upload --force .conda/noarch/*.tar.bz2
