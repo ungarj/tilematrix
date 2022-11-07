@@ -2,6 +2,12 @@
 Changelog
 #########
 
+2022.11.2 - 2022-11-07
+----------------------
+* update `conda` build
+  * add `conda-environment.yaml` as building and testing `conda` environment
+  * the dependencies from `requirements.txt` are manually added to `conda-environment.yaml`
+
 2022.11.1 - 2022-11-03
 ----------------------
 * fix `conda` & `pip ` builds
