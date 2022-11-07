@@ -20,6 +20,6 @@ jobs:
     - name: build conda package
       run: conda index && conda-build --output-folder .conda/ --no-anaconda-upload --verify tilematrix .conda/ && conda build purge
     - name: test conda package
-      run: VERSION=$(python setup.py --version) && cd noarch/ && conda install -y --use-local --offline tilematrix-$VERSION-py_0.tar.bz2 && pytest test/* -v
+      run: VERSION=$(python setup.py --version) && conda install -y --use-local tilematrix=$VERSION && pytest test/* -v
     # - name: upload conda package
     # run: export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }} && anaconda upload --force .conda/noarch/*.tar.bz2
