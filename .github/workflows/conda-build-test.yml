@@ -1,6 +1,6 @@
 name: Build and Test Conda Package
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build-test:
