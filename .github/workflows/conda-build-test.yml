@@ -18,4 +18,4 @@ jobs:
         auto-update-conda: true
         environment-file: .conda/conda-environment.yaml  
     - name: build and test conda package
-      run: VERSION=$(python setup.py --version) && conda index && conda-build --no-anaconda-upload --verify tilematrix .conda/meta.yaml && conda index && conda install -y --offline --use-local tilematrix=$VERSION
+run: PKG_NAME=tilematrix && USER=Scartography && export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }} && VERSION=$(python setup.py --version) && conda index && conda-build --no-anaconda-upload --verify $PKG_NAME .conda/meta.yaml && conda index && conda install -y --offline --use-local $PKG_NAME=$VERSION
