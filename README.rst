@@ -13,8 +13,8 @@ Tilematrix handles geographic web tiles and tile pyramids.
 .. image:: https://coveralls.io/repos/github/ungarj/tilematrix/badge.svg?branch=master
     :target: https://coveralls.io/github/ungarj/tilematrix?branch=master
 
-.. image:: https://anaconda.org/ungarj/tilematrix/badges/version.svg
-    :target: https://anaconda.org/ungarj/tilematrix    
+.. image:: https://anaconda.org/conda-forge/tilematrix/badges/version.svg
+    :target: https://anaconda.org/conda-forge/tilematrix    
 
 .. image:: https://img.shields.io/pypi/pyversions/mapchete.svg
 
