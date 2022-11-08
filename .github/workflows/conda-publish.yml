@@ -20,4 +20,4 @@ jobs:
     - name: build conda package
       run: VERSION=$(python setup.py --version) && conda index && conda-build --no-anaconda-upload --verify tilematrix .conda/meta.yaml && conda index && conda install -y --offline --use-local tilematrix=$VERSION
     - name: upload conda package
-      run: export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }} && anaconda upload tilematrix
+      run: VERSION=$(python setup.py && export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }} && anaconda upload --version $VERSION /usr/share/miniconda/envs/conda-build-publish-env/conda-bld/noarch/tilematrix-$VERSION-py_0.tar.bz2
