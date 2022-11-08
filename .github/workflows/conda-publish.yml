@@ -22,4 +22,4 @@ jobs:
         auto-update-conda: true
         environment-file: .conda/conda-environment.yaml  
     - name: build conda package
-      run: PKG_NAME=tilematrix && USER=Scartography && export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }} && VERSION=$(python setup.py --version) && conda index && conda-build --no-anaconda-upload --verify $PKG_NAME .conda/meta.yaml && conda index && conda install -y --offline --use-local $PKG_NAME=$VERSION && anaconda upload -t ${{ secrets.ANACONDA_TOKEN }} -u $USER --version $VERSION /usr/share/miniconda/envs/conda-build-publish-env/conda-bld/noarch/$PKG_NAME-$VERSION-py_0.tar.bz2
+      run: PKG_NAME=tilematrix && export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }} && VERSION=$(python setup.py --version) && conda index && conda-build --no-anaconda-upload --verify $PKG_NAME .conda/meta.yaml && conda index && conda install -y --offline --use-local $PKG_NAME=$VERSION && anaconda upload -t ${{ secrets.ANACONDA_TOKEN }} -u $GIT_USER --version $VERSION /usr/share/miniconda/envs/conda-build-publish-env/conda-bld/noarch/$PKG_NAME-$VERSION-py_0.tar.bz2
