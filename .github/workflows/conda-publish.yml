@@ -2,7 +2,7 @@ name: Build, Test and Upload Conda Package
 
 on:
   release:
-    types: [published]
+    types: [created]
 
 jobs:
   build-test-publish:
