@@ -2,14 +2,15 @@ name: Build, Test and Upload Conda Package
 
 on:
   release:
-    types: [created]
+    types: [published]
 
 jobs:
   build-test-publish:
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/2022')    
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -l {0}       
     steps:
     - uses: actions/checkout@v2          
     - uses: conda-incubator/setup-miniconda@v2
