@@ -3,7 +3,11 @@
 
 name: Python package test
 
-on: [push, release, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   test:
