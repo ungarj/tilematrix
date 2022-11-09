@@ -14,7 +14,7 @@ def test_geodetic_matrix_shapes():
         3: (16, 8),
         4: (32, 16),
         5: (64, 32),
-        6: (128, 64)
+        6: (128, 64),
     }
     tp = TilePyramid("geodetic")
     for zoom, shape in matrix_shapes.items():
@@ -87,7 +87,7 @@ def test_mercator_matrix_shapes():
         3: (8, 8),
         4: (16, 16),
         5: (32, 32),
-        6: (64, 64)
+        6: (64, 64),
     }
     tp = TilePyramid("mercator")
     for zoom, shape in matrix_shapes.items():

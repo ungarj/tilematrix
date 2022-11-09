@@ -96,51 +96,84 @@ def test_snap_bbox():
 
 
 def _run_bbox_bounds(
-    zoom, row, col, command=None, grid="geodetic", metatiling=1, pixelbuffer=0,
-    tile_size=256, output_format="WKT"
+    zoom,
+    row,
+    col,
+    command=None,
+    grid="geodetic",
+    metatiling=1,
+    pixelbuffer=0,
+    tile_size=256,
+    output_format="WKT",
 ):
-    tile = TilePyramid(
-        grid,
-        metatiling=metatiling,
-        tile_size=tile_size
-    ).tile(zoom, row, col)
-    result = CliRunner().invoke(tmx, [
-        "--pixelbuffer", str(pixelbuffer),
-        "--metatiling", str(metatiling),
-        "--grid", grid,
-        "--tile_size", str(tile_size),
-        "--output_format", output_format,
-        command, str(zoom), str(row), str(col)
-    ])
+    tile = TilePyramid(grid, metatiling=metatiling, tile_size=tile_size).tile(
+        zoom, row, col
+    )
+    result = CliRunner().invoke(
+        tmx,
+        [
+            "--pixelbuffer",
+            str(pixelbuffer),
+            "--metatiling",
+            str(metatiling),
+            "--grid",
+            grid,
+            "--tile_size",
+            str(tile_size),
+            "--output_format",
+            output_format,
+            command,
+            str(zoom),
+            str(row),
+            str(col),
+        ],
+    )
     assert result.exit_code == 0
     if command == "bounds":
         assert result.output.strip() == " ".join(map(str, tile.bounds(pixelbuffer)))
     elif output_format == "WKT":
         assert wkt.loads(result.output.strip()).almost_equals(tile.bbox(pixelbuffer))
     elif output_format == "GeoJSON":
-        assert shape(
-            geojson.loads(result.output.strip())
-        ).almost_equals(tile.bbox(pixelbuffer))
+        assert shape(geojson.loads(result.output.strip())).almost_equals(
+            tile.bbox(pixelbuffer)
+        )
 
 
 def _run_tile(
-    zoom, point, grid="geodetic", metatiling=1, pixelbuffer=0, tile_size=256,
-    output_format="WKT"
+    zoom,
+    point,
+    grid="geodetic",
+    metatiling=1,
+    pixelbuffer=0,
+    tile_size=256,
+    output_format="WKT",
 ):
-    x, y, = point
-    tile = TilePyramid(
-        grid,
-        metatiling=metatiling,
-        tile_size=tile_size
-    ).tile_from_xy(x, y, zoom)
-    result = CliRunner().invoke(tmx, [
-        "--pixelbuffer", str(pixelbuffer),
-        "--metatiling", str(metatiling),
-        "--grid", grid,
-        "--tile_size", str(tile_size),
-        "--output_format", output_format,
-        "tile", str(zoom), str(x), str(y)
-    ])
+    (
+        x,
+        y,
+    ) = point
+    tile = TilePyramid(grid, metatiling=metatiling, tile_size=tile_size).tile_from_xy(
+        x, y, zoom
+    )
+    result = CliRunner().invoke(
+        tmx,
+        [
+            "--pixelbuffer",
+            str(pixelbuffer),
+            "--metatiling",
+            str(metatiling),
+            "--grid",
+            grid,
+            "--tile_size",
+            str(tile_size),
+            "--output_format",
+            output_format,
+            "tile",
+            str(zoom),
+            str(x),
+            str(y),
+        ],
+    )
     assert result.exit_code == 0
     if output_format == "Tile":
         assert result.output.strip() == " ".join(map(str, tile.id))
@@ -152,45 +185,78 @@ def _run_tile(
 
 
 def _run_tiles(
-    zoom, bounds, grid="geodetic", metatiling=1, pixelbuffer=0, tile_size=256,
-    output_format="WKT"
+    zoom,
+    bounds,
+    grid="geodetic",
+    metatiling=1,
+    pixelbuffer=0,
+    tile_size=256,
+    output_format="WKT",
 ):
     left, bottom, right, top = bounds
     tiles = list(
-        TilePyramid(
-            grid,
-            metatiling=metatiling,
-            tile_size=tile_size
-        ).tiles_from_bounds(bounds, zoom)
+        TilePyramid(grid, metatiling=metatiling, tile_size=tile_size).tiles_from_bounds(
+            bounds, zoom
+        )
     )
-    result = CliRunner().invoke(tmx, [
-        "--pixelbuffer", str(pixelbuffer),
-        "--metatiling", str(metatiling),
-        "--grid", grid,
-        "--tile_size", str(tile_size),
-        "--output_format", output_format,
-        "tiles", str(zoom), str(left), str(bottom), str(right), str(top)
-    ])
+    result = CliRunner().invoke(
+        tmx,
+        [
+            "--pixelbuffer",
+            str(pixelbuffer),
+            "--metatiling",
+            str(metatiling),
+            "--grid",
+            grid,
+            "--tile_size",
+            str(tile_size),
+            "--output_format",
+            output_format,
+            "tiles",
+            str(zoom),
+            str(left),
+            str(bottom),
+            str(right),
+            str(top),
+        ],
+    )
     assert result.exit_code == 0
     if output_format == "Tile":
-        assert result.output.count('\n') == len(tiles)
+        assert result.output.count("\n") == len(tiles)
     elif output_format == "WKT":
-        assert result.output.count('\n') == len(tiles)
+        assert result.output.count("\n") == len(tiles)
     elif output_format == "GeoJSON":
         features = geojson.loads(result.output.strip())["features"]
         assert len(features) == len(tiles)
 
 
 def _run_snap_bounds(
-    zoom, bounds, command=None, grid="geodetic", metatiling=1, pixelbuffer=0,
-    tile_size=256
+    zoom,
+    bounds,
+    command=None,
+    grid="geodetic",
+    metatiling=1,
+    pixelbuffer=0,
+    tile_size=256,
 ):
     left, bottom, right, top = bounds
-    result = CliRunner().invoke(tmx, [
-        "--pixelbuffer", str(pixelbuffer),
-        "--metatiling", str(metatiling),
-        "--grid", grid,
-        "--tile_size", str(tile_size),
-        command, str(zoom), str(left), str(bottom), str(right), str(top)
-    ])
+    result = CliRunner().invoke(
+        tmx,
+        [
+            "--pixelbuffer",
+            str(pixelbuffer),
+            "--metatiling",
+            str(metatiling),
+            "--grid",
+            grid,
+            "--tile_size",
+            str(tile_size),
+            command,
+            str(zoom),
+            str(left),
+            str(bottom),
+            str(right),
+            str(top),
+        ],
+    )
     assert result.exit_code == 0

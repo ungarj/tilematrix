@@ -2,10 +2,16 @@
 Changelog
 #########
 
+2022.11.3 - 2022-11-08
+----------------------
+* replace `setuptools` with `hatch``
+
+
 2022.11.2 - 2022-11-08
 ----------------------
 * remove `conda` build files
 * `tilematrix-feedstock <https://github.com/conda-forge/tilematrix-feedstock>`_  `conda-forge feedstock` repository for releasing new versions on `conda-forge` 
+
 
 2022.11.1 - 2022-11-03
 ----------------------

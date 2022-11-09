@@ -67,11 +67,11 @@ def test_irregular_grids(grid_definition_irregular):
             for tile in [
                 tp.tile(0, 0, 0),
                 tp.tile(0, 10, 0),
-                tp.tile(0, tp.matrix_height(0) - 1, tp.matrix_width(0) - 1)
+                tp.tile(0, tp.matrix_height(0) - 1, tp.matrix_width(0) - 1),
             ]:
                 # pixel sizes have to be squares
                 assert tile.pixel_x_size == tile.pixel_y_size
-                assert tile.pixel_x_size == 10.
+                assert tile.pixel_x_size == 10.0
                 # pixelbuffer yields different shape and bounds
                 assert tile.shape(10) != tile.shape()
                 assert tile.bounds(10) != tile.bounds()
