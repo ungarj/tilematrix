@@ -37,7 +37,7 @@ class TilePyramid(object):
         """Initialize TilePyramid."""
         if grid is None:
             raise ValueError("grid definition required")
-        _metatiling_opts = [2 ** x for x in range(10)]
+        _metatiling_opts = [2**x for x in range(10)]
         if metatiling not in _metatiling_opts:
             raise ValueError(f"metatling must be one of {_metatiling_opts}")
         # get source grid parameters
@@ -147,7 +147,7 @@ class TilePyramid(object):
         validate_zoom(zoom)
         return round(
             (self.grid.right - self.grid.left)
-            / (self.grid.shape.width * 2 ** zoom * self.tile_size),
+            / (self.grid.shape.width * 2**zoom * self.tile_size),
             ROUND,
         )
 
@@ -160,7 +160,7 @@ class TilePyramid(object):
         validate_zoom(zoom)
         return round(
             (self.grid.top - self.grid.bottom)
-            / (self.grid.shape.height * 2 ** zoom * self.tile_size),
+            / (self.grid.shape.height * 2**zoom * self.tile_size),
             ROUND,
         )
 

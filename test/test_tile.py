@@ -27,7 +27,7 @@ def test_affine():
             tile.bounds(pixelbuffer).left,
             0,
             -tile.pixel_y_size,
-            tile.bounds(pixelbuffer).top
+            tile.bounds(pixelbuffer).top,
         )
         assert tile.affine(10) == test_affine
 
@@ -48,9 +48,7 @@ def test_get_children():
     # no metatiling
     tp = TilePyramid("geodetic")
     tile = tp.tile(8, 100, 100)
-    test_children = {
-        (9, 200, 200), (9, 201, 200), (9, 200, 201), (9, 201, 201)
-    }
+    test_children = {(9, 200, 200), (9, 201, 200), (9, 200, 201), (9, 201, 201)}
     children = {t.id for t in tile.get_children()}
     assert test_children == children
 
@@ -77,15 +75,19 @@ def test_get_neighbors(grid_definition_proj):
     tile = tp.tile(8, 100, 100)
     # 8 neighbors
     test_neighbors = {
-        (8, 101, 100), (8, 100, 101), (8, 99, 100), (8, 100, 99),
-        (8, 99, 101), (8, 101, 101), (8, 101, 99), (8, 99, 99)
+        (8, 101, 100),
+        (8, 100, 101),
+        (8, 99, 100),
+        (8, 100, 99),
+        (8, 99, 101),
+        (8, 101, 101),
+        (8, 101, 99),
+        (8, 99, 99),
     }
     neighbors = {t.id for t in tile.get_neighbors()}
     assert test_neighbors == neighbors
     # 4 neighbors
-    test_neighbors = {
-        (8, 101, 100), (8, 100, 101), (8, 99, 100), (8, 100, 99)
-    }
+    test_neighbors = {(8, 101, 100), (8, 100, 101), (8, 99, 100), (8, 100, 99)}
     neighbors = {t.id for t in tile.get_neighbors(connectedness=4)}
     assert test_neighbors == neighbors
 
@@ -93,15 +95,19 @@ def test_get_neighbors(grid_definition_proj):
     tile = tp.tile(3, 1, 0)
     # 8 neighbors
     test_neighbors = {
-        (3, 0, 0), (3, 1, 1), (3, 2, 0), (3, 1, 15),
-        (3, 0, 1), (3, 2, 1), (3, 2, 15), (3, 0, 15)
+        (3, 0, 0),
+        (3, 1, 1),
+        (3, 2, 0),
+        (3, 1, 15),
+        (3, 0, 1),
+        (3, 2, 1),
+        (3, 2, 15),
+        (3, 0, 15),
     }
     neighbors = {t.id for t in tile.get_neighbors()}
     assert test_neighbors == neighbors
     # 4 neighbors
-    test_neighbors = {
-        (3, 0, 0), (3, 1, 1), (3, 2, 0), (3, 1, 15)
-    }
+    test_neighbors = {(3, 0, 0), (3, 1, 1), (3, 2, 0), (3, 1, 15)}
     neighbors = {t.id for t in tile.get_neighbors(connectedness=4)}
     assert test_neighbors == neighbors
 
@@ -158,7 +164,11 @@ def test_tile_compare():
 def test_tile_tuple():
     tp = TilePyramid("geodetic")
     a = tp.tile(5, 5, 5)
-    assert tuple(a) == (5, 5, 5, )
+    assert tuple(a) == (
+        5,
+        5,
+        5,
+    )
 
 
 def test_deprecated():

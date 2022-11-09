@@ -27,7 +27,7 @@ def test_geodetic_metatiling_shapes():
         (2, 0, 0): (512, 512),
         (3, 0, 0): (512, 512),
         (4, 0, 0): (512, 512),
-        (5, 0, 0): (512, 512)
+        (5, 0, 0): (512, 512),
     }
     for tile_id, control_shape in tile_shapes.items():
         tile = tp.tile(*tile_id)
@@ -44,7 +44,7 @@ def test_geodetic_metatiling_shapes():
         (2, 0, 0): (1024, 1024),
         (3, 0, 0): (1024, 1024),
         (4, 0, 0): (1024, 1024),
-        (5, 0, 0): (1024, 1024)
+        (5, 0, 0): (1024, 1024),
     }
     for tile_id, control_shape in tile_shapes.items():
         tile = tp.tile(*tile_id)
@@ -61,7 +61,7 @@ def test_geodetic_metatiling_shapes():
         (2, 0, 0): (1024, 2048),
         (3, 0, 0): (2048, 2048),
         (4, 0, 0): (2048, 2048),
-        (5, 0, 0): (2048, 2048)
+        (5, 0, 0): (2048, 2048),
     }
     for tile_id, control_shape in tile_shapes.items():
         tile = tp.tile(*tile_id)
@@ -78,7 +78,7 @@ def test_geodetic_metatiling_shapes():
         (2, 0, 0): (1024, 2048),
         (3, 0, 0): (2048, 4096),
         (4, 0, 0): (4096, 4096),
-        (5, 0, 0): (4096, 4096)
+        (5, 0, 0): (4096, 4096),
     }
     for tile_id, control_shape in tile_shapes.items():
         tile = tp.tile(*tile_id)
@@ -122,7 +122,7 @@ def test_geodetic_metatile_shapes():
         (3, 0, 0): (522, 532),
         (4, 0, 0): (522, 532),
         (5, 0, 0): (522, 532),
-        (5, 1, 1): (532, 532)
+        (5, 1, 1): (532, 532),
     }
     for tile_id, control_shape in tile_shapes.items():
         tile = tp.tile(*tile_id)
@@ -138,7 +138,7 @@ def test_geodetic_metatile_shapes():
         (3, 0, 0): (1034, 1044),
         (4, 0, 0): (1034, 1044),
         (5, 0, 0): (1034, 1044),
-        (5, 1, 1): (1044, 1044)
+        (5, 1, 1): (1044, 1044),
     }
     for tile_id, control_shape in tile_shapes.items():
         tile = tp.tile(*tile_id)
@@ -154,7 +154,7 @@ def test_geodetic_metatile_shapes():
         (3, 0, 0): (2048, 2068),
         (4, 0, 0): (2058, 2068),
         (5, 0, 0): (2058, 2068),
-        (5, 1, 1): (2068, 2068)
+        (5, 1, 1): (2068, 2068),
     }
     for tile_id, control_shape in tile_shapes.items():
         tile = tp.tile(*tile_id)
@@ -170,7 +170,7 @@ def test_geodetic_metatile_shapes():
         (3, 0, 0): (2048, 4116),
         (4, 0, 0): (4096, 4116),
         (5, 0, 0): (4106, 4116),
-        (6, 1, 1): (4116, 4116)
+        (6, 1, 1): (4116, 4116),
     }
     for tile_id, control_shape in tile_shapes.items():
         tile = tp.tile(*tile_id)
