@@ -1,3 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tilematrix"
+dynamic = ["version"]
+description = "helps handling tile pyramids"
+readme = "README.rst"
+license = "MIT"
+authors = [
+    { name = "Joachim Ungar", email = "joachim.ungar@gmail.com" },
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+dependencies = [
+    "affine",
+    "click",
+    "geojson",
+    "rasterio>=1.0.21",
+    "shapely",
+]
+
+[project.scripts]
+tmx = "tilematrix.tmx.main:tmx"
+
+[project.urls]
+Homepage = "https://github.com/ungarj/tilematrix"
+
+[project.optional-dependencies]
+test = [
+    "black",
+    "coveralls",
+    "flake8",
+    "pre-commit",
+    "pytest",
+    "pytest-cov"
+]
+
+[tool.hatch.version]
+path = "tilematrix/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/tilematrix",
+]
+
 [tool.black]
 include = '\.pyi?$'
 exclude = '''
