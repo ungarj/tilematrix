@@ -13,6 +13,9 @@ Tilematrix handles geographic web tiles and tile pyramids.
 .. image:: https://coveralls.io/repos/github/ungarj/tilematrix/badge.svg?branch=master
     :target: https://coveralls.io/github/ungarj/tilematrix?branch=master
 
+.. image:: https://anaconda.org/conda-forge/tilematrix/badges/version.svg
+    :target: https://anaconda.org/conda-forge/tilematrix    
+
 .. image:: https://img.shields.io/pypi/pyversions/mapchete.svg
 
 
@@ -118,6 +121,11 @@ pyramid:
     $ tmx -output_format GeoJSON -grid mercator bbox 4 15 15
     {"type": "Polygon", "coordinates": [[[20037508.342789203, -20037508.3427892], [20037508.342789203, -17532819.799940553], [17532819.799940553, -17532819.799940553], [17532819.799940553, -20037508.3427892], [20037508.342789203, -20037508.3427892]]]}
 
+----------
+Conda Publishing
+----------
+
+Use bot pull requests generated with every release at `tilematrix-feedstock`_  repository for releasing new versions on `conda-forge` 
 
 
 -------
@@ -129,3 +137,5 @@ MIT License
 Copyright (c) 2015, 2016, 2017 `EOX IT Services`_
 
 .. _`EOX IT Services`: https://eox.at/
+
+.. _`tilematrix-feedstock`: <https://github.com/conda-forge/tilematrix-feedstock>
