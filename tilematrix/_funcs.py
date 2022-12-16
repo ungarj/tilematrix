@@ -41,10 +41,12 @@ def clip_geometry_to_srs_bounds(geometry, pyramid, multipart=False):
         inside_geom = geometry.intersection(pyramid_bbox)
         outside_geom = geometry.difference(pyramid_bbox)
         # shift outside geometry so it lies within SRS bounds
-        if isinstance(outside_geom, Polygon):
-            outside_geom = [outside_geom]
+        if hasattr(outside_geom, "geoms"):
+            outside_geoms = outside_geom.geoms
+        else:
+            outside_geoms = [outside_geom]
         all_geoms = [inside_geom]
-        for geom in outside_geom:
+        for geom in outside_geoms:
             geom_bounds = Bounds(*geom.bounds)
             if geom_bounds.left < pyramid.left:
                 geom = translate(geom, xoff=2 * pyramid.right)
