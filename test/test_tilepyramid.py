@@ -366,6 +366,14 @@ def test_snap_bounds():
     assert snapped == control
 
 
+def test_snap_bounds_edge_cases():
+    # as zoom level increases, so increases the potential rounding errors
+    tp = TilePyramid("geodetic")
+    for zoom in range(22):
+        snapped = snap_bounds(bounds=tp.bounds, tile_pyramid=tp, zoom=zoom)
+        assert snapped == tp.bounds
+
+
 def test_deprecated():
     tp = TilePyramid("geodetic")
     assert tp.type

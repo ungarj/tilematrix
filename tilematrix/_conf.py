@@ -1,7 +1,7 @@
 """Package configuration parameters."""
 
 # round coordinates
-ROUND = 20
+ROUND = 30
 
 # bounds ratio vs shape ratio uncertainty
 DELTA = 1e-6
