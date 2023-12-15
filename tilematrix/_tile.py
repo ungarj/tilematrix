@@ -1,12 +1,13 @@
 """Tile class."""
 
+import warnings
+
 from affine import Affine
 from shapely.geometry import box
-import warnings
 
 from ._conf import ROUND
 from ._funcs import _tile_intersecting_tilepyramid
-from ._types import TileIndex, Shape, Bounds
+from ._types import Bounds, Shape, TileIndex
 
 
 class Tile(object):

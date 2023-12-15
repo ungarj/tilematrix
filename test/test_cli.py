@@ -1,9 +1,9 @@
-from click.testing import CliRunner
 import geojson
+from click.testing import CliRunner
 from shapely import wkt
 from shapely.geometry import shape
 
-from tilematrix import __version__, TilePyramid
+from tilematrix import TilePyramid, __version__
 from tilematrix.tmx.main import tmx
 
 

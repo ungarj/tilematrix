@@ -1,9 +1,11 @@
 """TilePyramid creation."""
 
 import math
+
 import pytest
 from shapely.geometry import box
-from tilematrix import TilePyramid, GridDefinition, PYRAMID_PARAMS
+
+from tilematrix import PYRAMID_PARAMS, GridDefinition, TilePyramid
 
 
 def test_grid_init(grid_definition_proj):
@@ -83,7 +85,6 @@ def test_irregular_grids(grid_definition_irregular):
 
             # with pixelbuffers, some tile bounds have to be outside TilePyramid bounds
             if pixelbuffer:
-
                 # tile on top left corner
                 tile = tp.tile(0, 0, 0)
                 assert tile.bounds(pixelbuffer).left < tp.left

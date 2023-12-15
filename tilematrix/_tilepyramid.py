@@ -1,20 +1,21 @@
 """Handling tile pyramids."""
 
-from shapely.prepared import prep
 import math
 import warnings
 
+from shapely.prepared import prep
+
 from ._conf import ROUND
+from ._funcs import (
+    _global_tiles_from_bounds,
+    _tile_from_xy,
+    _tile_intersecting_tilepyramid,
+    _tiles_from_cleaned_bounds,
+    clip_geometry_to_srs_bounds,
+    validate_zoom,
+)
 from ._grid import GridDefinition
 from ._tile import Tile
-from ._funcs import (
-    validate_zoom,
-    clip_geometry_to_srs_bounds,
-    _tile_intersecting_tilepyramid,
-    _global_tiles_from_bounds,
-    _tiles_from_cleaned_bounds,
-    _tile_from_xy,
-)
 from ._types import Bounds
 
 

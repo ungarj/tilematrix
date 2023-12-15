@@ -4,7 +4,7 @@ from itertools import product
 
 from rasterio.crs import CRS
 from shapely.affinity import translate
-from shapely.geometry import Polygon, GeometryCollection, box
+from shapely.geometry import GeometryCollection, Polygon, box
 from shapely.ops import unary_union
 from shapely.prepared import prep
 
