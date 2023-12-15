@@ -64,7 +64,7 @@ class GridDefinition(object):
             is_global=self.is_global,
             shape=self.shape,
             srs=dict(wkt=self.crs.to_wkt()),
-            type=self.type,
+            grid=self.type,
         )
 
     def from_dict(config_dict):
