@@ -2,14 +2,20 @@
 Changelog
 #########
 
+2023.12.0 - 2022-12-15
+----------------------
+* fix grid warning
+* add more pre-commit hooks
+
+
 2022.12.0 - 2022-12-16
 ----------------------
-* make fit for `Shapely 2.0``
+* make fit for `Shapely 2.0`
 
 
 2022.11.3 - 2022-11-08
 ----------------------
-* replace `setuptools` with `hatch``
+* replace `setuptools` with `hatch`
 
 
 2022.11.2 - 2022-11-08
