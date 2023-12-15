@@ -2,8 +2,8 @@ import pytest
 from rasterio.crs import CRS
 from shapely.geometry import box
 
-from tilematrix import clip_geometry_to_srs_bounds, TilePyramid, validate_zoom
-from tilematrix._funcs import _verify_shape_bounds, _get_crs
+from tilematrix import TilePyramid, clip_geometry_to_srs_bounds, validate_zoom
+from tilematrix._funcs import _get_crs, _verify_shape_bounds
 
 
 def test_antimeridian_clip(invalid_geom):

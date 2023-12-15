@@ -1,7 +1,7 @@
 """Fixtures for test suite."""
 
 import pytest
-from shapely.geometry import Polygon, shape, Point
+from shapely.geometry import Point, Polygon, shape
 
 example_proj = """
         +proj=ortho

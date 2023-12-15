@@ -41,7 +41,7 @@ class GridDefinition(object):
                 if self.__eq__(default_grid):
                     self.type = default_grid_name
         elif isinstance(grid, dict):
-            if "type" in grid:
+            if "type" in grid:  # pragma: no cover
                 warnings.warn(
                     DeprecationWarning("'type' is deprecated and should be 'grid'")
                 )
@@ -64,7 +64,7 @@ class GridDefinition(object):
             is_global=self.is_global,
             shape=self.shape,
             srs=dict(wkt=self.crs.to_wkt()),
-            type=self.type,
+            grid=self.type,
         )
 
     def from_dict(config_dict):

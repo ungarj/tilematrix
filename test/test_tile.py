@@ -1,7 +1,7 @@
 """Tile properties."""
 
-from affine import Affine
 import pytest
+from affine import Affine
 
 from tilematrix import TilePyramid
 

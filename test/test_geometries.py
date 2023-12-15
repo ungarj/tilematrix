@@ -1,10 +1,11 @@
 """Tile geometries and tiles from geometries."""
 
-import pytest
-from shapely.geometry import Point, Polygon, shape
 from types import GeneratorType
 
-from tilematrix import TilePyramid, Tile
+import pytest
+from shapely.geometry import Point, Polygon, shape
+
+from tilematrix import Tile, TilePyramid
 
 
 def test_top_left_coord():
