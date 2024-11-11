@@ -2,7 +2,11 @@
 Changelog
 #########
 
-2023.12.0 - 2022-12-15
+2024.11.0 - 2024-11-11
+----------------------
+* fix error when getting intersecting tiles from inputs with differing metatiling settings on higher zoom levels (#64)
+
+2023.12.0 - 2023-12-15
 ----------------------
 * fix grid warning
 * add more pre-commit hooks
