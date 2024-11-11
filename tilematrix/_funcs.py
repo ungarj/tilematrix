@@ -137,16 +137,20 @@ def _tile_intersecting_tilepyramid(tile, tp):
     pyramid_metatiling = tp.metatiling
     multiplier = tile_metatiling / pyramid_metatiling
     if tile_metatiling > pyramid_metatiling:
-        return [
-            tp.tile(
-                tile.zoom,
-                int(multiplier) * tile.row + row_offset,
-                int(multiplier) * tile.col + col_offset,
-            )
-            for row_offset, col_offset in product(
-                range(int(multiplier)), range(int(multiplier))
-            )
-        ]
+        out = []
+        multiplier = int(multiplier)
+        for row_offset, col_offset in product(range(multiplier), range(multiplier)):
+            try:
+                out.append(
+                    tp.tile(
+                        tile.zoom,
+                        multiplier * tile.row + row_offset,
+                        multiplier * tile.col + col_offset,
+                    )
+                )
+            except ValueError:
+                pass
+        return out
     elif tile_metatiling < pyramid_metatiling:
         return [
             tp.tile(tile.zoom, int(multiplier * tile.row), int(multiplier * tile.col))
